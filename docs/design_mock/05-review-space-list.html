@@ -147,100 +147,6 @@
         <span class="text-gray-900 font-medium">○○システム開発</span>
       </nav>
 
-      <!-- Actions Bar -->
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-        <div>
-          <h3 class="text-2xl font-bold text-gray-900">レビュースペース一覧</h3>
-          <p class="text-sm text-gray-600 mt-1">レビュースペースを選択してレビューを開始します</p>
-        </div>
-        <a href="05c-space-create.html" class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center gap-2">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-          </svg>
-          新規スペース
-        </a>
-      </div>
-
-      <!-- Project Members Section -->
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
-        <div class="p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">プロジェクトメンバー</h3>
-            <a href="04-member-search-modal.html" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium flex items-center gap-2">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-              </svg>
-              メンバーを追加
-            </a>
-          </div>
-
-          <!-- Members Grid -->
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <!-- Member 1 -->
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium flex-shrink-0">山</div>
-                <div class="min-w-0">
-                  <p class="text-sm font-medium text-gray-900 truncate">山田太郎</p>
-                  <p class="text-xs text-gray-500">EMP001</p>
-                </div>
-              </div>
-              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800 ml-2">
-                自分
-              </span>
-            </div>
-
-            <!-- Member 2 -->
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 group">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-medium flex-shrink-0">佐</div>
-                <div class="min-w-0">
-                  <p class="text-sm font-medium text-gray-900 truncate">佐藤花子</p>
-                  <p class="text-xs text-gray-500">EMP002</p>
-                </div>
-              </div>
-              <button class="text-gray-400 hover:text-red-600 transition duration-150 opacity-0 group-hover:opacity-100 ml-2" title="削除">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Member 3 -->
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 group">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-medium flex-shrink-0">鈴</div>
-                <div class="min-w-0">
-                  <p class="text-sm font-medium text-gray-900 truncate">鈴木一郎</p>
-                  <p class="text-xs text-gray-500">EMP003</p>
-                </div>
-              </div>
-              <button class="text-gray-400 hover:text-red-600 transition duration-150 opacity-0 group-hover:opacity-100 ml-2" title="削除">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Member 4 -->
-            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 group">
-              <div class="flex items-center gap-3 min-w-0">
-                <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-medium flex-shrink-0">田</div>
-                <div class="min-w-0">
-                  <p class="text-sm font-medium text-gray-900 truncate">田中次郎</p>
-                  <p class="text-xs text-gray-500">EMP004</p>
-                </div>
-              </div>
-              <button class="text-gray-400 hover:text-red-600 transition duration-150 opacity-0 group-hover:opacity-100 ml-2" title="削除">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Project Settings Section -->
       <div class="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
         <div class="p-6">
@@ -277,8 +183,32 @@
               <label class="block text-sm font-medium text-gray-700 mb-2">説明</label>
               <p class="text-sm text-gray-600">○○システムの設計・開発・テストに関するレビューを管理するプロジェクトです。設計書、コード、テスト仕様書などのレビューを実施します。</p>
             </div>
+
+            <!-- members -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">メンバー</label>
+              <div class="flex -space-x-3">
+                <div class="w-8 h-8 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-white font-medium text-sm" title="山田太郎">山</div>
+                <div class="w-8 h-8 rounded-full bg-green-500 border-2 border-white flex items-center justify-center text-white font-medium text-sm" title="佐藤花子">佐</div>
+                <div class="w-8 h-8 rounded-full bg-purple-500 border-2 border-white flex items-center justify-center text-white font-medium text-sm" title="鈴木次郎">鈴</div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
+
+      <!-- Actions Bar -->
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <div>
+          <h3 class="text-2xl font-bold text-gray-900">レビュースペース一覧</h3>
+          <p class="text-sm text-gray-600 mt-1">レビュースペースを選択してレビューを開始します</p>
+        </div>
+        <a href="05c-space-create.html" class="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center gap-2">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          新規スペース
+        </a>
       </div>
 
       <!-- Spaces Grid -->
