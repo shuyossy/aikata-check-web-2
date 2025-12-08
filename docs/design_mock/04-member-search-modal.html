@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIKATA - メンバー検索</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              200: '#BFDBFE',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8',
+              900: '#1E3A8A',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <!-- Modal Overlay -->
+  <div class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <!-- Modal -->
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+      <div class="p-6">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">メンバーを検索</h3>
+          <button class="text-gray-400 hover:text-gray-600 transition duration-150">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="mb-4">
+          <div class="relative">
+            <input
+              type="search"
+              placeholder="氏名または社員IDで検索..."
+              class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-150">
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Selected Count -->
+        <div class="mb-3">
+          <p class="text-sm text-gray-600">選択中: <span class="font-medium text-gray-900">3名</span></p>
+        </div>
+
+        <!-- User List -->
+        <div class="space-y-2 max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+          <!-- User Item 1 (Selected) -->
+          <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-primary-300 cursor-pointer hover:border-primary-400 transition duration-150">
+            <input type="checkbox" checked class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            <div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium flex-shrink-0">山</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">山田太郎</p>
+              <p class="text-xs text-gray-500">ID: EMP001</p>
+            </div>
+          </label>
+
+          <!-- User Item 2 (Selected) -->
+          <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-primary-300 cursor-pointer hover:border-primary-400 transition duration-150">
+            <input type="checkbox" checked class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            <div class="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center text-white font-medium flex-shrink-0">佐</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">佐藤花子</p>
+              <p class="text-xs text-gray-500">ID: EMP002</p>
+            </div>
+          </label>
+
+          <!-- User Item 3 (Selected) -->
+          <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-primary-300 cursor-pointer hover:border-primary-400 transition duration-150">
+            <input type="checkbox" checked class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            <div class="w-10 h-10 rounded-full bg-purple-500 flex items-center justify-center text-white font-medium flex-shrink-0">鈴</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">鈴木一郎</p>
+              <p class="text-xs text-gray-500">ID: EMP003</p>
+            </div>
+          </label>
+
+          <!-- User Item 4 (Not Selected) -->
+          <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-gray-300 transition duration-150">
+            <input type="checkbox" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            <div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center text-white font-medium flex-shrink-0">田</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">田中次郎</p>
+              <p class="text-xs text-gray-500">ID: EMP004</p>
+            </div>
+          </label>
+
+          <!-- User Item 5 (Not Selected) -->
+          <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-gray-300 transition duration-150">
+            <input type="checkbox" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            <div class="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-medium flex-shrink-0">高</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">高橋美咲</p>
+              <p class="text-xs text-gray-500">ID: EMP005</p>
+            </div>
+          </label>
+
+          <!-- User Item 6 (Not Selected) -->
+          <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-gray-300 transition duration-150">
+            <input type="checkbox" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            <div class="w-10 h-10 rounded-full bg-red-500 flex items-center justify-center text-white font-medium flex-shrink-0">渡</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">渡辺健太</p>
+              <p class="text-xs text-gray-500">ID: EMP006</p>
+            </div>
+          </label>
+
+          <!-- User Item 7 (Not Selected) -->
+          <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-gray-300 transition duration-150">
+            <input type="checkbox" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            <div class="w-10 h-10 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium flex-shrink-0">伊</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">伊藤結衣</p>
+              <p class="text-xs text-gray-500">ID: EMP007</p>
+            </div>
+          </label>
+
+          <!-- User Item 8 (Not Selected) -->
+          <label class="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 cursor-pointer hover:border-gray-300 transition duration-150">
+            <input type="checkbox" class="w-4 h-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500">
+            <div class="w-10 h-10 rounded-full bg-pink-500 flex items-center justify-center text-white font-medium flex-shrink-0">中</div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900">中村大輔</p>
+              <p class="text-xs text-gray-500">ID: EMP008</p>
+            </div>
+          </label>
+        </div>
+
+        <!-- Pagination -->
+        <div class="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+          <p class="text-sm text-gray-600">8件中 1-8件を表示</p>
+          <div class="flex items-center gap-2">
+            <button class="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white text-gray-400 cursor-not-allowed" disabled>
+              前へ
+            </button>
+            <button class="px-3 py-1.5 text-sm border border-gray-300 rounded bg-white hover:bg-gray-50 text-gray-700 transition duration-150">
+              次へ
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Actions -->
+        <div class="flex flex-col-reverse sm:flex-row gap-3 mt-6 pt-4 border-t border-gray-200">
+          <button class="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium text-center">
+            キャンセル
+          </button>
+          <button class="px-6 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            選択を確定
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

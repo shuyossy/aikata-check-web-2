@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIKATA - プロジェクト切り替え</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              200: '#BFDBFE',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8',
+              900: '#1E3A8A',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+  <!-- Modal Overlay -->
+  <div class="fixed inset-0 bg-gray-900 bg-opacity-50 z-50 flex items-center justify-center">
+    <!-- Modal -->
+    <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4">
+      <div class="p-6">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-semibold text-gray-900">プロジェクトを切り替え</h3>
+          <button class="text-gray-400 hover:text-gray-600 transition duration-150">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search Input -->
+        <div class="mb-4">
+          <div class="relative">
+            <input
+              type="search"
+              placeholder="プロジェクト名で検索..."
+              class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-150">
+            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Current Project Notice -->
+        <div class="mb-3">
+          <p class="text-sm text-gray-600">現在: <span class="font-medium text-primary-600">○○システム開発</span></p>
+        </div>
+
+        <!-- Project List -->
+        <div class="space-y-2 max-h-96 overflow-y-auto">
+          <!-- Project Item 1 (Current) -->
+          <button class="w-full flex items-center gap-3 p-4 bg-primary-50 rounded-lg border-2 border-primary-500 text-left transition duration-150">
+            <div class="w-12 h-12 rounded-lg bg-primary-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <p class="text-sm font-semibold text-gray-900">○○システム開発</p>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                  現在
+                </span>
+              </div>
+              <p class="text-xs text-gray-600 mt-0.5">最終更新: 2024/12/08</p>
+              <p class="text-xs text-gray-500 mt-1">5個のレビュースペース</p>
+            </div>
+            <svg class="w-5 h-5 text-primary-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+
+          <!-- Project Item 2 -->
+          <button class="w-full flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-gray-50 text-left transition duration-150">
+            <div class="w-12 h-12 rounded-lg bg-green-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900">△△サービス改善プロジェクト</p>
+              <p class="text-xs text-gray-600 mt-0.5">最終更新: 2024/12/05</p>
+              <p class="text-xs text-gray-500 mt-1">3個のレビュースペース</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+
+          <!-- Project Item 3 -->
+          <button class="w-full flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-gray-50 text-left transition duration-150">
+            <div class="w-12 h-12 rounded-lg bg-purple-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900">□□アプリ開発</p>
+              <p class="text-xs text-gray-600 mt-0.5">最終更新: 2024/12/01</p>
+              <p class="text-xs text-gray-500 mt-1">2個のレビュースペース</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+
+          <!-- Project Item 4 -->
+          <button class="w-full flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-gray-50 text-left transition duration-150">
+            <div class="w-12 h-12 rounded-lg bg-orange-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900">◇◇プラットフォーム刷新</p>
+              <p class="text-xs text-gray-600 mt-0.5">最終更新: 2024/11/28</p>
+              <p class="text-xs text-gray-500 mt-1">4個のレビュースペース</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+
+          <!-- Project Item 5 -->
+          <button class="w-full flex items-center gap-3 p-4 bg-white rounded-lg border border-gray-200 hover:border-primary-300 hover:bg-gray-50 text-left transition duration-150">
+            <div class="w-12 h-12 rounded-lg bg-red-500 flex items-center justify-center text-white font-bold flex-shrink-0">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+              </svg>
+            </div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-semibold text-gray-900">◆◆セキュリティ強化プロジェクト</p>
+              <p class="text-xs text-gray-600 mt-0.5">最終更新: 2024/11/20</p>
+              <p class="text-xs text-gray-500 mt-1">1個のレビュースペース</p>
+            </div>
+            <svg class="w-5 h-5 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Create New Project -->
+        <div class="mt-4 pt-4 border-t border-gray-200">
+          <a href="03-project-create.html" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-white text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50 transition duration-150 font-medium">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            新しいプロジェクトを作成
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
