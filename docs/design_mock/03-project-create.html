@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIKATA - 新規プロジェクト作成</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              200: '#BFDBFE',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8',
+              900: '#1E3A8A',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+  <!-- Header -->
+  <header class="bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-4">
+          <h1 class="text-xl font-bold text-primary-600">AIKATA</h1>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm">山</div>
+            <span class="text-sm font-medium text-gray-700 hidden md:block">山田太郎</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Breadcrumb -->
+    <nav class="flex text-sm text-gray-500 mb-6">
+      <a href="02-project-list.html" class="hover:text-gray-700 transition duration-150">プロジェクト</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-900 font-medium">新規作成</span>
+    </nav>
+
+    <!-- Page Header -->
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold text-gray-900 mb-2">新規プロジェクト作成</h2>
+      <p class="text-gray-600">プロジェクト情報を入力してください</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="bg-white rounded-lg border border-gray-200 shadow-sm">
+      <form class="p-6 sm:p-8 space-y-6">
+        <!-- Basic Information Section -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <span class="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-bold mr-3">1</span>
+            基本情報
+          </h3>
+
+          <div class="space-y-4 ml-11">
+            <!-- Project Name -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                プロジェクト名 <span class="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-150"
+                placeholder="例: ○○システム開発プロジェクト"
+                required>
+              <p class="mt-1 text-sm text-gray-500">プロジェクトを識別するための名称を入力してください</p>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                説明 <span class="text-gray-400 text-xs">(任意)</span>
+              </label>
+              <textarea
+                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-150"
+                rows="4"
+                placeholder="プロジェクトの目的や概要を入力してください"></textarea>
+              <p class="mt-1 text-sm text-gray-500">プロジェクトの詳細な説明を入力できます</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- API Configuration Section -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <span class="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-bold mr-3">2</span>
+            API設定
+          </h3>
+
+          <div class="space-y-4 ml-11">
+            <!-- API Key Info -->
+            <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+              <div class="flex items-start">
+                <svg class="h-5 w-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                </svg>
+                <div class="ml-3">
+                  <p class="text-sm text-blue-800 font-medium">APIキーについて</p>
+                  <p class="mt-1 text-sm text-blue-700">プロジェクトごとにAI APIキーを設定する必要があります。APIキーは社内のAIチームから発行されます。</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- API Key -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                APIキー <span class="text-gray-400 text-xs">(任意・後で設定可能)</span>
+              </label>
+              <div class="relative">
+                <input
+                  type="password"
+                  class="w-full px-4 py-2.5 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent transition duration-150 font-mono text-sm"
+                  placeholder="sk-xxxxxxxxxxxxxxxxxxxx">
+                <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </button>
+              </div>
+              <p class="mt-1 text-sm text-gray-500">APIキーは安全に保管されます</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- Members Section -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <span class="w-8 h-8 rounded-full bg-primary-100 text-primary-600 flex items-center justify-center text-sm font-bold mr-3">3</span>
+            メンバー
+          </h3>
+
+          <div class="space-y-4 ml-11">
+            <!-- Info -->
+            <p class="text-sm text-gray-600">プロジェクトに参加するメンバーを追加してください。デフォルトで自身が選択されています。</p>
+
+            <!-- Add Member Button -->
+            <button type="button" class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium flex items-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+              </svg>
+              メンバーを追加
+            </button>
+
+            <!-- Selected Members List -->
+            <div class="space-y-2">
+              <p class="text-sm font-medium text-gray-700">選択済みメンバー (1名)</p>
+
+              <!-- Member Item 1 (Self) -->
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium">山</div>
+                  <div>
+                    <p class="text-sm font-medium text-gray-900">山田太郎</p>
+                    <p class="text-xs text-gray-500">ID: EMP001</p>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                    自分
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty State for Additional Members -->
+            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+              <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+              </svg>
+              <p class="mt-2 text-sm text-gray-500">「メンバーを追加」ボタンから追加できます</p>
+            </div>
+          </div>
+        </div>
+
+        <hr class="border-gray-200">
+
+        <!-- Form Actions -->
+        <div class="flex flex-col-reverse sm:flex-row gap-3 justify-end pt-4">
+          <a href="02-project-list.html" class="px-6 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium text-center">
+            キャンセル
+          </a>
+          <button type="submit" class="px-6 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            プロジェクトを作成
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Help Section -->
+    <div class="mt-6 bg-gray-100 rounded-lg p-4">
+      <div class="flex items-start gap-3">
+        <svg class="w-5 h-5 text-gray-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+        </svg>
+        <div>
+          <p class="text-sm font-medium text-gray-900">プロジェクト作成のヒント</p>
+          <ul class="mt-2 text-sm text-gray-600 space-y-1 list-disc list-inside">
+            <li>プロジェクト名は後から変更できます</li>
+            <li>APIキーは作成後でも設定・変更が可能です</li>
+            <li>メンバーはいつでも追加・削除できます</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

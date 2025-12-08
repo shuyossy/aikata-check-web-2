@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIKATA - Q&A</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              200: '#BFDBFE',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8',
+              900: '#1E3A8A',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col md:flex-row">
+  <!-- Sidebar -->
+  <aside class="w-full md:w-64 bg-white border-r border-gray-200">
+    <div class="p-4">
+      <h1 class="text-xl font-bold text-primary-600 mb-6">AIKATA</h1>
+      <button class="w-full px-3 py-2 mb-6 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-150 text-sm font-medium flex items-center justify-between">
+        <span class="truncate">○○システム開発</span>
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"/>
+        </svg>
+      </button>
+      <nav class="space-y-1">
+        <a href="05-review-space-list.html" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition duration-150">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          レビュースペース
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+          </svg>
+          Q&A
+        </a>
+      </nav>
+      <div class="mt-8 pt-4 border-t border-gray-200">
+        <a href="13-review-results.html" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition duration-150">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          レビュー結果に戻る
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+      <div class="px-6 py-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">Q&A - 基本設計書v1.0</h2>
+            <p class="text-sm text-gray-600 mt-1">レビュー結果やドキュメントについて質問できます</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm">山</div>
+            <span class="text-sm font-medium text-gray-700 hidden sm:block">山田太郎</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="flex-1 flex flex-col">
+      <!-- Breadcrumb -->
+      <div class="px-6 pt-6">
+        <nav class="flex text-sm text-gray-500 mb-6">
+          <a href="02-project-list.html" class="hover:text-gray-700 transition duration-150">プロジェクト</a>
+          <span class="mx-2">/</span>
+          <a href="05-review-space-list.html" class="hover:text-gray-700 transition duration-150">○○システム開発</a>
+          <span class="mx-2">/</span>
+          <a href="05b-review-target-list.html" class="hover:text-gray-700 transition duration-150">設計書レビュー</a>
+          <span class="mx-2">/</span>
+          <a href="13-review-results.html" class="hover:text-gray-700 transition duration-150">レビュー結果</a>
+          <span class="mx-2">/</span>
+          <span class="text-gray-900 font-medium">Q&A</span>
+        </nav>
+      </div>
+
+      <!-- Chat Container -->
+      <div class="flex-1 flex flex-col max-w-5xl mx-auto w-full px-6">
+        <!-- Context Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <svg class="h-5 w-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+            <div class="ml-3 flex-1">
+              <p class="text-sm text-blue-800 font-medium">現在のコンテキスト</p>
+              <p class="mt-1 text-sm text-blue-700">
+                レビュー対象: 基本設計書v1.0 | チェックリスト: 設計書レビューチェックリスト (8項目) | レビュー日時: 2024/12/07 14:30
+              </p>
+              <p class="mt-1 text-xs text-blue-600">
+                AIはこのレビュー結果とドキュメント内容を理解した上で回答します
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Messages Area -->
+        <div class="flex-1 overflow-y-auto space-y-6 mb-6">
+          <!-- Welcome Message -->
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+              AI
+            </div>
+            <div class="flex-1">
+              <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <p class="text-sm text-gray-900">
+                  こんにちは！レビュー結果やドキュメント内容について、何でもお気軽にご質問ください。
+                </p>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">AI • 2024/12/07 15:00</div>
+            </div>
+          </div>
+
+          <!-- User Message 1 -->
+          <div class="flex gap-3 justify-end">
+            <div class="flex-1 max-w-3xl">
+              <div class="bg-primary-500 rounded-lg p-4 shadow-sm">
+                <p class="text-sm text-white">
+                  エラー処理の項目がC評定でしたが、具体的にどのような内容を追記すればよいでしょうか？
+                </p>
+              </div>
+              <div class="text-xs text-gray-500 mt-1 text-right">あなた • 2024/12/07 15:01</div>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+              山
+            </div>
+          </div>
+
+          <!-- AI Response 1 -->
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+              AI
+            </div>
+            <div class="flex-1">
+              <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <p class="text-sm text-gray-900 mb-4">
+                  エラー処理の項目について、以下の3点を追記することをお勧めします：
+                </p>
+                <div class="space-y-3 text-sm text-gray-700">
+                  <div class="pl-4 border-l-2 border-purple-400">
+                    <p class="font-semibold text-gray-900 mb-1">1. 例外処理フローの定義</p>
+                    <p>例外の種類（ビジネスロジック例外、システム例外、外部連携例外など）ごとに、発生時の処理フローをフローチャートで明記してください。特にデータベーストランザクション中の例外発生時のロールバック処理、外部API呼び出し失敗時のリトライ制御について詳細化が必要です。</p>
+                  </div>
+                  <div class="pl-4 border-l-2 border-purple-400">
+                    <p class="font-semibold text-gray-900 mb-1">2. エラーメッセージ一覧の作成</p>
+                    <p>エラーコード体系、メッセージID、画面表示メッセージ（ユーザ向け）、ログ出力メッセージ（技術者向け）、重要度レベルを含むエラーメッセージ一覧表を追加してください。付録Aのメッセージ一覧に追記する形が良いでしょう。</p>
+                  </div>
+                  <div class="pl-4 border-l-2 border-purple-400">
+                    <p class="font-semibold text-gray-900 mb-1">3. ログ出力方針の明確化</p>
+                    <p>ログレベル（ERROR、WARN、INFO等）の使い分け基準、必須ログ出力項目（タイムスタンプ、ユーザID、セッションID、リクエストID、スタックトレース等）、ログフォーマットのサンプルを第4章の運用・保守セクションに追記してください。</p>
+                  </div>
+                </div>
+                <p class="text-sm text-gray-900 mt-4">
+                  これらを追記することで、開発時のエラー処理実装の統一性が保たれ、運用時の障害調査も効率化されます。
+                </p>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">AI • 2024/12/07 15:01</div>
+            </div>
+          </div>
+
+          <!-- User Message 2 -->
+          <div class="flex gap-3 justify-end">
+            <div class="flex-1 max-w-3xl">
+              <div class="bg-primary-500 rounded-lg p-4 shadow-sm">
+                <p class="text-sm text-white">
+                  ありがとうございます。ログフォーマットのサンプルとして、どのような形式が推奨されますか？
+                </p>
+              </div>
+              <div class="text-xs text-gray-500 mt-1 text-right">あなた • 2024/12/07 15:03</div>
+            </div>
+            <div class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+              山
+            </div>
+          </div>
+
+          <!-- AI Response 2 -->
+          <div class="flex gap-3">
+            <div class="w-8 h-8 rounded-full bg-purple-500 flex items-center justify-center text-white font-medium text-sm flex-shrink-0">
+              AI
+            </div>
+            <div class="flex-1">
+              <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                <p class="text-sm text-gray-900 mb-3">
+                  構造化ログ形式（JSON形式）を推奨します。以下、サンプルです：
+                </p>
+                <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                  <pre class="text-xs text-green-400 font-mono"><code>{
+  "timestamp": "2024-12-07T15:03:25.123+09:00",
+  "level": "ERROR",
+  "logger": "com.example.service.PaymentService",
+  "thread": "http-nio-8080-exec-5",
+  "requestId": "req-abc123xyz",
+  "sessionId": "sess-789def456",
+  "userId": "U12345",
+  "message": "決済APIの呼び出しに失敗しました",
+  "errorCode": "PAY-E001",
+  "exception": {
+    "class": "com.example.exception.PaymentApiException",
+    "message": "Connection timeout",
+    "stackTrace": [...]
+  },
+  "context": {
+    "orderId": "ORD-2024120700123",
+    "amount": 10000,
+    "apiEndpoint": "https://payment.example.com/api/v1/charge"
+  }
+}</code></pre>
+                </div>
+                <div class="mt-4 space-y-2 text-sm text-gray-700">
+                  <p class="font-semibold text-gray-900">主要項目の説明：</p>
+                  <ul class="list-disc list-inside space-y-1 ml-2">
+                    <li><strong>requestId:</strong> リクエスト全体を追跡するためのID（必須）</li>
+                    <li><strong>sessionId:</strong> ユーザセッションの識別（ユーザ操作の文脈把握用）</li>
+                    <li><strong>userId:</strong> 実行ユーザの識別（セキュリティ監査用）</li>
+                    <li><strong>errorCode:</strong> システム独自のエラー分類（統計・分析用）</li>
+                    <li><strong>context:</strong> エラー発生時のビジネスコンテキスト（調査用）</li>
+                  </ul>
+                </div>
+                <p class="text-sm text-gray-900 mt-3">
+                  JSON形式を採用することで、ログ分析ツール（Elasticsearch、Splunk等）での検索・集計が容易になります。
+                </p>
+              </div>
+              <div class="text-xs text-gray-500 mt-1">AI • 2024/12/07 15:03</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Suggested Questions -->
+        <div class="mb-4">
+          <p class="text-xs font-medium text-gray-600 mb-2">よくある質問:</p>
+          <div class="flex flex-wrap gap-2">
+            <button class="px-3 py-1.5 bg-white border border-gray-300 rounded-full text-xs text-gray-700 hover:bg-gray-50 hover:border-primary-500 transition duration-150">
+              他のC評定項目はありますか？
+            </button>
+            <button class="px-3 py-1.5 bg-white border border-gray-300 rounded-full text-xs text-gray-700 hover:bg-gray-50 hover:border-primary-500 transition duration-150">
+              セキュリティ要件の詳細を教えてください
+            </button>
+            <button class="px-3 py-1.5 bg-white border border-gray-300 rounded-full text-xs text-gray-700 hover:bg-gray-50 hover:border-primary-500 transition duration-150">
+              パフォーマンス改善のポイントは？
+            </button>
+            <button class="px-3 py-1.5 bg-white border border-gray-300 rounded-full text-xs text-gray-700 hover:bg-gray-50 hover:border-primary-500 transition duration-150">
+              ドキュメントの全体的な評価は？
+            </button>
+          </div>
+        </div>
+
+        <!-- Input Area -->
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+          <div class="flex gap-3">
+            <textarea
+              class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition duration-150"
+              rows="3"
+              placeholder="質問を入力してください...&#10;例: データベース設計のB評定について、具体的な改善案を教えてください"></textarea>
+            <button class="px-6 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2 h-fit">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+              </svg>
+              送信
+            </button>
+          </div>
+          <p class="text-xs text-gray-500 mt-2">
+            AIはレビュー結果とドキュメント内容を参照して回答します
+          </p>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

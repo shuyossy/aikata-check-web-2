@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIKATA - レビュー詳細</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              200: '#BFDBFE',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8',
+              900: '#1E3A8A',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col md:flex-row">
+  <!-- Sidebar -->
+  <aside class="w-full md:w-64 bg-white border-r border-gray-200">
+    <div class="p-4">
+      <h1 class="text-xl font-bold text-primary-600 mb-6">AIKATA</h1>
+      <button class="w-full px-3 py-2 mb-6 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-150 text-sm font-medium flex items-center justify-between">
+        <span class="truncate">○○システム開発</span>
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"/>
+        </svg>
+      </button>
+      <nav class="space-y-1">
+        <a href="05-review-space-list.html" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition duration-150">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          レビュースペース
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          レビュー結果
+        </a>
+      </nav>
+      <div class="mt-8 pt-4 border-t border-gray-200">
+        <a href="13-review-results.html" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition duration-150">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          レビュー結果一覧に戻る
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+      <div class="px-6 py-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-bold text-gray-900">レビュー詳細</h2>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm">山</div>
+            <span class="text-sm font-medium text-gray-700 hidden sm:block">山田太郎</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="flex-1 p-6">
+      <!-- Breadcrumb -->
+      <nav class="flex text-sm text-gray-500 mb-6">
+        <a href="02-project-list.html" class="hover:text-gray-700 transition duration-150">プロジェクト</a>
+        <span class="mx-2">/</span>
+        <a href="05-review-space-list.html" class="hover:text-gray-700 transition duration-150">○○システム開発</a>
+        <span class="mx-2">/</span>
+        <a href="05b-review-target-list.html" class="hover:text-gray-700 transition duration-150">設計書レビュー</a>
+        <span class="mx-2">/</span>
+        <a href="13-review-results.html" class="hover:text-gray-700 transition duration-150">レビュー結果</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900 font-medium">項目詳細</span>
+      </nav>
+
+      <!-- Main Content Area -->
+      <div class="max-w-5xl mx-auto">
+        <!-- Navigation -->
+        <div class="flex items-center justify-between mb-6">
+          <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-white hover:shadow-sm rounded-lg border border-transparent hover:border-gray-200 transition duration-150">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+            前の項目
+          </a>
+          <span class="text-sm text-gray-600">項目 4 / 8</span>
+          <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-white hover:shadow-sm rounded-lg border border-transparent hover:border-gray-200 transition duration-150">
+            次の項目
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+
+        <!-- Item Card -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-8 mb-6">
+          <!-- Header -->
+          <div class="flex items-start justify-between mb-6 pb-6 border-b border-gray-200">
+            <div class="flex-1">
+              <div class="flex items-center gap-3 mb-2">
+                <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-700 text-sm font-bold">
+                  4
+                </span>
+                <h3 class="text-2xl font-bold text-gray-900">エラー処理が適切に設計されているか</h3>
+              </div>
+              <div class="flex items-center gap-4 text-sm text-gray-600 ml-11">
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                  </svg>
+                  基本設計書v1.0
+                </div>
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  2024/12/07 14:30
+                </div>
+              </div>
+            </div>
+            <div class="flex-shrink-0">
+              <span class="inline-flex items-center px-6 py-3 rounded-full text-2xl font-bold bg-red-100 text-red-800">
+                C
+              </span>
+            </div>
+          </div>
+
+          <!-- Rating Info -->
+          <div class="mb-8">
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded">
+              <div class="flex items-start">
+                <svg class="h-5 w-5 text-red-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                <div class="ml-3">
+                  <h4 class="text-sm font-semibold text-red-900">評定: C (不適合)</h4>
+                  <p class="mt-1 text-sm text-red-800">重大な問題があり、必ず修正が必要な状態です。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Review Summary -->
+          <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">レビューサマリー</h4>
+            <div class="prose max-w-none">
+              <p class="text-gray-700 leading-relaxed">
+                エラー処理の記載が不十分です。例外発生時の処理フロー、エラーメッセージの定義、ログ出力の方針が明記されていません。必ず追記が必要です。
+              </p>
+            </div>
+          </div>
+
+          <!-- Detailed Findings -->
+          <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">詳細な指摘事項</h4>
+
+            <div class="space-y-6">
+              <!-- Finding 1 -->
+              <div class="border-l-4 border-red-400 pl-4">
+                <div class="flex items-start gap-3 mb-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 flex-shrink-0">
+                    重大
+                  </span>
+                  <h5 class="font-semibold text-gray-900">例外処理フローの欠如</h5>
+                </div>
+                <div class="ml-16">
+                  <p class="text-sm text-gray-700 mb-3">
+                    <strong class="text-gray-900">指摘箇所:</strong> 第3章 システム構成図、3.2節 エラーハンドリング（ページ15-17）
+                  </p>
+                  <p class="text-sm text-gray-700 mb-3">
+                    <strong class="text-gray-900">問題点:</strong>
+                    例外が発生した場合の処理フローが明記されていません。特に、データベーストランザクション中の例外発生時のロールバック処理、外部API呼び出し失敗時のリトライ制御、予期しない例外のハンドリング方法が不明確です。
+                  </p>
+                  <p class="text-sm text-gray-700">
+                    <strong class="text-gray-900">改善提案:</strong>
+                    例外の種類ごと（ビジネスロジック例外、システム例外、外部連携例外など）に処理フローを明記し、フローチャートで可視化してください。特にトランザクション境界とロールバック範囲を明確に定義する必要があります。
+                  </p>
+                </div>
+              </div>
+
+              <!-- Finding 2 -->
+              <div class="border-l-4 border-yellow-400 pl-4">
+                <div class="flex items-start gap-3 mb-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-yellow-100 text-yellow-800 flex-shrink-0">
+                    中程度
+                  </span>
+                  <h5 class="font-semibold text-gray-900">エラーメッセージ定義の不足</h5>
+                </div>
+                <div class="ml-16">
+                  <p class="text-sm text-gray-700 mb-3">
+                    <strong class="text-gray-900">指摘箇所:</strong> 付録A メッセージ一覧（ページ87-89）
+                  </p>
+                  <p class="text-sm text-gray-700 mb-3">
+                    <strong class="text-gray-900">問題点:</strong>
+                    正常系のメッセージは定義されていますが、エラーメッセージの一覧が不足しています。エラーコード体系、メッセージID、表示内容、ログ出力内容の対応関係が定義されていません。
+                  </p>
+                  <p class="text-sm text-gray-700">
+                    <strong class="text-gray-900">改善提案:</strong>
+                    エラーメッセージ一覧表を追加し、エラーコード、メッセージID、画面表示メッセージ（ユーザ向け）、ログ出力メッセージ（技術者向け）、重要度レベルを定義してください。多言語対応が必要な場合はメッセージIDベースの設計を推奨します。
+                  </p>
+                </div>
+              </div>
+
+              <!-- Finding 3 -->
+              <div class="border-l-4 border-red-400 pl-4">
+                <div class="flex items-start gap-3 mb-2">
+                  <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-red-100 text-red-800 flex-shrink-0">
+                    重大
+                  </span>
+                  <h5 class="font-semibold text-gray-900">ログ出力方針の未定義</h5>
+                </div>
+                <div class="ml-16">
+                  <p class="text-sm text-gray-700 mb-3">
+                    <strong class="text-gray-900">指摘箇所:</strong> 第4章 非機能要件、4.5節 運用・保守（ページ32-34）
+                  </p>
+                  <p class="text-sm text-gray-700 mb-3">
+                    <strong class="text-gray-900">問題点:</strong>
+                    エラー発生時のログ出力レベル（ERROR、WARN、INFO等）の使い分け基準、ログ出力項目（タイムスタンプ、ユーザID、セッションID、スタックトレース等）、ログローテーション方針が記載されていません。
+                  </p>
+                  <p class="text-sm text-gray-700">
+                    <strong class="text-gray-900">改善提案:</strong>
+                    ログレベル定義表を作成し、各レベルの使用基準を明記してください。また、エラー調査に必要な情報（リクエストID、ユーザセッション情報、実行パラメータ等）を含むログフォーマットを定義し、サンプルを記載することを推奨します。
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Recommendations -->
+          <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">推奨事項</h4>
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <ul class="space-y-2 text-sm text-blue-900">
+                <li class="flex items-start gap-2">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>既存システムや類似プロジェクトのエラー処理設計を参考にし、標準的なパターンを採用してください</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>運用チームと協議し、障害発生時の調査に必要なログ情報を洗い出してください</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>セキュリティ要件として、エラーメッセージにシステム内部情報を含めないよう配慮してください</span>
+                </li>
+                <li class="flex items-start gap-2">
+                  <svg class="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                  </svg>
+                  <span>エラー処理の実装サンプルコードを設計書に含めることで、開発者の理解を促進できます</span>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col sm:flex-row gap-3 pt-6 border-t border-gray-200">
+            <a href="16-qa-interface.html" class="flex-1 px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+              </svg>
+              この項目について質問
+            </a>
+            <a href="13-review-results.html" class="flex-1 px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+              一覧に戻る
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>

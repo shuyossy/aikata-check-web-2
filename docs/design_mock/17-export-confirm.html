@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AIKATA - CSV出力</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Custom Tailwind Config -->
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              50: '#EFF6FF',
+              100: '#DBEAFE',
+              200: '#BFDBFE',
+              500: '#3B82F6',
+              600: '#2563EB',
+              700: '#1D4ED8',
+              900: '#1E3A8A',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col md:flex-row">
+  <!-- Sidebar -->
+  <aside class="w-full md:w-64 bg-white border-r border-gray-200">
+    <div class="p-4">
+      <h1 class="text-xl font-bold text-primary-600 mb-6">AIKATA</h1>
+      <button class="w-full px-3 py-2 mb-6 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-150 text-sm font-medium flex items-center justify-between">
+        <span class="truncate">○○システム開発</span>
+        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"/>
+        </svg>
+      </button>
+      <nav class="space-y-1">
+        <a href="05-review-space-list.html" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition duration-150">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+          </svg>
+          レビュースペース
+        </a>
+        <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-white bg-primary-500 rounded-lg">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+          </svg>
+          CSV出力
+        </a>
+      </nav>
+      <div class="mt-8 pt-4 border-t border-gray-200">
+        <a href="13-review-results.html" class="flex items-center gap-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 transition duration-150">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+          </svg>
+          レビュー結果に戻る
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200">
+      <div class="px-6 py-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-bold text-gray-900">CSV出力</h2>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm">山</div>
+            <span class="text-sm font-medium text-gray-700 hidden sm:block">山田太郎</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Page Content -->
+    <main class="flex-1 p-6">
+      <!-- Breadcrumb -->
+      <nav class="flex text-sm text-gray-500 mb-6">
+        <a href="02-project-list.html" class="hover:text-gray-700 transition duration-150">プロジェクト</a>
+        <span class="mx-2">/</span>
+        <a href="05-review-space-list.html" class="hover:text-gray-700 transition duration-150">○○システム開発</a>
+        <span class="mx-2">/</span>
+        <a href="05b-review-target-list.html" class="hover:text-gray-700 transition duration-150">設計書レビュー</a>
+        <span class="mx-2">/</span>
+        <a href="13-review-results.html" class="hover:text-gray-700 transition duration-150">レビュー結果</a>
+        <span class="mx-2">/</span>
+        <span class="text-gray-900 font-medium">CSV出力</span>
+      </nav>
+
+      <!-- Main Card -->
+      <div class="max-w-4xl mx-auto">
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm p-8">
+          <!-- Header -->
+          <div class="mb-8">
+            <h3 class="text-2xl font-bold text-gray-900 mb-2">レビュー結果をCSV出力</h3>
+            <p class="text-gray-600">出力するデータの範囲と形式を選択してください</p>
+          </div>
+
+          <!-- Target Info -->
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-8">
+            <div class="flex items-center gap-3">
+              <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+              </svg>
+              <div>
+                <p class="text-sm font-medium text-gray-900">レビュー対象: 基本設計書v1.0</p>
+                <p class="text-xs text-gray-600">チェックリスト: 設計書レビューチェックリスト (8項目) | レビュー日時: 2024/12/07 14:30</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Export Range -->
+          <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">出力範囲</h4>
+            <div class="space-y-3">
+              <label class="flex items-start p-4 border-2 border-primary-500 rounded-lg cursor-pointer">
+                <input type="radio" name="export-range" value="all" class="w-5 h-5 text-primary-500 border-gray-300 focus:ring-primary-500 mt-0.5" checked>
+                <div class="ml-3 flex-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-gray-900">全ての項目を出力</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                      8項目
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-1">すべてのチェック項目とレビュー結果を含めます</p>
+                </div>
+              </label>
+
+              <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 cursor-pointer transition duration-150">
+                <input type="radio" name="export-range" value="failed" class="w-5 h-5 text-primary-500 border-gray-300 focus:ring-primary-500 mt-0.5">
+                <div class="ml-3 flex-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-gray-900">改善が必要な項目のみ</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                      3項目 (B:2, C:1)
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-1">評定がB（要改善）またはC（不適合）の項目のみ出力します</p>
+                </div>
+              </label>
+
+              <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg hover:border-primary-500 cursor-pointer transition duration-150">
+                <input type="radio" name="export-range" value="critical" class="w-5 h-5 text-primary-500 border-gray-300 focus:ring-primary-500 mt-0.5">
+                <div class="ml-3 flex-1">
+                  <div class="flex items-center justify-between">
+                    <span class="text-sm font-semibold text-gray-900">不適合項目のみ</span>
+                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                      1項目 (C)
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 mt-1">評定がC（不適合）の項目のみ出力します</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Export Columns -->
+          <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">出力項目</h4>
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div class="space-y-3">
+                <label class="flex items-center">
+                  <input type="checkbox" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" checked disabled>
+                  <span class="ml-3 text-sm text-gray-700">No. <span class="text-gray-500">(必須)</span></span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" checked disabled>
+                  <span class="ml-3 text-sm text-gray-700">チェック項目 <span class="text-gray-500">(必須)</span></span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" checked disabled>
+                  <span class="ml-3 text-sm text-gray-700">評定 <span class="text-gray-500">(必須)</span></span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" checked>
+                  <span class="ml-3 text-sm text-gray-700">コメント</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" checked>
+                  <span class="ml-3 text-sm text-gray-700">詳細な指摘事項</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500">
+                  <span class="ml-3 text-sm text-gray-700">レビュー対象名</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500">
+                  <span class="ml-3 text-sm text-gray-700">レビュー日時</span>
+                </label>
+                <label class="flex items-center">
+                  <input type="checkbox" class="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500">
+                  <span class="ml-3 text-sm text-gray-700">推奨事項</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- File Format -->
+          <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">ファイル形式</h4>
+            <div class="space-y-3">
+              <label class="flex items-center p-3 border-2 border-primary-500 rounded-lg cursor-pointer">
+                <input type="radio" name="format" value="csv" class="w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500" checked>
+                <div class="ml-3">
+                  <span class="text-sm font-semibold text-gray-900">CSV (UTF-8 BOM付き)</span>
+                  <p class="text-xs text-gray-600 mt-0.5">Excelで開いた際に文字化けしない形式</p>
+                </div>
+              </label>
+              <label class="flex items-center p-3 border-2 border-gray-200 rounded-lg hover:border-primary-500 cursor-pointer transition duration-150">
+                <input type="radio" name="format" value="tsv" class="w-4 h-4 text-primary-500 border-gray-300 focus:ring-primary-500">
+                <div class="ml-3">
+                  <span class="text-sm font-semibold text-gray-900">TSV (タブ区切り)</span>
+                  <p class="text-xs text-gray-600 mt-0.5">コメント内の改行やカンマに対応</p>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div class="mb-8">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">プレビュー</h4>
+            <div class="bg-gray-900 rounded-lg p-4 overflow-x-auto">
+              <pre class="text-xs text-green-400 font-mono"><code>No.,チェック項目,評定,コメント,詳細な指摘事項
+1,要件定義書との整合性が確保されているか,A,要件定義書の内容が適切に反映されており、整合性が確保されています。,
+2,画面遷移図が明確に記載されているか,A,画面遷移図が詳細に記載されており、各画面の関係性が明確です。,
+3,データベース設計が適切に行われているか,B,基本的な設計は適切ですが、インデックス設計について詳細な検討が必要です。,"【重要度:中】インデックス最適化の検討
+..."
+4,エラー処理が適切に設計されているか,C,エラー処理の記載が不十分です。例外発生時の処理フロー、エラーメッセージの定義、ログ出力の方針が明記されていません。,"【重要度:高】例外処理フローの欠如
+【重要度:中】エラーメッセージ定義の不足
+..."
+...</code></pre>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">
+              ※ 実際のファイルには選択した項目のみが含まれます
+            </p>
+          </div>
+
+          <!-- Info Alert -->
+          <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-8 rounded">
+            <div class="flex items-start">
+              <svg class="h-5 w-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+              </svg>
+              <div class="ml-3">
+                <p class="text-sm text-blue-800 font-medium">出力ファイルについて</p>
+                <p class="mt-1 text-sm text-blue-700">ファイル名: review_results_basic_design_v1.0_20241207.csv</p>
+                <p class="mt-1 text-sm text-blue-700">エンコーディング: UTF-8 (BOM付き) - Excelでそのまま開けます</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-gray-200">
+            <a href="13-review-results.html" class="px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium text-center">
+              キャンセル
+            </a>
+            <button class="px-6 py-3 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              CSVファイルをダウンロード
+            </button>
+          </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-6 bg-gray-100 rounded-lg p-4">
+          <div class="flex items-start gap-3">
+            <svg class="w-5 h-5 text-gray-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-gray-900">CSV出力のヒント</p>
+              <ul class="mt-2 text-sm text-gray-600 space-y-1 list-disc list-inside">
+                <li>UTF-8 BOM付き形式で出力するため、Excelで直接開いても文字化けしません</li>
+                <li>詳細な指摘事項を含めると、各項目の詳細な分析結果が確認できます</li>
+                <li>出力したCSVはExcel、Googleスプレッドシート等で編集・共有できます</li>
+                <li>改善が必要な項目のみの出力は、関係者への報告に便利です</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</body>
+</html>
