@@ -175,6 +175,10 @@
 
       <!-- Page Header with Actions -->
       <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div>
+          <h3 class="text-2xl font-bold text-gray-900">レビュー対象一覧</h3>
+          <p class="text-sm text-gray-600 mt-1">このレビュースペースで管理するレビュー対象を確認・追加できます</p>
+        </div>
         <div class="flex flex-col sm:flex-row gap-3">
           <a href="10-checklist-view-edit.html" class="px-4 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium flex items-center justify-center gap-2">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -182,11 +186,11 @@
             </svg>
             チェックリストを表示/編集
           </a>
-          <button class="px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2">
+          <button class="px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2" onclick="location.href='12-review-execute.html'">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
             </svg>
-            新規レビュー対象を追加
+            新規レビューを実行
           </button>
         </div>
       </div>
@@ -284,74 +288,6 @@
                   <div class="flex items-center justify-end gap-3">
                     <a href="13-review-results.html" class="text-primary-600 hover:text-primary-900 transition duration-150">
                       結果を見る
-                    </a>
-                    <button class="text-red-600 hover:text-red-900 transition duration-150" title="削除">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-
-              <!-- Row 3: Not Reviewed -->
-              <tr class="hover:bg-gray-50 transition duration-150">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  3
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-900">
-                  <div class="font-medium">詳細設計書v1.0</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    未レビュー
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2024/12/08 09:00
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div class="flex items-center justify-end gap-3">
-                    <a href="12-review-execute.html" class="inline-flex items-center px-3 py-1.5 bg-primary-500 text-white rounded hover:bg-primary-600 transition duration-150 text-sm">
-                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      レビューを実行
-                    </a>
-                    <button class="text-red-600 hover:text-red-900 transition duration-150" title="削除">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-
-              <!-- Row 4: Not Reviewed -->
-              <tr class="hover:bg-gray-50 transition duration-150">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  4
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-900">
-                  <div class="font-medium">テスト仕様書v1.0</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                    未レビュー
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2024/12/08 08:30
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div class="flex items-center justify-end gap-3">
-                    <a href="12-review-execute.html" class="inline-flex items-center px-3 py-1.5 bg-primary-500 text-white rounded hover:bg-primary-600 transition duration-150 text-sm">
-                      <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                      </svg>
-                      レビューを実行
                     </a>
                     <button class="text-red-600 hover:text-red-900 transition duration-150" title="削除">
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
