@@ -20,8 +20,13 @@ next-server/
     ui/ # 汎用的なUIコンポーネント（shadcn/uiのコンポーネントもここに含まれる）
     layout/ # 汎用的なレイアウトコンポーネント
   hooks/ # 共通フック
-  types/ # 型定義
-    message.ts # ユーザメッセージを管理する型
+  types/ # 汎用型定義
+    shared/
+    client/
+    server/
+      message.ts # ユーザメッセージコード
+      error.ts # エラー関連型
+  store/ # zustandで管理するstate定義
   message/ja/template.ts # ユーザメッセージテンプレート
   domain/ # ドメイン層
     example/

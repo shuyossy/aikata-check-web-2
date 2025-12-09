@@ -6,20 +6,30 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "format": "npx prettier --write \"**/*.{ts,tsx}\""
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "^0.2.16",
+    "@mastra/core": "^0.24.6",
+    "@mastra/loggers": "^0.10.19",
+    "drizzle-orm": "^0.45.0",
+    "intl-messageformat": "^10.7.18",
     "next": "16.0.8",
+    "next-safe-action": "^8.0.11",
     "react": "19.2.1",
-    "react-dom": "19.2.1"
+    "react-dom": "19.2.1",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "drizzle-kit": "^0.31.8",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
+    "prettier": "^3.7.4",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

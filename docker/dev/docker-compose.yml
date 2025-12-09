@@ -10,7 +10,7 @@ services:
     ports:
       - "5433:5432"   # dev container 外部から接続したい場合
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - aikata-check-web-dev-db-data:/var/lib/postgresql/data
 
 volumes:
   aikata-check-web-dev-db-data:

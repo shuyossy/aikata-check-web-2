@@ -100,3 +100,4 @@ baseStepOutputSchema = z.object({
 - Tailwind CSS、shadcn/uiを利用
 - 共通化できるコンポーネントは`next-server/components`に配置
 - 機能独自のコンポーネントは`next-server/app/${feature}/components`に配置
+- グローバル状態管理が必要な場合は`zustand`を利用
