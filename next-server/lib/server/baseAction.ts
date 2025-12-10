@@ -5,7 +5,8 @@ import {
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
 import { normalizeUnknownError, toPayload, unauthorizedError } from "./error";
-import { logger, createContextLogger } from "./logger";
+import { createContextLogger, getLogger } from "./logger";
+import { runWithRequestContext } from "./requestContext";
 import { v4 as uuidv4 } from "uuid";
 
 /**
@@ -45,14 +46,14 @@ export interface AuthContext {
 export const baseAction = createSafeActionClient({
   // エラーハンドリング
   handleServerError(error) {
-    logger.error(
+    getLogger().error(
       { rawError: serializeError(error) },
       "Error captured in baseAction",
     );
     const appError = normalizeUnknownError(error);
 
     // エラーログ出力
-    logger.error(
+    getLogger().error(
       {
         errorCode: appError.errorCode,
         messageCode: appError.messageCode,
@@ -77,6 +78,7 @@ export const baseAction = createSafeActionClient({
  * - セッションから認証情報を取得
  * - 未認証の場合はエラーをスロー
  * - 認証情報をコンテキストに追加
+ * - AsyncLocalStorageにリクエストコンテキストを設定（全レイヤーでgetLogger()でアクセス可能）
  */
 export const authenticatedAction = baseAction.use(async ({ next }) => {
   const session = await getServerSession(authOptions);
@@ -100,15 +102,26 @@ export const authenticatedAction = baseAction.use(async ({ next }) => {
 
   contextLogger.info("Authenticated action started");
 
-  return next({
-    ctx: {
-      auth: authContext,
-      logger: contextLogger,
-    },
-  });
+  // AsyncLocalStorageにリクエストコンテキストを設定して実行
+  return runWithRequestContext(
+    { requestId, employeeId: session.user.employeeId },
+    () =>
+      next({
+        ctx: {
+          auth: authContext,
+        },
+      })
+  );
 });
 
 /**
  * 認証不要の公開アクション用の基底クラス
+ * - AsyncLocalStorageにリクエストコンテキスト（requestIdのみ）を設定
+ * - 全レイヤーでgetLogger()でアクセス可能
  */
-export const publicAction = baseAction;
+export const publicAction = baseAction.use(async ({ next }) => {
+  const requestId = uuidv4();
+
+  // AsyncLocalStorageにリクエストコンテキストを設定して実行
+  return runWithRequestContext({ requestId }, () => next());
+});

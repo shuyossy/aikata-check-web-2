@@ -1,12 +1,9 @@
 import pino, { Logger } from "pino";
+import { getRequestContext } from "./requestContext";
 
 const base = pino({
   level: getLogLevel(),
 });
-
-export function getMainLogger(): Logger {
-  return base;
-}
 
 /**
  * コンテキスト情報を含むロガーを作成
@@ -37,5 +34,26 @@ export function getLogLevel() {
   return logLevel;
 }
 
-// デフォルトエクスポート
-export const logger = getMainLogger();
+/**
+ * 現在のリクエストコンテキストに基づいたロガーを取得
+ *
+ * - コンテキストが存在する場合: requestId, employeeIdを含むロガー
+ * - コンテキストが存在しない場合: ベースロガー
+ *
+ * 全レイヤーでこの関数を使用することで、引数なしでコンテキスト付きロガーを取得可能
+ *
+ * @returns コンテキスト付きロガーまたはベースロガー
+ */
+export function getLogger(): Logger {
+  const context = getRequestContext();
+
+  if (context) {
+    return createContextLogger({
+      requestId: context.requestId,
+      employeeId: context.employeeId,
+    });
+  }
+
+  // コンテキスト外の場合はベースロガーを返す
+  return base;
+}
