@@ -77,7 +77,7 @@ describe("internalError", () => {
         cause: originalError,
       });
 
-      expect(error.couse).toBe(originalError);
+      expect(error.cause).toBe(originalError);
     });
   });
 

@@ -1,4 +1,5 @@
 import { IUserRepository } from "@/application/shared/port/repository";
+import { normalizePagination } from "@/application/shared/util";
 import { UserDto } from "@/domain/user";
 
 /**
@@ -46,12 +47,12 @@ export class SearchUsersService {
     const { query: searchQuery } = query;
 
     // ページネーションパラメータの正規化
-    const page = Math.max(1, query.page ?? 1);
-    const limit = Math.min(
-      SearchUsersService.MAX_LIMIT,
-      Math.max(1, query.limit ?? SearchUsersService.DEFAULT_LIMIT),
-    );
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = normalizePagination({
+      page: query.page,
+      limit: query.limit,
+      defaultLimit: SearchUsersService.DEFAULT_LIMIT,
+      maxLimit: SearchUsersService.MAX_LIMIT,
+    });
 
     // ユーザを検索
     const [users, total] = await Promise.all([

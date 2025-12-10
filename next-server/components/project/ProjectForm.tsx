@@ -152,7 +152,9 @@ export function ProjectForm({
                 placeholder="プロジェクトの目的や概要を入力してください"
               />
               {errors.description ? (
-                <p className="mt-1 text-sm text-red-500">{errors.description}</p>
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.description}
+                </p>
               ) : (
                 <p className="mt-1 text-sm text-gray-500">
                   プロジェクトの詳細な説明を入力できます

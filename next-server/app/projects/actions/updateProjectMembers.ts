@@ -30,7 +30,10 @@ export const updateProjectMembersAction = authenticatedAction
       throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
     }
 
-    const service = new UpdateProjectMembersService(projectRepository, userRepository);
+    const service = new UpdateProjectMembersService(
+      projectRepository,
+      userRepository,
+    );
     return service.execute({
       projectId: parsedInput.projectId,
       userId: user.id.value,

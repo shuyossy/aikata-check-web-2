@@ -65,9 +65,7 @@ export function MemberSearchModal({
           "message" in actionError.serverError
             ? (actionError.serverError as { message: string }).message
             : null;
-        setSearchError(
-          serverMessage || "ユーザー検索に失敗しました。",
-        );
+        setSearchError(serverMessage || "ユーザー検索に失敗しました。");
       },
     },
   );
@@ -278,9 +276,7 @@ export function MemberSearchModal({
                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
                   />
                 </svg>
-                <p className="text-sm">
-                  氏名または社員IDで検索してください
-                </p>
+                <p className="text-sm">氏名または社員IDで検索してください</p>
               </div>
             ) : searchResults.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-gray-500">

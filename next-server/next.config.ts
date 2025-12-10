@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     turbopack: {
       resolve: {
         external: [
-          'thread-stream', // Exclude thread-stream from Turbopack's bundling
+          "thread-stream", // Exclude thread-stream from Turbopack's bundling
           // Add other packages here if needed
         ],
       },

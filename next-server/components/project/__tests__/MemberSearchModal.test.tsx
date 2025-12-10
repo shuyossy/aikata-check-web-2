@@ -122,7 +122,10 @@ describe("MemberSearchModal", () => {
       ];
 
       render(
-        <MemberSearchModal {...defaultProps} initialSelected={initialSelected} />,
+        <MemberSearchModal
+          {...defaultProps}
+          initialSelected={initialSelected}
+        />,
       );
 
       expect(screen.getByText("2名")).toBeInTheDocument();
@@ -229,9 +232,7 @@ describe("MemberSearchModal", () => {
       // エラーコールバックをシミュレート（serverErrorなし）
       const options = (globalThis as Record<string, unknown>)
         .__mockActionOptions as {
-        onError: (arg: {
-          error: { serverError: null };
-        }) => void;
+        onError: (arg: { error: { serverError: null } }) => void;
       };
       if (options?.onError) {
         options.onError({
@@ -263,16 +264,22 @@ describe("MemberSearchModal", () => {
       // 成功コールバックをシミュレート
       const options = (globalThis as Record<string, unknown>)
         .__mockActionOptions as {
-        onSuccess: (arg: {
-          data: { users: UserDto[]; total: number };
-        }) => void;
+        onSuccess: (arg: { data: { users: UserDto[]; total: number } }) => void;
       };
       if (options?.onSuccess) {
         options.onSuccess({
           data: {
             users: [
-              { id: "user-1", employeeId: "EMP001", displayName: "テストユーザー1" },
-              { id: "user-2", employeeId: "EMP002", displayName: "テストユーザー2" },
+              {
+                id: "user-1",
+                employeeId: "EMP001",
+                displayName: "テストユーザー1",
+              },
+              {
+                id: "user-2",
+                employeeId: "EMP002",
+                displayName: "テストユーザー2",
+              },
             ],
             total: 2,
           },
@@ -298,9 +305,7 @@ describe("MemberSearchModal", () => {
       // 成功コールバックをシミュレート（結果0件）
       const options = (globalThis as Record<string, unknown>)
         .__mockActionOptions as {
-        onSuccess: (arg: {
-          data: { users: UserDto[]; total: number };
-        }) => void;
+        onSuccess: (arg: { data: { users: UserDto[]; total: number } }) => void;
       };
       if (options?.onSuccess) {
         options.onSuccess({
@@ -335,16 +340,22 @@ describe("MemberSearchModal", () => {
       // 成功コールバックをシミュレート
       const options = (globalThis as Record<string, unknown>)
         .__mockActionOptions as {
-        onSuccess: (arg: {
-          data: { users: UserDto[]; total: number };
-        }) => void;
+        onSuccess: (arg: { data: { users: UserDto[]; total: number } }) => void;
       };
       if (options?.onSuccess) {
         options.onSuccess({
           data: {
             users: [
-              { id: "user-1", employeeId: "EMP001", displayName: "除外ユーザー" },
-              { id: "user-2", employeeId: "EMP002", displayName: "通常ユーザー" },
+              {
+                id: "user-1",
+                employeeId: "EMP001",
+                displayName: "除外ユーザー",
+              },
+              {
+                id: "user-2",
+                employeeId: "EMP002",
+                displayName: "通常ユーザー",
+              },
             ],
             total: 2,
           },

@@ -57,7 +57,10 @@ describe("ListUserProjectsService", () => {
       countSearchUsers: vi.fn(),
       save: vi.fn(),
     };
-    service = new ListUserProjectsService(mockProjectRepository, mockUserRepository);
+    service = new ListUserProjectsService(
+      mockProjectRepository,
+      mockUserRepository,
+    );
   });
 
   describe("正常系", () => {
@@ -145,6 +148,80 @@ describe("ListUserProjectsService", () => {
         expect.anything(),
         expect.objectContaining({ limit: 100 }),
       );
+    });
+
+    it("ページ番号が0以下の場合は1に正規化される", async () => {
+      vi.mocked(mockProjectRepository.findByMemberId).mockResolvedValue([]);
+      vi.mocked(mockProjectRepository.countByMemberId).mockResolvedValue(0);
+
+      const result = await service.execute({
+        userId: validMemberId,
+        page: 0,
+      });
+
+      expect(result.page).toBe(1);
+      expect(mockProjectRepository.findByMemberId).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ offset: 0 }),
+      );
+    });
+
+    it("limitが0以下の場合は1に正規化される", async () => {
+      vi.mocked(mockProjectRepository.findByMemberId).mockResolvedValue([]);
+      vi.mocked(mockProjectRepository.countByMemberId).mockResolvedValue(0);
+
+      const result = await service.execute({
+        userId: validMemberId,
+        limit: -5,
+      });
+
+      expect(result.limit).toBe(1);
+    });
+  });
+
+  describe("異常系", () => {
+    it("プロジェクトリポジトリでエラーが発生した場合はスロー", async () => {
+      vi.mocked(mockProjectRepository.findByMemberId).mockRejectedValue(
+        new Error("DB Error"),
+      );
+
+      await expect(
+        service.execute({
+          userId: validMemberId,
+        }),
+      ).rejects.toThrow("DB Error");
+    });
+
+    it("カウント処理でエラーが発生した場合はスロー", async () => {
+      vi.mocked(mockProjectRepository.findByMemberId).mockResolvedValue([]);
+      vi.mocked(mockProjectRepository.countByMemberId).mockRejectedValue(
+        new Error("Count Error"),
+      );
+
+      await expect(
+        service.execute({
+          userId: validMemberId,
+        }),
+      ).rejects.toThrow("Count Error");
+    });
+
+    it("ユーザ情報取得でエラーが発生した場合はスロー", async () => {
+      vi.mocked(mockProjectRepository.findByMemberId).mockResolvedValue([
+        createMockProject(
+          "323e4567-e89b-12d3-a456-426614174002",
+          "プロジェクト1",
+        ),
+      ]);
+      vi.mocked(mockProjectRepository.countByMemberId).mockResolvedValue(1);
+      vi.mocked(mockUserRepository.findByIds).mockRejectedValue(
+        new Error("User Fetch Error"),
+      );
+
+      await expect(
+        service.execute({
+          userId: validMemberId,
+        }),
+      ).rejects.toThrow("User Fetch Error");
     });
   });
 });

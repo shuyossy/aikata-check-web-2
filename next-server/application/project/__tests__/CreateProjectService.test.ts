@@ -44,7 +44,10 @@ describe("CreateProjectService", () => {
       countSearchUsers: vi.fn(),
       save: vi.fn(),
     };
-    service = new CreateProjectService(mockProjectRepository, mockUserRepository);
+    service = new CreateProjectService(
+      mockProjectRepository,
+      mockUserRepository,
+    );
   });
 
   describe("正常系", () => {
@@ -100,6 +103,42 @@ describe("CreateProjectService", () => {
       });
 
       expect(result.members).toHaveLength(2);
+    });
+
+    it("save()が正しい引数で呼ばれる", async () => {
+      await service.execute({
+        name: "テストプロジェクト",
+        description: "テスト説明",
+        apiKey: "sk-test123",
+        memberIds: [validMemberId],
+      });
+
+      expect(mockProjectRepository.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          _name: expect.objectContaining({ _value: "テストプロジェクト" }),
+          _description: expect.objectContaining({ _value: "テスト説明" }),
+        }),
+      );
+    });
+
+    it("ユーザ情報が正しくマッピングされる", async () => {
+      vi.mocked(mockUserRepository.findByIds).mockResolvedValue([
+        User.reconstruct({
+          id: validMemberId,
+          employeeId: "EMP999",
+          displayName: "マッピングテストユーザー",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }),
+      ]);
+
+      const result = await service.execute({
+        name: "テストプロジェクト",
+        memberIds: [validMemberId],
+      });
+
+      expect(result.members[0].displayName).toBe("マッピングテストユーザー");
+      expect(result.members[0].employeeId).toBe("EMP999");
     });
   });
 

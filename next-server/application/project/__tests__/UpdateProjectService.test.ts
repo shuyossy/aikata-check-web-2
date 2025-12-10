@@ -59,7 +59,10 @@ describe("UpdateProjectService", () => {
       countSearchUsers: vi.fn(),
       save: vi.fn(),
     };
-    service = new UpdateProjectService(mockProjectRepository, mockUserRepository);
+    service = new UpdateProjectService(
+      mockProjectRepository,
+      mockUserRepository,
+    );
   });
 
   describe("正常系", () => {

@@ -6,6 +6,7 @@ import { ProjectCard } from "@/components/project";
 import { listUserProjectsAction } from "./actions";
 import { useAction } from "next-safe-action/hooks";
 import { ProjectListItemDto } from "@/domain/project";
+import { useServerActionError } from "@/hooks";
 
 /**
  * プロジェクト一覧ページ
@@ -16,7 +17,7 @@ export default function ProjectsPage() {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { error, clearError, handleError } = useServerActionError();
   const limit = 12;
 
   const { execute: loadProjects, isPending: isLoading } = useAction(
@@ -27,21 +28,12 @@ export default function ProjectsPage() {
           setProjects(data.projects);
           setTotalCount(data.total);
           setHasLoaded(true);
-          setError(null);
+          clearError();
         }
       },
       onError: ({ error: actionError }) => {
         setHasLoaded(true);
-        // サーバからのエラーメッセージを取得（存在すればそれを使用、なければ汎用メッセージ）
-        const serverMessage =
-          typeof actionError.serverError === "object" &&
-          actionError.serverError !== null &&
-          "message" in actionError.serverError
-            ? (actionError.serverError as { message: string }).message
-            : null;
-        setError(
-          serverMessage || "プロジェクト一覧の取得に失敗しました。",
-        );
+        handleError(actionError, "プロジェクト一覧の取得に失敗しました。");
       },
     },
   );
@@ -85,7 +77,9 @@ export default function ProjectsPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <div className="mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">プロジェクト</h2>
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            プロジェクト
+          </h2>
           <p className="text-gray-600">
             参加しているプロジェクトを選択してください
           </p>

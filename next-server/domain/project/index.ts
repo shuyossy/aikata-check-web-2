@@ -19,4 +19,5 @@ export type {
   ProjectListItemDto,
   CreateProjectParams,
   ReconstructProjectParams,
+  UserInfo,
 } from "./Project";

@@ -13,7 +13,8 @@ export interface ProjectCardProps {
  * 日付をフォーマット（YYYY/MM/DD形式）
  */
 function formatDate(dateString: string | Date): string {
-  const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+  const date =
+    typeof dateString === "string" ? new Date(dateString) : dateString;
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
@@ -26,9 +27,11 @@ function formatDate(dateString: string | Date): string {
  */
 export function ProjectCard({ project }: ProjectCardProps) {
   // メンバー名のリストを作成（AvatarGroup用）
-  const memberNames = project.memberPreview.map((member: { userId: string; displayName: string }) => ({
-    name: member.displayName,
-  }));
+  const memberNames = project.memberPreview.map(
+    (member: { userId: string; displayName: string }) => ({
+      name: member.displayName,
+    }),
+  );
 
   return (
     <Link
@@ -92,11 +95,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
         {/* Footer */}
         <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-          <AvatarGroup
-            members={memberNames}
-            maxDisplay={3}
-            size="md"
-          />
+          <AvatarGroup members={memberNames} maxDisplay={3} size="md" />
           <span className="text-sm text-blue-600 font-medium group-hover:text-blue-700 flex items-center">
             開く
             <svg

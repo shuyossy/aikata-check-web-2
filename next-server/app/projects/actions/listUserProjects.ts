@@ -31,7 +31,10 @@ export const listUserProjectsAction = authenticatedAction
       throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
     }
 
-    const service = new ListUserProjectsService(projectRepository, userRepository);
+    const service = new ListUserProjectsService(
+      projectRepository,
+      userRepository,
+    );
     return service.execute({
       userId: user.id.value,
       search: parsedInput.search,

@@ -56,7 +56,9 @@ describe("ProjectForm", () => {
 
       render(<ProjectForm {...defaultProps} initialData={initialData} />);
 
-      expect(screen.getByDisplayValue("テストプロジェクト")).toBeInTheDocument();
+      expect(
+        screen.getByDisplayValue("テストプロジェクト"),
+      ).toBeInTheDocument();
       expect(screen.getByDisplayValue("テストの説明")).toBeInTheDocument();
     });
 
@@ -76,9 +78,8 @@ describe("ProjectForm", () => {
       const user = userEvent.setup();
       render(<ProjectForm {...defaultProps} />);
 
-      const input = screen.getByPlaceholderText(
-        "例: ○○システム開発プロジェクト",
-      );
+      const input =
+        screen.getByPlaceholderText("例: ○○システム開発プロジェクト");
       await user.type(input, "新しいプロジェクト");
 
       expect(input).toHaveValue("新しいプロジェクト");
@@ -140,9 +141,8 @@ describe("ProjectForm", () => {
       const onSubmit = vi.fn();
       render(<ProjectForm {...defaultProps} onSubmit={onSubmit} />);
 
-      const nameInput = screen.getByPlaceholderText(
-        "例: ○○システム開発プロジェクト",
-      );
+      const nameInput =
+        screen.getByPlaceholderText("例: ○○システム開発プロジェクト");
       await user.type(nameInput, "テストプロジェクト");
 
       const submitButton = screen.getByText("プロジェクトを作成");
@@ -208,9 +208,8 @@ describe("ProjectForm", () => {
       render(<ProjectForm {...defaultProps} onSubmit={onSubmit} />);
 
       // プロジェクト名を入力
-      const nameInput = screen.getByPlaceholderText(
-        "例: ○○システム開発プロジェクト",
-      );
+      const nameInput =
+        screen.getByPlaceholderText("例: ○○システム開発プロジェクト");
       await user.type(nameInput, "テストプロジェクト");
 
       // 説明を1001文字以上入力
@@ -234,9 +233,8 @@ describe("ProjectForm", () => {
       const onSubmit = vi.fn();
       render(<ProjectForm {...defaultProps} onSubmit={onSubmit} />);
 
-      const nameInput = screen.getByPlaceholderText(
-        "例: ○○システム開発プロジェクト",
-      );
+      const nameInput =
+        screen.getByPlaceholderText("例: ○○システム開発プロジェクト");
       const longName = "あ".repeat(101);
       fireEvent.change(nameInput, { target: { value: longName } });
 

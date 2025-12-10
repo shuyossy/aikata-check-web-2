@@ -2,6 +2,7 @@ import {
   IProjectRepository,
   IUserRepository,
 } from "@/application/shared/port/repository";
+import { buildUserInfoMap } from "@/application/shared/util";
 import { Project, ProjectDto } from "@/domain/project";
 import { UserId } from "@/domain/user";
 import { domainValidationError } from "@/lib/server/error";
@@ -59,12 +60,9 @@ export class CreateProjectService {
     // 保存
     await this.projectRepository.save(project);
 
-    // ユーザー名マップを作成（既に取得済み）
-    const userNameMap = new Map<string, string>();
-    for (const user of users) {
-      userNameMap.set(user.id.value, user.displayName);
-    }
+    // ユーザー情報マップを作成（既に取得済み）
+    const userInfoMap = buildUserInfoMap(users);
 
-    return project.toDto(userNameMap);
+    return project.toDto(userInfoMap);
   }
 }

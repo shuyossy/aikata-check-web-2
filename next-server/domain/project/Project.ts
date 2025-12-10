@@ -25,8 +25,18 @@ export interface ProjectDto {
  */
 export interface ProjectMemberDto {
   userId: string;
+  employeeId: string;
   displayName: string;
   createdAt: Date;
+}
+
+/**
+ * ユーザ情報（表示名とemployeeId）
+ * toDto/toListItemDtoで使用
+ */
+export interface UserInfo {
+  displayName: string;
+  employeeId: string;
 }
 
 /**
@@ -116,9 +126,7 @@ export class Project {
     }
 
     const now = new Date();
-    const members = memberIds.map((userId) =>
-      ProjectMember.create({ userId }),
-    );
+    const members = memberIds.map((userId) => ProjectMember.create({ userId }));
 
     return new Project(
       ProjectId.create(),
@@ -302,19 +310,27 @@ export class Project {
 
   /**
    * DTOに変換する
-   * @param userNameMap ユーザIDと表示名のマップ
+   * @param userInfoMap ユーザIDとユーザ情報（displayName, employeeId）のマップ
    */
-  toDto(userNameMap: Map<string, string>): ProjectDto {
+  toDto(userInfoMap: Map<string, UserInfo>): ProjectDto {
+    const defaultUserInfo: UserInfo = {
+      displayName: "Unknown",
+      employeeId: "",
+    };
     return {
       id: this._id.value,
       name: this._name.value,
       description: this._description.value,
       hasApiKey: this._encryptedApiKey.hasValue(),
-      members: this._members.map((m) => ({
-        userId: m.userId.value,
-        displayName: userNameMap.get(m.userId.value) ?? "Unknown",
-        createdAt: m.createdAt,
-      })),
+      members: this._members.map((m) => {
+        const userInfo = userInfoMap.get(m.userId.value) ?? defaultUserInfo;
+        return {
+          userId: m.userId.value,
+          employeeId: userInfo.employeeId,
+          displayName: userInfo.displayName,
+          createdAt: m.createdAt,
+        };
+      }),
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
     };

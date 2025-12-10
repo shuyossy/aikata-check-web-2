@@ -2,6 +2,10 @@ import {
   IProjectRepository,
   IUserRepository,
 } from "@/application/shared/port/repository";
+import {
+  buildUserNameMap,
+  normalizePagination,
+} from "@/application/shared/util";
 import { ProjectListItemDto } from "@/domain/project";
 import { UserId } from "@/domain/user";
 
@@ -55,12 +59,12 @@ export class ListUserProjectsService {
     const { userId, search } = query;
 
     // ページネーションパラメータの正規化
-    const page = Math.max(1, query.page ?? 1);
-    const limit = Math.min(
-      ListUserProjectsService.MAX_LIMIT,
-      Math.max(1, query.limit ?? ListUserProjectsService.DEFAULT_LIMIT),
-    );
-    const offset = (page - 1) * limit;
+    const { page, limit, offset } = normalizePagination({
+      page: query.page,
+      limit: query.limit,
+      defaultLimit: ListUserProjectsService.DEFAULT_LIMIT,
+      maxLimit: ListUserProjectsService.MAX_LIMIT,
+    });
 
     const userIdVo = UserId.reconstruct(userId);
 
@@ -89,10 +93,7 @@ export class ListUserProjectsService {
     const users = await this.userRepository.findByIds(userIds);
 
     // ユーザー名マップを作成
-    const userNameMap = new Map<string, string>();
-    for (const user of users) {
-      userNameMap.set(user.id.value, user.displayName);
-    }
+    const userNameMap = buildUserNameMap(users);
 
     return {
       projects: projects.map((p) => p.toListItemDto(userNameMap)),

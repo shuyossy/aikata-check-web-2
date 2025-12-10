@@ -43,11 +43,7 @@ export function encrypt(plainText: string): string {
   const authTag = cipher.getAuthTag();
 
   // IV + AuthTag + EncryptedData を結合してBase64エンコード
-  const combined = Buffer.concat([
-    iv,
-    authTag,
-    Buffer.from(encrypted, "hex"),
-  ]);
+  const combined = Buffer.concat([iv, authTag, Buffer.from(encrypted, "hex")]);
 
   return combined.toString("base64");
 }

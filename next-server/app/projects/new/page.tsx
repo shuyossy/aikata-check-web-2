@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
@@ -8,6 +7,7 @@ import { ProjectForm, ProjectFormData } from "@/components/project";
 import { createProjectAction } from "../actions";
 import { useAction } from "next-safe-action/hooks";
 import { UserDto } from "@/domain/user";
+import { useServerActionError } from "@/hooks";
 
 /**
  * 新規プロジェクト作成ページ
@@ -15,28 +15,22 @@ import { UserDto } from "@/domain/user";
 export default function NewProjectPage() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [error, setError] = useState<string | null>(null);
+  const { error, clearError, handleError } = useServerActionError();
 
   const { execute: createProject, isPending: isSubmitting } = useAction(
     createProjectAction,
     {
       onSuccess: ({ data }) => {
         if (data) {
-          setError(null);
+          clearError();
           router.push(`/projects/${data.id}/review-spaces`);
         }
       },
       onError: ({ error: actionError }) => {
         console.error("プロジェクト作成エラー:", actionError);
-        // サーバからのエラーメッセージを取得（存在すればそれを使用、なければ汎用メッセージ）
-        const serverMessage =
-          typeof actionError.serverError === "object" &&
-          actionError.serverError !== null &&
-          "message" in actionError.serverError
-            ? (actionError.serverError as { message: string }).message
-            : null;
-        setError(
-          serverMessage || "プロジェクトの作成に失敗しました。もう一度お試しください。",
+        handleError(
+          actionError,
+          "プロジェクトの作成に失敗しました。もう一度お試しください。",
         );
       },
     },

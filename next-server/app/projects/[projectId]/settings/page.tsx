@@ -14,6 +14,7 @@ import {
 import { useAction } from "next-safe-action/hooks";
 import { ProjectDto } from "@/domain/project";
 import { UserDto } from "@/domain/user";
+import { useServerActionError } from "@/hooks";
 
 interface Props {
   params: Promise<{ projectId: string }>;
@@ -29,38 +30,19 @@ export default function ProjectSettingsPage({ params }: Props) {
   const [project, setProject] = useState<ProjectDto | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // サーバエラーメッセージを抽出するヘルパー関数
-  const extractServerErrorMessage = (
-    actionError: { serverError?: unknown },
-    fallbackMessage: string,
-  ): string => {
-    const serverMessage =
-      typeof actionError.serverError === "object" &&
-      actionError.serverError !== null &&
-      "message" in actionError.serverError
-        ? (actionError.serverError as { message: string }).message
-        : null;
-    return serverMessage || fallbackMessage;
-  };
+  const { error, clearError, handleError } = useServerActionError();
 
   const { execute: loadProject } = useAction(getProjectAction, {
     onSuccess: ({ data }) => {
       if (data) {
         setProject(data);
-        setError(null);
+        clearError();
       }
       setIsLoading(false);
     },
     onError: ({ error: actionError }) => {
       setIsLoading(false);
-      setError(
-        extractServerErrorMessage(
-          actionError,
-          "プロジェクト情報の取得に失敗しました。",
-        ),
-      );
+      handleError(actionError, "プロジェクト情報の取得に失敗しました。");
     },
   });
 
@@ -70,17 +52,12 @@ export default function ProjectSettingsPage({ params }: Props) {
       onSuccess: ({ data }) => {
         if (data) {
           setProject(data);
-          setError(null);
+          clearError();
           router.push(`/projects/${projectId}/review-spaces`);
         }
       },
       onError: ({ error: actionError }) => {
-        setError(
-          extractServerErrorMessage(
-            actionError,
-            "プロジェクトの更新に失敗しました。",
-          ),
-        );
+        handleError(actionError, "プロジェクトの更新に失敗しました。");
       },
     },
   );
@@ -89,16 +66,11 @@ export default function ProjectSettingsPage({ params }: Props) {
     onSuccess: ({ data }) => {
       if (data) {
         setProject(data);
-        setError(null);
+        clearError();
       }
     },
     onError: ({ error: actionError }) => {
-      setError(
-        extractServerErrorMessage(
-          actionError,
-          "メンバーの更新に失敗しました。",
-        ),
-      );
+      handleError(actionError, "メンバーの更新に失敗しました。");
     },
   });
 
@@ -110,12 +82,7 @@ export default function ProjectSettingsPage({ params }: Props) {
       },
       onError: ({ error: actionError }) => {
         setShowDeleteConfirm(false);
-        setError(
-          extractServerErrorMessage(
-            actionError,
-            "プロジェクトの削除に失敗しました。",
-          ),
-        );
+        handleError(actionError, "プロジェクトの削除に失敗しました。");
       },
     },
   );
@@ -236,7 +203,7 @@ export default function ProjectSettingsPage({ params }: Props) {
     apiKey: "", // APIキーは表示しない（セキュリティ上）
     members: project.members.map((m) => ({
       id: m.userId,
-      employeeId: m.displayName, // displayNameを仮でemployeeIdとして使用
+      employeeId: m.employeeId,
       displayName: m.displayName,
     })),
   };

@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { Project } from "../Project";
+import { describe, it, expect, vi } from "vitest";
+import { Project, UserInfo } from "../Project";
 
 // 暗号化関数をモック
 vi.mock("@/lib/server/encryption", () => ({
@@ -281,9 +281,12 @@ describe("Project", () => {
         memberIds: [validMemberId],
       });
 
-      const userNameMap = new Map<string, string>();
-      userNameMap.set(validMemberId, "テストユーザー");
-      const dto = project.toDto(userNameMap);
+      const userInfoMap = new Map<string, UserInfo>();
+      userInfoMap.set(validMemberId, {
+        displayName: "テストユーザー",
+        employeeId: "EMP001",
+      });
+      const dto = project.toDto(userInfoMap);
 
       expect(dto.id).toBe(project.id.value);
       expect(dto.name).toBe("テスト");
@@ -292,6 +295,20 @@ describe("Project", () => {
       expect(dto.members).toHaveLength(1);
       expect(dto.members[0].userId).toBe(validMemberId);
       expect(dto.members[0].displayName).toBe("テストユーザー");
+      expect(dto.members[0].employeeId).toBe("EMP001");
+    });
+
+    it("ユーザ情報がない場合はデフォルト値を使用する", () => {
+      const project = Project.create({
+        name: "テスト",
+        memberIds: [validMemberId],
+      });
+
+      const userInfoMap = new Map<string, UserInfo>();
+      const dto = project.toDto(userInfoMap);
+
+      expect(dto.members[0].displayName).toBe("Unknown");
+      expect(dto.members[0].employeeId).toBe("");
     });
   });
 

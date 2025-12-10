@@ -45,7 +45,10 @@ export interface AuthContext {
 export const baseAction = createSafeActionClient({
   // エラーハンドリング
   handleServerError(error) {
-    logger.error({ rawError: serializeError(error) }, "Error captured in baseAction");
+    logger.error(
+      { rawError: serializeError(error) },
+      "Error captured in baseAction",
+    );
     const appError = normalizeUnknownError(error);
 
     // エラーログ出力
@@ -54,7 +57,7 @@ export const baseAction = createSafeActionClient({
         errorCode: appError.errorCode,
         messageCode: appError.messageCode,
         expose: appError.expose,
-        cause: appError.couse,
+        cause: appError.cause,
       },
       "Action error occurred",
     );

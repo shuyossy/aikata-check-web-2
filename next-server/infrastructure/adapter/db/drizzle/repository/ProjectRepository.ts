@@ -65,29 +65,19 @@ export class ProjectRepository implements IProjectRepository {
       .from(projectMembers)
       .where(eq(projectMembers.userId, userId.value));
 
+    // where句を構築
+    const whereCondition = search
+      ? sql`${projects.id} IN ${memberProjectIds} AND ${projects.name} ILIKE ${"%" + search + "%"}`
+      : inArray(projects.id, memberProjectIds);
+
     // プロジェクトを取得
-    let query = db
+    const projectsResult = await db
       .select()
       .from(projects)
-      .where(inArray(projects.id, memberProjectIds))
+      .where(whereCondition)
       .orderBy(desc(projects.updatedAt))
       .limit(limit)
       .offset(offset);
-
-    // 検索キーワードがある場合はフィルタ
-    if (search) {
-      query = db
-        .select()
-        .from(projects)
-        .where(
-          sql`${projects.id} IN ${memberProjectIds} AND ${projects.name} ILIKE ${"%" + search + "%"}`,
-        )
-        .orderBy(desc(projects.updatedAt))
-        .limit(limit)
-        .offset(offset);
-    }
-
-    const projectsResult = await query;
 
     // 各プロジェクトのメンバーを取得
     const projectIds = projectsResult.map((p) => p.id);
@@ -134,22 +124,15 @@ export class ProjectRepository implements IProjectRepository {
       .from(projectMembers)
       .where(eq(projectMembers.userId, userId.value));
 
-    let query;
-    if (search) {
-      query = db
-        .select({ count: sql<number>`count(*)` })
-        .from(projects)
-        .where(
-          sql`${projects.id} IN ${memberProjectIds} AND ${projects.name} ILIKE ${"%" + search + "%"}`,
-        );
-    } else {
-      query = db
-        .select({ count: sql<number>`count(*)` })
-        .from(projects)
-        .where(inArray(projects.id, memberProjectIds));
-    }
+    // where句を構築
+    const whereCondition = search
+      ? sql`${projects.id} IN ${memberProjectIds} AND ${projects.name} ILIKE ${"%" + search + "%"}`
+      : inArray(projects.id, memberProjectIds);
 
-    const result = await query;
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(projects)
+      .where(whereCondition);
     return Number(result[0]?.count ?? 0);
   }
 
