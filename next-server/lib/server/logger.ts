@@ -5,13 +5,29 @@ const base = pino({
 });
 
 export function getMainLogger(): Logger {
-  // TODO: 将来的にコンテキスト情報（リクエストIDやユーザーIDなど）を追加する場合はここでラップする
   return base;
+}
+
+/**
+ * コンテキスト情報を含むロガーを作成
+ * @param context リクエストID、ユーザー情報などのコンテキスト
+ * @returns コンテキスト付きロガー
+ */
+export interface LogContext {
+  requestId: string;
+  employeeId?: string;
+}
+
+export function createContextLogger(context: LogContext): Logger {
+  return base.child({
+    requestId: context.requestId,
+    employeeId: context.employeeId,
+  });
 }
 
 export function getLogLevel() {
   let logLevel: "debug" | "info";
-  if (process.env.DESIGN_GEN_LOG_DEBUG !== undefined) {
+  if (process.env.AIKATA_LOG_DEBUG !== undefined) {
     // 環境変数が設定されていれば強制 debug
     logLevel = "debug";
   } else {

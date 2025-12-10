@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "format": "npx prettier --write \"**/*.{ts,tsx}\""
+    "format": "npx prettier --write \"**/*.{ts,tsx}\"",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
     "@ai-sdk/openai-compatible": "^0.2.16",
@@ -18,20 +24,30 @@
     "next": "16.0.8",
     "next-auth": "^4.24.13",
     "next-safe-action": "^8.0.11",
+    "pg": "^8.13.0",
+    "pino": "^9.6.0",
     "react": "19.2.1",
     "react-dom": "19.2.1",
+    "uuid": "^11.1.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16.0.0",
     "@types/node": "^20",
+    "@types/pg": "^8.11.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "@vitest/coverage-v8": "^2.1.0",
     "drizzle-kit": "^0.31.8",
     "eslint": "^9",
     "eslint-config-next": "16.0.8",
+    "jsdom": "^25.0.0",
     "prettier": "^3.7.4",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^2.1.0"
   }
 }

@@ -16,3 +16,29 @@
   - 事後処理
     - [事後処理があれば箇条書きで記載]
 ```
+
+---
+
+## ユーザ管理
+
+- ユーザ同期
+  - 識別子: SyncUserService
+  - 前提条件
+    - Keycloakで認証済みであること
+  - 入力: SyncUserCommand { employeeId: string, displayName: string }
+  - 出力: UserDto { id: string, employeeId: string, displayName: string }
+  - メインフロー
+    1. 入力された社員IDからEmployeeId値オブジェクトを生成する
+    2. 社員IDでユーザリポジトリを検索する
+    3. ユーザが存在しない場合、新規Userエンティティを作成し保存する
+    4. ユーザが存在する場合、表示名が異なれば更新して保存する
+    5. UserDtoを生成して返却する
+  - 例外
+    - パターン1: 社員IDが空の場合
+      - ドメインバリデーションエラー（EMPLOYEE_ID_EMPTY）を返す
+    - パターン2: 社員IDが255文字超過の場合
+      - ドメインバリデーションエラー（EMPLOYEE_ID_TOO_LONG）を返す
+    - パターン3: リポジトリでエラーが発生した場合
+      - 内部エラーとしてスローする
+  - 事後処理
+    - なし

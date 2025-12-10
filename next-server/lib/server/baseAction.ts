@@ -2,8 +2,23 @@ import {
   createSafeActionClient,
   DEFAULT_SERVER_ERROR_MESSAGE,
 } from "next-safe-action";
-import { normalizeUnknownError, toPayload } from "./error";
-import { logger } from "./logger";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/auth";
+import { normalizeUnknownError, toPayload, unauthorizedError } from "./error";
+import { logger, createContextLogger } from "./logger";
+import { v4 as uuidv4 } from "uuid";
+
+/**
+ * 認証済みユーザコンテキスト
+ */
+export interface AuthContext {
+  /** Keycloakの社員ID */
+  employeeId: string;
+  /** 表示名 */
+  displayName: string;
+  /** リクエストID */
+  requestId: string;
+}
 
 /**
  * next-safe-actionの基底クラス
@@ -39,9 +54,39 @@ export const baseAction = createSafeActionClient({
 
 /**
  * 認証が必要なアクション用の基底クラス
- * TODO: NextAuth実装後に認証チェックを追加
+ * - セッションから認証情報を取得
+ * - 未認証の場合はエラーをスロー
+ * - 認証情報をコンテキストに追加
  */
-export const authenticatedAction = baseAction;
+export const authenticatedAction = baseAction.use(async ({ next }) => {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    throw unauthorizedError();
+  }
+
+  const requestId = uuidv4();
+  const contextLogger = createContextLogger({
+    requestId,
+    employeeId: session.user.employeeId,
+  });
+
+  // 認証情報をコンテキストに追加
+  const authContext: AuthContext = {
+    employeeId: session.user.employeeId,
+    displayName: session.user.displayName,
+    requestId,
+  };
+
+  contextLogger.info("Authenticated action started");
+
+  return next({
+    ctx: {
+      auth: authContext,
+      logger: contextLogger,
+    },
+  });
+});
 
 /**
  * 認証不要の公開アクション用の基底クラス

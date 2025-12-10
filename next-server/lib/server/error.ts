@@ -90,6 +90,16 @@ export function repositoryError(detail: string, error: unknown) {
 }
 
 /**
+ * ドメインバリデーションエラー
+ * エンティティや値オブジェクトの不変条件違反時に使用
+ */
+export const domainValidationError = (messageCode: MessageCode) =>
+  new AppError("DOMAIN_VALIDATION_ERROR", {
+    expose: true,
+    messageCode,
+  });
+
+/**
  * Zod のエラー → クライアントに安全に出せる形へ
  */
 export function zodToAppError(e: ZodError) {

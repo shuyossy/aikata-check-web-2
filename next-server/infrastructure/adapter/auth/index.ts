@@ -1,0 +1,1 @@
+export { NextAuthAdapter } from "./NextAuthAdapter";
