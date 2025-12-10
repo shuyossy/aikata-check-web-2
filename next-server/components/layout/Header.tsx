@@ -2,6 +2,8 @@
 
 import { useSession, signOut } from "next-auth/react";
 import { useState, useRef, useEffect } from "react";
+import { ChevronDown, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /**
  * アプリケーションヘッダー
@@ -51,9 +53,10 @@ export function Header() {
             ) : session?.user ? (
               <div className="relative" ref={dropdownRef}>
                 {/* User Profile Button */}
-                <button
+                <Button
+                  variant="ghost"
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded-lg px-3 py-2 transition duration-150"
+                  className="flex items-center gap-2 px-3 py-2 h-auto"
                 >
                   {/* Avatar */}
                   <div className="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm">
@@ -69,20 +72,8 @@ export function Header() {
                     </p>
                   </div>
                   {/* Dropdown Arrow */}
-                  <svg
-                    className="w-4 h-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </button>
+                  <ChevronDown className="size-4 text-gray-400" />
+                </Button>
 
                 {/* Dropdown Menu */}
                 {isDropdownOpen && (
@@ -97,25 +88,14 @@ export function Header() {
                       </p>
                     </div>
                     {/* Logout Option */}
-                    <button
+                    <Button
+                      variant="ghost"
                       onClick={() => signOut({ callbackUrl: "/" })}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-150 flex items-center gap-2"
+                      className="w-full justify-start rounded-none px-4 py-2 h-auto text-sm text-gray-700 hover:bg-gray-100"
                     >
-                      <svg
-                        className="w-4 h-4 text-gray-500"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                        />
-                      </svg>
+                      <LogOut className="size-4 text-gray-500" />
                       ログアウト
-                    </button>
+                    </Button>
                   </div>
                 )}
               </div>

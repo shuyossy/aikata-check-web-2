@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { MoreVertical, Clock, ChevronRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { AvatarGroup } from "@/components/ui/AvatarGroup";
 import { ProjectListItemDto } from "@/domain/project";
 
@@ -48,11 +51,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
   };
 
   return (
-    <div
+    <Card
       onClick={handleCardClick}
-      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition duration-150 cursor-pointer group"
+      className="cursor-pointer py-0 hover:shadow-md hover:border-blue-300 transition duration-150 group"
     >
-      <div className="p-6">
+      <CardContent className="p-6">
         {/* Header */}
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
@@ -60,26 +63,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
               {project.name}
             </h3>
           </div>
-          <Link
-            href={`/projects/${project.id}/settings`}
-            onClick={handleSettingsClick}
-            className="p-1 text-gray-400 hover:text-gray-600 rounded"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            asChild
+            className="text-gray-400 hover:text-gray-600"
             title="設定"
           >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+            <Link
+              href={`/projects/${project.id}/settings`}
+              onClick={handleSettingsClick}
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
-              />
-            </svg>
-          </Link>
+              <MoreVertical className="size-5" />
+            </Link>
+          </Button>
         </div>
 
         {/* Description */}
@@ -90,19 +87,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
         {/* Meta Info */}
         <div className="space-y-2 mb-4">
           <div className="flex items-center text-sm text-gray-500">
-            <svg
-              className="w-4 h-4 mr-2 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
+            <Clock className="size-4 mr-2 text-gray-400" />
             最終更新: {formatDate(project.updatedAt)}
           </div>
         </div>
@@ -112,22 +97,10 @@ export function ProjectCard({ project }: ProjectCardProps) {
           <AvatarGroup members={memberNames} maxDisplay={3} size="md" />
           <span className="text-sm text-blue-600 font-medium group-hover:text-blue-700 flex items-center">
             開く
-            <svg
-              className="w-4 h-4 ml-1"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
+            <ChevronRight className="size-4 ml-1" />
           </span>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

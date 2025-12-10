@@ -1,5 +1,7 @@
 "use client";
 
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/Avatar";
 import { UserDto } from "@/domain/user";
 
@@ -53,26 +55,16 @@ export function MemberList({
                 </span>
               )}
               {!readOnly && !isSelf && onRemove && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-sm"
                   onClick={() => onRemove(member.id)}
-                  className="p-1 text-gray-400 hover:text-red-500 rounded transition duration-150"
+                  className="text-gray-400 hover:text-red-500"
                   title="削除"
                 >
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                  <X className="size-5" />
+                </Button>
               )}
             </div>
           </div>
