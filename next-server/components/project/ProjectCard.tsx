@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AvatarGroup } from "@/components/ui/AvatarGroup";
 import { ProjectListItemDto } from "@/domain/project";
 
@@ -11,13 +12,14 @@ export interface ProjectCardProps {
 
 /**
  * 日付をフォーマット（YYYY/MM/DD形式）
+ * UTCベースでフォーマットしてサーバー/クライアント間の一貫性を保証
  */
 function formatDate(dateString: string | Date): string {
   const date =
     typeof dateString === "string" ? new Date(dateString) : dateString;
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
+  const year = date.getUTCFullYear();
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(date.getUTCDate()).padStart(2, "0");
   return `${year}/${month}/${day}`;
 }
 
@@ -26,6 +28,8 @@ function formatDate(dateString: string | Date): string {
  * プロジェクト一覧で表示されるカード
  */
 export function ProjectCard({ project }: ProjectCardProps) {
+  const router = useRouter();
+
   // メンバー名のリストを作成（AvatarGroup用）
   const memberNames = project.memberPreview.map(
     (member: { userId: string; displayName: string }) => ({
@@ -33,10 +37,20 @@ export function ProjectCard({ project }: ProjectCardProps) {
     }),
   );
 
+  // カードクリック時のナビゲーション
+  const handleCardClick = () => {
+    router.push(`/projects/${project.id}/review-spaces`);
+  };
+
+  // 設定ボタンクリック時（イベント伝播を止めて設定ページへ）
+  const handleSettingsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
-    <Link
-      href={`/projects/${project.id}/review-spaces`}
-      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition duration-150 cursor-pointer group block"
+    <div
+      onClick={handleCardClick}
+      className="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition duration-150 cursor-pointer group"
     >
       <div className="p-6">
         {/* Header */}
@@ -48,7 +62,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </div>
           <Link
             href={`/projects/${project.id}/settings`}
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleSettingsClick}
             className="p-1 text-gray-400 hover:text-gray-600 rounded"
             title="設定"
           >
@@ -114,6 +128,6 @@ export function ProjectCard({ project }: ProjectCardProps) {
           </span>
         </div>
       </div>
-    </Link>
+    </div>
   );
 }
