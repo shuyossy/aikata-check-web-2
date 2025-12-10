@@ -102,5 +102,7 @@ baseStepOutputSchema = z.object({
 # フロントエンド作成方針
 - Tailwind CSS、shadcn/uiを利用
 - 共通化できるコンポーネントは`next-server/components`に配置
+  - なるべく共通化して保守性を高めたい
+  - 将来的に共通化しておくと役立ちそうな場合も、こちらに配置しておく
 - 機能独自のコンポーネントは`next-server/app/${feature}/components`に配置
 - グローバル状態管理が必要な場合は`zustand`を利用
