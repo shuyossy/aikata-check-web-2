@@ -4,13 +4,41 @@ services:
   postgres-server:
     image: postgres:16
     environment:
-      - POSTGRES_DB=postgres
-      - POSTGRES_USER=user
-      - POSTGRES_PASSWORD=pass
+      POSTGRES_DB: postgres
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
     ports:
       - "5433:5432"   # dev container 外部から接続したい場合
     volumes:
       - aikata-check-web-dev-db-data:/var/lib/postgresql/data
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    environment:
+      # 一応必須なのでダミー値を入れるが、
+      # 下の SERVER_MODE=False にしているのでログイン画面は出ない
+      PGADMIN_DEFAULT_EMAIL: pgadmin@example.com
+      PGADMIN_DEFAULT_PASSWORD: dummy-password
+
+      # ← ここでログイン画面をスキップ（Desktop モード）
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      # マスターパスワードも要求しない
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+
+    ports:
+      - "8431:80"     # http://localhost:8431 でアクセス
+    depends_on:
+      - postgres-server
+
+    # pgpass を使うため root + entrypoint を少しだけカスタマイズ
+    user: root
+    entrypoint: /bin/sh -c "chmod 600 /pgpass; /entrypoint.sh;"
+
+    volumes:
+      # 接続先情報（自動登録用）
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+      # DB パスワードを事前登録するファイル
+      - ./pgadmin/pgpass:/pgpass
 
 volumes:
   aikata-check-web-dev-db-data:

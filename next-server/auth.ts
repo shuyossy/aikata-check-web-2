@@ -39,6 +39,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user, account }) {
       // 初回サインイン時のみuserが存在
       if (account && user) {
+        token.id = user.id; // DBのユーザーID（UUID）
         token.employeeId = user.employeeId;
         token.displayName = user.displayName;
       }
@@ -49,6 +50,7 @@ export const authOptions: NextAuthOptions = {
      */
     async session({ session, token }) {
       if (session.user) {
+        session.user.id = token.id as string; // DBのユーザーID（UUID）
         session.user.employeeId = token.employeeId as string;
         session.user.displayName = token.displayName as string;
       }
@@ -60,10 +62,12 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user }) {
       try {
         const syncUserService = new SyncUserService(new UserRepository());
-        await syncUserService.execute({
+        const syncedUser = await syncUserService.execute({
           employeeId: user.employeeId,
           displayName: user.displayName,
         });
+        // DBのユーザーID（UUID）をuserオブジェクトに設定
+        user.id = syncedUser.id;
         return true;
       } catch (error) {
         console.error("Failed to sync user:", error);

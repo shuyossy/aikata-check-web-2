@@ -17,6 +17,10 @@ describe("SyncUserService", () => {
     // リポジトリのモック
     mockUserRepository = {
       findByEmployeeId: vi.fn(),
+      findById: vi.fn(),
+      findByIds: vi.fn(),
+      searchUsers: vi.fn(),
+      countSearchUsers: vi.fn(),
       save: vi.fn(),
     };
 

@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "run dev server",
+      "runtimeExecutable": "/Users/yoshidashuhei/.nvm/versions/node/v22.13.0/bin/npm",
+      "runtimeArgs": ["run", "dev"],
+      "env": {
+        "NODE_OPTIONS": "--inspect=0.0.0.0:9229"
+      },
+      "cwd": "${workspaceFolder}/next-server",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true,
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}

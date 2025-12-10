@@ -16,4 +16,15 @@ export const template = {
   DISPLAY_NAME_EMPTY: `表示名は必須です。`,
   // 認証エラー
   USER_SYNC_FAILED: `システムに問題が発生しており、ログイン処理を完了できません`,
+  // プロジェクト管理ドメインバリデーションエラー
+  PROJECT_ID_INVALID_FORMAT: `プロジェクトIDの形式が不正です。有効なUUID形式である必要があります。`,
+  PROJECT_NAME_EMPTY: `プロジェクト名は必須です。`,
+  PROJECT_NAME_TOO_LONG: `プロジェクト名は100文字以内で入力してください。`,
+  PROJECT_DESCRIPTION_TOO_LONG: `プロジェクト説明は1000文字以内で入力してください。`,
+  PROJECT_NOT_FOUND: `指定されたプロジェクトが見つかりません。`,
+  PROJECT_ACCESS_DENIED: `このプロジェクトへのアクセス権がありません。`,
+  PROJECT_MEMBER_REQUIRED: `プロジェクトには少なくとも1人のメンバーが必要です。`,
+  PROJECT_MEMBER_ALREADY_EXISTS: `指定されたユーザは既にプロジェクトメンバーです。`,
+  PROJECT_MEMBER_NOT_FOUND: `指定されたユーザはプロジェクトメンバーではありません。`,
+  PROJECT_MEMBER_USER_NOT_FOUND: `指定されたメンバーの一部が見つかりません。`,
 } as const;

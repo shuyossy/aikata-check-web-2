@@ -9,6 +9,22 @@ import { logger, createContextLogger } from "./logger";
 import { v4 as uuidv4 } from "uuid";
 
 /**
+ * エラーを安全にシリアライズするヘルパー関数
+ * JavaScriptのErrorオブジェクトのプロパティは列挙可能ではないため、
+ * JSONシリアライズすると{}になってしまう問題を解決する
+ */
+function serializeError(error: unknown): object {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    };
+  }
+  return { value: error };
+}
+
+/**
  * 認証済みユーザコンテキスト
  */
 export interface AuthContext {
@@ -29,6 +45,7 @@ export interface AuthContext {
 export const baseAction = createSafeActionClient({
   // エラーハンドリング
   handleServerError(error) {
+    logger.error({ rawError: serializeError(error) }, "Error captured in baseAction");
     const appError = normalizeUnknownError(error);
 
     // エラーログ出力

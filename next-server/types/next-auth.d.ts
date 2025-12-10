@@ -7,6 +7,8 @@ declare module "next-auth" {
    * Keycloakから取得する追加属性を定義
    */
   interface User {
+    /** DBのユーザーID（UUID） */
+    id: string;
     /** Keycloakのpreferred_username（社員ID） */
     employeeId: string;
     /** Keycloakのdisplay_name（表示名） */
@@ -19,8 +21,8 @@ declare module "next-auth" {
    */
   interface Session {
     user: {
-      /** システム内部のユーザID */
-      id?: string;
+      /** DBのユーザーID（UUID） */
+      id: string;
       /** Keycloakのpreferred_username（社員ID） */
       employeeId: string;
       /** Keycloakのdisplay_name（表示名） */
@@ -41,6 +43,8 @@ declare module "next-auth/jwt" {
    * JWTトークンに含める追加クレームを定義
    */
   interface JWT {
+    /** DBのユーザーID（UUID） */
+    id?: string;
     /** Keycloakのpreferred_username（社員ID） */
     employeeId?: string;
     /** Keycloakのdisplay_name（表示名） */

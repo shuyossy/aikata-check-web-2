@@ -1,2 +1,2 @@
 export { db } from "./drizzle";
-export { UserRepository } from "./drizzle/repository";
+export { UserRepository, ProjectRepository } from "./drizzle/repository";

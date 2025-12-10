@@ -14,3 +14,4 @@
 | 認証         | KEYCLOAK_SECRET  | Yes  | -      | Keycloak のクライアントシークレット                                       | auth.ts                                       |
 | 認証         | KEYCLOAK_ISSUER  | Yes  | -      | Keycloak の Issuer URL（例: https://keycloak.example.com/realms/myrealm） | auth.ts                                       |
 | ログ         | AIKATA_LOG_DEBUG | No   | -      | 設定されている場合、ログレベルを debug に強制設定                         | lib/server/logger.ts                          |
+| セキュリティ | ENCRYPTION_KEY   | Yes  | -      | APIキー等の暗号化に使用するAES-256キー（64桁の16進数文字列）              | lib/server/encryption.ts                      |
