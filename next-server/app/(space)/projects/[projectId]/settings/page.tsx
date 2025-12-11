@@ -5,12 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { ProjectForm, ProjectFormData } from "@/components/project";
+import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import {
   getProjectAction,
   updateProjectAction,
   updateProjectMembersAction,
   deleteProjectAction,
-} from "../../actions";
+} from "@/app/(project)/projects/actions";
 import { useAction } from "next-safe-action/hooks";
 import { ProjectDto } from "@/domain/project";
 import { UserDto } from "@/domain/user";
@@ -53,7 +54,7 @@ export default function ProjectSettingsPage({ params }: Props) {
         if (data) {
           setProject(data);
           clearError();
-          router.push(`/projects/${projectId}/review-spaces`);
+          router.push(`/projects/${projectId}/spaces`);
         }
       },
       onError: ({ error: actionError }) => {
@@ -122,7 +123,7 @@ export default function ProjectSettingsPage({ params }: Props) {
   };
 
   const handleCancel = () => {
-    router.push(`/projects/${projectId}/review-spaces`);
+    router.push(`/projects/${projectId}/spaces`);
   };
 
   const handleDelete = () => {
@@ -212,23 +213,12 @@ export default function ProjectSettingsPage({ params }: Props) {
     <div className="bg-gray-50 min-h-screen">
       <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
-        <nav className="flex text-sm text-gray-500 mb-6">
-          <Link
-            href="/projects"
-            className="hover:text-gray-700 transition duration-150"
-          >
-            プロジェクト
-          </Link>
-          <span className="mx-2">/</span>
-          <Link
-            href={`/projects/${projectId}/review-spaces`}
-            className="hover:text-gray-700 transition duration-150"
-          >
-            {project.name}
-          </Link>
-          <span className="mx-2">/</span>
-          <span className="text-gray-900 font-medium">設定</span>
-        </nav>
+        <Breadcrumb
+          items={[
+            { label: project.name, href: `/projects/${projectId}/spaces` },
+            { label: "設定" },
+          ]}
+        />
 
         {/* Page Header */}
         <div className="mb-8">

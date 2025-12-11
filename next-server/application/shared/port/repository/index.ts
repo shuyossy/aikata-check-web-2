@@ -3,3 +3,7 @@ export type {
   IProjectRepository,
   FindProjectsOptions,
 } from "./IProjectRepository";
+export type {
+  IReviewSpaceRepository,
+  FindReviewSpacesOptions,
+} from "./IReviewSpaceRepository";

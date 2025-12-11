@@ -95,3 +95,38 @@ export const projectMembers = pgTable(
  */
 export type ProjectMemberDbEntity = typeof projectMembers.$inferSelect;
 export type NewProjectMemberDbEntity = typeof projectMembers.$inferInsert;
+
+/**
+ * review_spacesテーブル
+ * レビュースペース情報を管理
+ */
+export const reviewSpaces = pgTable(
+  "review_spaces",
+  {
+    /** レビュースペースID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 所属プロジェクトID（FK） */
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    /** スペース名 */
+    name: varchar("name", { length: 100 }).notNull(),
+    /** スペース説明 */
+    description: text("description"),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** レコード更新日時 */
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("idx_review_spaces_project_id").on(table.projectId)],
+);
+
+/**
+ * レビュースペーステーブルの型定義
+ */
+export type ReviewSpaceDbEntity = typeof reviewSpaces.$inferSelect;
+export type NewReviewSpaceDbEntity = typeof reviewSpaces.$inferInsert;

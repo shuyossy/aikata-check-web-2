@@ -27,4 +27,11 @@ export const template = {
   PROJECT_MEMBER_ALREADY_EXISTS: `指定されたユーザは既にプロジェクトメンバーです。`,
   PROJECT_MEMBER_NOT_FOUND: `指定されたユーザはプロジェクトメンバーではありません。`,
   PROJECT_MEMBER_USER_NOT_FOUND: `指定されたメンバーの一部が見つかりません。`,
+  // レビュースペース管理ドメインバリデーションエラー
+  REVIEW_SPACE_ID_INVALID_FORMAT: `レビュースペースIDの形式が不正です。有効なUUID形式である必要があります。`,
+  REVIEW_SPACE_NAME_EMPTY: `スペース名は必須です。`,
+  REVIEW_SPACE_NAME_TOO_LONG: `スペース名は100文字以内で入力してください。`,
+  REVIEW_SPACE_DESCRIPTION_TOO_LONG: `スペース説明は1000文字以内で入力してください。`,
+  REVIEW_SPACE_NOT_FOUND: `指定されたレビュースペースが見つかりません。`,
+  REVIEW_SPACE_ACCESS_DENIED: `このレビュースペースへのアクセス権がありません。`,
 } as const;

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Plus, Eye, EyeOff, Check, Info, Users, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +11,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { MemberSearchModal } from "./MemberSearchModal";
 import { MemberList } from "./MemberList";
 import { UserDto } from "@/domain/user";
+
+// バリデーションスキーマ
+const projectFormSchema = z.object({
+  name: z
+    .string()
+    .min(1, "プロジェクト名は必須です")
+    .max(100, "プロジェクト名は100文字以内で入力してください"),
+  description: z
+    .string()
+    .max(1000, "説明は1000文字以内で入力してください")
+    .optional(),
+  apiKey: z.string().optional(),
+});
+
+export type ProjectFormSchemaData = z.infer<typeof projectFormSchema>;
 
 export interface ProjectFormData {
   name: string;
@@ -42,51 +60,42 @@ export function ProjectForm({
   isSubmitting = false,
   submitLabel = "プロジェクトを作成",
 }: ProjectFormProps) {
-  const [name, setName] = useState(initialData?.name ?? "");
-  const [description, setDescription] = useState(
-    initialData?.description ?? "",
-  );
-  const [apiKey, setApiKey] = useState(initialData?.apiKey ?? "");
   const [showApiKey, setShowApiKey] = useState(false);
+  // membersは配列なのでuseStateで別管理
   const [members, setMembers] = useState<UserDto[]>(
     initialData?.members ?? [currentUser],
   );
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [membersError, setMembersError] = useState<string | null>(null);
 
-  // バリデーション
-  const validate = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!name.trim()) {
-      newErrors.name = "プロジェクト名は必須です";
-    } else if (name.length > 100) {
-      newErrors.name = "プロジェクト名は100文字以内で入力してください";
-    }
-
-    if (description.length > 1000) {
-      newErrors.description = "説明は1000文字以内で入力してください";
-    }
-
-    if (members.length === 0) {
-      newErrors.members = "メンバーは少なくとも1名必要です";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ProjectFormSchemaData>({
+    resolver: zodResolver(projectFormSchema),
+    defaultValues: {
+      name: initialData?.name ?? "",
+      description: initialData?.description ?? "",
+      apiKey: initialData?.apiKey ?? "",
+    },
+  });
 
   // フォーム送信
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (validate()) {
-      onSubmit({
-        name: name.trim(),
-        description: description.trim(),
-        apiKey: apiKey.trim(),
-        members,
-      });
+  const onFormSubmit = (data: ProjectFormSchemaData) => {
+    // メンバーバリデーション
+    if (members.length === 0) {
+      setMembersError("メンバーは少なくとも1名必要です");
+      return;
     }
+    setMembersError(null);
+
+    onSubmit({
+      name: data.name.trim(),
+      description: data.description?.trim() ?? "",
+      apiKey: data.apiKey?.trim() ?? "",
+      members,
+    });
   };
 
   // メンバー削除
@@ -103,11 +112,12 @@ export function ProjectForm({
     } else {
       setMembers([currentUser, ...selectedUsers]);
     }
+    setMembersError(null);
   };
 
   return (
     <>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
         {/* 基本情報セクション */}
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
@@ -120,18 +130,24 @@ export function ProjectForm({
           <div className="space-y-4 ml-11">
             {/* プロジェクト名 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 プロジェクト名 <span className="text-red-500">*</span>
               </label>
               <Input
+                id="name"
                 type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
+                {...register("name")}
                 className={`h-11 ${errors.name ? "border-red-300 focus-visible:ring-red-500" : ""}`}
                 placeholder="例: ○○システム開発プロジェクト"
+                disabled={isSubmitting}
               />
               {errors.name ? (
-                <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+                <p className="mt-1 text-sm text-red-500">
+                  {errors.name.message}
+                </p>
               ) : (
                 <p className="mt-1 text-sm text-gray-500">
                   プロジェクトを識別するための名称を入力してください
@@ -141,19 +157,23 @@ export function ProjectForm({
 
             {/* 説明 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 説明 <span className="text-gray-400 text-xs">(任意)</span>
               </label>
               <Textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                id="description"
+                {...register("description")}
                 className={`min-h-[100px] ${errors.description ? "border-red-300 focus-visible:ring-red-500" : ""}`}
                 rows={4}
                 placeholder="プロジェクトの目的や概要を入力してください"
+                disabled={isSubmitting}
               />
               {errors.description ? (
                 <p className="mt-1 text-sm text-red-500">
-                  {errors.description}
+                  {errors.description.message}
                 </p>
               ) : (
                 <p className="mt-1 text-sm text-gray-500">
@@ -194,7 +214,10 @@ export function ProjectForm({
 
             {/* APIキー入力 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="apiKey"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 APIキー{" "}
                 <span className="text-gray-400 text-xs">
                   (任意・後で設定可能)
@@ -202,11 +225,12 @@ export function ProjectForm({
               </label>
               <div className="relative">
                 <Input
+                  id="apiKey"
                   type={showApiKey ? "text" : "password"}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+                  {...register("apiKey")}
                   className="h-11 pr-10 font-mono text-sm"
                   placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+                  disabled={isSubmitting}
                 />
                 <Button
                   type="button"
@@ -245,8 +269,8 @@ export function ProjectForm({
               プロジェクトに参加するメンバーを追加してください。デフォルトで自身が選択されています。
             </p>
 
-            {errors.members && (
-              <p className="text-sm text-red-500">{errors.members}</p>
+            {membersError && (
+              <p className="text-sm text-red-500">{membersError}</p>
             )}
 
             {/* メンバー追加ボタン */}
@@ -255,6 +279,7 @@ export function ProjectForm({
               variant="outline"
               onClick={() => setIsModalOpen(true)}
               className="h-10"
+              disabled={isSubmitting}
             >
               <Plus className="size-5" />
               メンバーを追加

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/AuthProvider";
-import { Header } from "@/components/layout/Header";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,6 +18,10 @@ export const metadata: Metadata = {
   description: "AIレビュープラットフォーム",
 };
 
+/**
+ * ルートレイアウト
+ * 認証プロバイダのみを提供し、レイアウト構造は各Route Groupで定義
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -29,12 +32,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          <div className="h-screen flex flex-col bg-gray-50">
-            <Header />
-            <main className="flex-1 overflow-auto">{children}</main>
-          </div>
-        </AuthProvider>
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );

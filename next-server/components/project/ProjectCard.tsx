@@ -7,23 +7,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AvatarGroup } from "@/components/ui/AvatarGroup";
 import { ProjectListItemDto } from "@/domain/project";
+import { formatDate } from "@/lib/formatters";
 
 export interface ProjectCardProps {
   /** プロジェクト情報 */
   project: ProjectListItemDto;
-}
-
-/**
- * 日付をフォーマット（YYYY/MM/DD形式）
- * UTCベースでフォーマットしてサーバー/クライアント間の一貫性を保証
- */
-function formatDate(dateString: string | Date): string {
-  const date =
-    typeof dateString === "string" ? new Date(dateString) : dateString;
-  const year = date.getUTCFullYear();
-  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(date.getUTCDate()).padStart(2, "0");
-  return `${year}/${month}/${day}`;
 }
 
 /**
@@ -42,7 +30,7 @@ export function ProjectCard({ project }: ProjectCardProps) {
 
   // カードクリック時のナビゲーション
   const handleCardClick = () => {
-    router.push(`/projects/${project.id}/review-spaces`);
+    router.push(`/projects/${project.id}/spaces`);
   };
 
   // 設定ボタンクリック時（イベント伝播を止めて設定ページへ）

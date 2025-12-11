@@ -23,7 +23,7 @@ export default function NewProjectPage() {
       onSuccess: ({ data }) => {
         if (data) {
           clearError();
-          router.push(`/projects/${data.id}/review-spaces`);
+          router.push(`/projects/${data.id}/spaces`);
         }
       },
       onError: ({ error: actionError }) => {

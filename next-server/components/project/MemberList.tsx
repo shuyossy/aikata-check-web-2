@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/Avatar";
+import { Badge } from "@/components/ui/badge";
 import { UserDto } from "@/domain/user";
 
 export interface MemberListProps {
@@ -50,9 +51,12 @@ export function MemberList({
             </div>
             <div className="flex items-center gap-2">
               {isSelf && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                <Badge
+                  variant="secondary"
+                  className="bg-blue-100 text-blue-800 border-transparent"
+                >
                   自分
-                </span>
+                </Badge>
               )}
               {!readOnly && !isSelf && onRemove && (
                 <Button

@@ -12,8 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar } from "@/components/ui/Avatar";
+import { Checkbox } from "@/components/ui/checkbox";
 import { UserDto } from "@/domain/user";
-import { searchUsersAction } from "@/app/projects/actions";
+import { searchUsersAction } from "@/app/(project)/projects/actions";
 import { useAction } from "next-safe-action/hooks";
 
 export interface MemberSearchModalProps {
@@ -229,11 +230,9 @@ export function MemberSearchModal({
                       : "border-gray-200 hover:border-gray-300"
                   }`}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     checked={isSelected}
-                    onChange={() => toggleUser(user)}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    onCheckedChange={() => toggleUser(user)}
                   />
                   <Avatar name={user.displayName} size="lg" />
                   <div className="flex-1 min-w-0">

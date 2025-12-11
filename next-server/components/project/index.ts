@@ -9,3 +9,5 @@ export type { MemberListProps } from "./MemberList";
 
 export { MemberSearchModal } from "./MemberSearchModal";
 export type { MemberSearchModalProps } from "./MemberSearchModal";
+
+export { ProjectSwitcher } from "./ProjectSwitcher";
