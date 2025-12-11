@@ -1,14 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import {
-  ChevronDown,
-  Folder,
-  Menu,
-  X,
-} from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { ChevronDown, Folder, Menu, X, ClipboardList } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ProjectSwitcher } from "@/components/project/ProjectSwitcher";
@@ -31,7 +26,56 @@ export function Sidebar({
   reviewSpaces,
 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+
+  // 展開中のスペースIDを管理
+  const [expandedSpaces, setExpandedSpaces] = useState<Set<string>>(() => {
+    // 現在のパスに含まれるスペースIDを初期展開
+    const initialExpanded = new Set<string>();
+    reviewSpaces.forEach((space) => {
+      if (
+        pathname.includes(`/projects/${currentProject.id}/spaces/${space.id}`)
+      ) {
+        initialExpanded.add(space.id);
+      }
+    });
+    return initialExpanded;
+  });
+
+  // スペースの展開/折りたたみをトグル
+  const toggleSpace = useCallback((spaceId: string) => {
+    setExpandedSpaces((prev) => {
+      const next = new Set(prev);
+      if (next.has(spaceId)) {
+        next.delete(spaceId);
+      } else {
+        next.add(spaceId);
+      }
+      return next;
+    });
+  }, []);
+
+  // スペース名クリック時の処理（展開しながらレビュー対象一覧へ遷移）
+  const handleSpaceClick = useCallback(
+    (spaceId: string, e: React.MouseEvent) => {
+      // Chevronアイコン以外がクリックされた場合は遷移
+      const target = e.target as HTMLElement;
+      const isChevronClick =
+        target.closest('[data-chevron="true"]') !== null;
+
+      if (!isChevronClick) {
+        // 展開状態にして遷移
+        setExpandedSpaces((prev) => {
+          const next = new Set(prev);
+          next.add(spaceId);
+          return next;
+        });
+        router.push(`/projects/${currentProject.id}/spaces/${spaceId}`);
+      }
+    },
+    [currentProject.id, router],
+  );
 
   return (
     <>
@@ -84,26 +128,57 @@ export function Sidebar({
                   const isActive = pathname.includes(
                     `/projects/${currentProject.id}/spaces/${space.id}`,
                   );
+                  const isExpanded = expandedSpaces.has(space.id);
+
                   return (
-                    <Link
-                      key={space.id}
-                      href={`/projects/${currentProject.id}/spaces/${space.id}`}
-                      className={cn(
-                        "w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150",
-                        isActive
-                          ? "text-blue-600 bg-blue-50"
-                          : "text-gray-700 hover:bg-gray-100",
-                      )}
-                    >
-                      <ChevronDown
+                    <div key={space.id} className="space-y-1">
+                      {/* スペースボタン */}
+                      <button
+                        onClick={(e) => handleSpaceClick(space.id, e)}
                         className={cn(
-                          "size-4 transition-transform",
-                          !isActive && "-rotate-90",
+                          "w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-150",
+                          isActive
+                            ? "text-blue-600 bg-blue-50"
+                            : "text-gray-700 hover:bg-gray-100",
                         )}
-                      />
-                      <Folder className="size-4" />
-                      <span className="truncate">{space.name}</span>
-                    </Link>
+                      >
+                        <ChevronDown
+                          data-chevron="true"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSpace(space.id);
+                          }}
+                          className={cn(
+                            "size-4 transition-transform cursor-pointer hover:text-blue-600",
+                            !isExpanded && "-rotate-90",
+                          )}
+                        />
+                        <Folder className="size-4" />
+                        <span className="truncate">{space.name}</span>
+                      </button>
+
+                      {/* 展開時の子要素 */}
+                      {isExpanded && (
+                        <div className="ml-6 space-y-1 border-l-2 border-gray-200 pl-2">
+                          {/* チェックリストリンク */}
+                          <Link
+                            href={`/projects/${currentProject.id}/spaces/${space.id}/checklist`}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 text-sm rounded transition duration-150",
+                              pathname.includes(
+                                `/spaces/${space.id}/checklist`,
+                              )
+                                ? "text-blue-600 bg-blue-50"
+                                : "text-gray-700 hover:bg-gray-100",
+                            )}
+                          >
+                            <ClipboardList className="size-3" />
+                            <span className="truncate">チェックリスト</span>
+                          </Link>
+                          {/* 今後: レビュー対象のリストがここに追加される */}
+                        </div>
+                      )}
+                    </div>
                   );
                 })
               ) : (

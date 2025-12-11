@@ -130,3 +130,36 @@ export const reviewSpaces = pgTable(
  */
 export type ReviewSpaceDbEntity = typeof reviewSpaces.$inferSelect;
 export type NewReviewSpaceDbEntity = typeof reviewSpaces.$inferInsert;
+
+/**
+ * check_list_itemsテーブル
+ * レビュースペースに紐づくチェック項目を管理
+ */
+export const checkListItems = pgTable(
+  "check_list_items",
+  {
+    /** チェック項目ID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 所属レビュースペースID（FK） */
+    reviewSpaceId: uuid("review_space_id")
+      .notNull()
+      .references(() => reviewSpaces.id, { onDelete: "cascade" }),
+    /** チェック項目内容（最大2000文字） */
+    content: text("content").notNull(),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** レコード更新日時 */
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("idx_check_list_items_review_space_id").on(table.reviewSpaceId)],
+);
+
+/**
+ * チェック項目テーブルの型定義
+ */
+export type CheckListItemDbEntity = typeof checkListItems.$inferSelect;
+export type NewCheckListItemDbEntity = typeof checkListItems.$inferInsert;

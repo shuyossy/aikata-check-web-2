@@ -34,4 +34,8 @@ export const template = {
   REVIEW_SPACE_DESCRIPTION_TOO_LONG: `スペース説明は1000文字以内で入力してください。`,
   REVIEW_SPACE_NOT_FOUND: `指定されたレビュースペースが見つかりません。`,
   REVIEW_SPACE_ACCESS_DENIED: `このレビュースペースへのアクセス権がありません。`,
+  // チェック項目管理ドメインバリデーションエラー
+  CHECK_LIST_ITEM_ID_INVALID_FORMAT: `チェック項目IDの形式が不正です。有効なUUID形式である必要があります。`,
+  CHECK_LIST_ITEM_CONTENT_EMPTY: `チェック項目の内容は必須です。`,
+  CHECK_LIST_ITEM_NOT_FOUND: `指定されたチェック項目が見つかりません。`,
 } as const;

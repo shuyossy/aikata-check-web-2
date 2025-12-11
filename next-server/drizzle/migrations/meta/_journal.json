@@ -22,6 +22,13 @@
       "when": 1765381148324,
       "tag": "0002_hard_princess_powerful",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1765439285370,
+      "tag": "0003_dark_ultragirl",
+      "breakpoints": true
     }
   ]
 }

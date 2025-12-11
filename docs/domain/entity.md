@@ -147,3 +147,50 @@
     - hasMember: 指定ユーザがメンバーか確認する
     - toDto: DTOに変換する
     - toListItemDto: 一覧用DTOに変換する
+
+---
+
+## チェックリスト管理
+
+- チェック項目ID
+  - 識別子: CheckListItemId
+  - 種類: 値オブジェクト
+  - 不変条件
+    - UUIDv4形式であること
+  - 属性
+    - value: string - UUID文字列
+  - 振る舞い
+    - create: 新規UUIDを生成して返却する
+    - reconstruct: 既存のUUID文字列から復元する
+
+- チェック項目内容
+  - 識別子: CheckListItemContent
+  - 種類: 値オブジェクト
+  - 不変条件
+    - 空文字でないこと
+    - 2000文字以内であること
+  - 属性
+    - value: string - チェック項目の内容
+  - 振る舞い
+    - create: 文字列からチェック項目内容を生成する
+    - reconstruct: 既存の文字列から復元する
+
+- チェック項目
+  - 識別子: CheckListItem
+  - 種類: エンティティ
+  - 不変条件
+    - チェック項目IDは空ではないこと（UUID形式）
+    - レビュースペースIDは空ではないこと（UUID形式）
+    - チェック項目内容は空ではないこと（2000文字以内）
+  - 属性
+    - id: CheckListItemId - チェック項目ID
+    - reviewSpaceId: ReviewSpaceId - 所属レビュースペースID
+    - content: CheckListItemContent - チェック項目内容
+    - createdAt: Date - 作成日時
+    - updatedAt: Date - 更新日時
+  - 振る舞い
+    - create: 新規チェック項目を作成する
+    - reconstruct: DBから取得したデータからチェック項目を復元する
+    - updateContent: チェック項目内容を更新する
+    - toDto: DTOに変換する
+    - toListItemDto: 一覧用DTOに変換する
