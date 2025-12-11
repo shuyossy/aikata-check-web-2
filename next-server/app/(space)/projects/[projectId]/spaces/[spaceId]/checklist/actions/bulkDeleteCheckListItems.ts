@@ -11,7 +11,6 @@ import {
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
 import { EmployeeId } from "@/domain/user";
-import { revalidatePath } from "next/cache";
 
 const bulkDeleteCheckListItemsSchema = z.object({
   reviewSpaceId: z.string().uuid(),
@@ -49,9 +48,6 @@ export const bulkDeleteCheckListItemsAction = authenticatedAction
       userId: user.id.value,
       checkListItemIds: parsedInput.checkListItemIds,
     });
-
-    // キャッシュを無効化
-    revalidatePath(`/projects`);
 
     return result;
   });

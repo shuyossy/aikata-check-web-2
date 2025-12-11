@@ -73,6 +73,18 @@ describe("BulkDeleteCheckListItemsService", () => {
           }
           return Promise.resolve(null);
         }),
+      findByIds: vi.fn().mockImplementation((ids) => {
+        const items: CheckListItem[] = [];
+        for (const id of ids) {
+          if (id.value === validCheckListItemId1) {
+            items.push(mockCheckListItem1);
+          }
+          if (id.value === validCheckListItemId2) {
+            items.push(mockCheckListItem2);
+          }
+        }
+        return Promise.resolve(items);
+      }),
       findByReviewSpaceId: vi.fn().mockResolvedValue([]),
       countByReviewSpaceId: vi.fn().mockResolvedValue(0),
       save: vi.fn(),
@@ -175,6 +187,8 @@ describe("BulkDeleteCheckListItemsService", () => {
 
     it("存在しないチェック項目IDの場合はエラー", async () => {
       const nonExistentId = "723e4567-e89b-12d3-a456-426614174006";
+      // findByIdsが空配列を返す場合（存在しないIDが含まれている）
+      vi.mocked(mockCheckListItemRepository.findByIds).mockResolvedValue([]);
 
       await expect(
         service.execute({
@@ -194,9 +208,10 @@ describe("BulkDeleteCheckListItemsService", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      vi.mocked(mockCheckListItemRepository.findById).mockResolvedValue(
+      // findByIdsが異なるレビュースペースのアイテムを返す
+      vi.mocked(mockCheckListItemRepository.findByIds).mockResolvedValue([
         otherCheckListItem,
-      );
+      ]);
 
       await expect(
         service.execute({

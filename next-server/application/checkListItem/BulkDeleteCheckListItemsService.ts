@@ -77,12 +77,16 @@ export class BulkDeleteCheckListItemsService {
       CheckListItemId.reconstruct(id),
     );
 
-    // 各チェック項目の存在確認とレビュースペース所属確認
-    for (const itemId of itemIds) {
-      const item = await this.checkListItemRepository.findById(itemId);
-      if (!item) {
-        throw domainValidationError("CHECK_LIST_ITEM_NOT_FOUND");
-      }
+    // 一括でチェック項目を取得（N+1問題を回避）
+    const items = await this.checkListItemRepository.findByIds(itemIds);
+
+    // 全てのチェック項目が存在するか確認
+    if (items.length !== itemIds.length) {
+      throw domainValidationError("CHECK_LIST_ITEM_NOT_FOUND");
+    }
+
+    // 全てのチェック項目が指定されたレビュースペースに所属しているか確認
+    for (const item of items) {
       if (!item.reviewSpaceId.equals(reviewSpaceIdVo)) {
         throw domainValidationError("REVIEW_SPACE_ACCESS_DENIED");
       }

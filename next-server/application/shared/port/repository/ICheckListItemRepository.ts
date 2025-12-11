@@ -24,6 +24,13 @@ export interface ICheckListItemRepository {
   findById(id: CheckListItemId): Promise<CheckListItem | null>;
 
   /**
+   * 複数のIDでチェック項目を一括検索
+   * @param ids チェック項目IDの配列
+   * @returns チェック項目エンティティの配列（存在するもののみ）
+   */
+  findByIds(ids: CheckListItemId[]): Promise<CheckListItem[]>;
+
+  /**
    * レビュースペースIDでチェック項目一覧を検索
    * @param reviewSpaceId レビュースペースID
    * @param options 検索オプション

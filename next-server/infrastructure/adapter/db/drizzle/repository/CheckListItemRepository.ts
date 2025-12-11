@@ -38,6 +38,31 @@ export class CheckListItemRepository implements ICheckListItemRepository {
   }
 
   /**
+   * 複数のIDでチェック項目を一括検索
+   */
+  async findByIds(ids: CheckListItemId[]): Promise<CheckListItem[]> {
+    if (ids.length === 0) {
+      return [];
+    }
+
+    const idValues = ids.map((id) => id.value);
+    const result = await db
+      .select()
+      .from(checkListItems)
+      .where(inArray(checkListItems.id, idValues));
+
+    return result.map((row) =>
+      CheckListItem.reconstruct({
+        id: row.id,
+        reviewSpaceId: row.reviewSpaceId,
+        content: row.content,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      }),
+    );
+  }
+
+  /**
    * レビュースペースIDでチェック項目一覧を検索
    */
   async findByReviewSpaceId(

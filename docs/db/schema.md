@@ -124,7 +124,7 @@
 |---------|------|------|-----------|------|
 | id | UUID | NOT NULL | gen_random_uuid() | チェック項目ID（PK） |
 | review_space_id | UUID | NOT NULL | - | 所属レビュースペースID（FK → review_spaces.id） |
-| content | TEXT | NOT NULL | - | チェック項目内容（2000文字以内） |
+| content | TEXT | NOT NULL | - | チェック項目内容 |
 | created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
 | updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
 

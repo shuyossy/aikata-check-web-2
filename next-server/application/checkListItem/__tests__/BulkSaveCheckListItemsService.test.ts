@@ -44,6 +44,7 @@ describe("BulkSaveCheckListItemsService", () => {
   beforeEach(() => {
     mockCheckListItemRepository = {
       findById: vi.fn(),
+      findByIds: vi.fn().mockResolvedValue([]),
       findByReviewSpaceId: vi.fn().mockResolvedValue([]),
       countByReviewSpaceId: vi.fn().mockResolvedValue(0),
       save: vi.fn(),
@@ -89,20 +90,16 @@ describe("BulkSaveCheckListItemsService", () => {
 
       expect(result.savedCount).toBe(3);
       expect(mockCheckListItemRepository.bulkSave).toHaveBeenCalledTimes(1);
-      expect(mockCheckListItemRepository.bulkSave).toHaveBeenCalledWith(
-        expect.anything(),
-        expect.arrayContaining([
-          expect.objectContaining({
-            _content: expect.objectContaining({ _value: contents[0] }),
-          }),
-          expect.objectContaining({
-            _content: expect.objectContaining({ _value: contents[1] }),
-          }),
-          expect.objectContaining({
-            _content: expect.objectContaining({ _value: contents[2] }),
-          }),
-        ]),
-      );
+
+      // bulkSaveの第2引数（チェック項目配列）を取得
+      const savedItems = vi.mocked(mockCheckListItemRepository.bulkSave).mock
+        .calls[0][1];
+
+      // 順序が保持されていることを検証
+      expect(savedItems).toHaveLength(3);
+      expect(savedItems[0].content.value).toBe(contents[0]);
+      expect(savedItems[1].content.value).toBe(contents[1]);
+      expect(savedItems[2].content.value).toBe(contents[2]);
     });
 
     it("空の配列でも保存できる（全削除）", async () => {

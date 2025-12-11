@@ -73,9 +73,11 @@ export function CheckListEditClient({
       onSuccess: () => {
         toast.success("チェックリストを保存しました");
         setHasChanges(false);
-        // 新規フラグをクリア
+        // 空アイテムを除外し、新規フラグをクリア
         setItems((prev) =>
-          prev.map((item) => ({ ...item, isNew: false })),
+          prev
+            .filter((item) => item.content.trim().length > 0)
+            .map((item) => ({ ...item, isNew: false })),
         );
       },
       onError: ({ error: actionError }) => {
@@ -88,18 +90,25 @@ export function CheckListEditClient({
     },
   );
 
+  // 削除対象のIDを保持するref（onSuccess時に参照するため）
+  const deletingItemIds = useRef<string[]>([]);
+
   // 一括削除アクション
   const { execute: executeBulkDelete, isExecuting: isDeleting } = useAction(
     bulkDeleteCheckListItemsAction,
     {
       onSuccess: (result) => {
         toast.success(`${result.data?.deletedCount}件のチェック項目を削除しました`);
-        // 削除したアイテムを除去
-        setItems((prev) =>
-          prev.filter((item) => !selectedIds.has(item.id)),
-        );
-        setSelectedIds(new Set());
+        // 削除したアイテムを除去（refから削除対象IDを取得）
+        const deletedIds = new Set(deletingItemIds.current);
+        setItems((prev) => prev.filter((item) => !deletedIds.has(item.id)));
+        setSelectedIds((prev) => {
+          const next = new Set(prev);
+          deletingItemIds.current.forEach((id) => next.delete(id));
+          return next;
+        });
         setHasChanges(true);
+        deletingItemIds.current = [];
       },
       onError: ({ error: actionError }) => {
         const message = extractServerErrorMessage(
@@ -107,6 +116,7 @@ export function CheckListEditClient({
           "削除に失敗しました",
         );
         toast.error(message);
+        deletingItemIds.current = [];
       },
     },
   );
@@ -114,7 +124,7 @@ export function CheckListEditClient({
   // アイテム追加
   const handleAddItem = useCallback(() => {
     const newItem: EditableItem = {
-      id: `new-${Date.now()}`,
+      id: `new-${crypto.randomUUID()}`,
       content: "",
       isNew: true,
     };
@@ -200,6 +210,8 @@ export function CheckListEditClient({
       (id) => !id.startsWith("new-"),
     );
     if (existingItemIds.length > 0) {
+      // 削除対象IDをrefに保持（onSuccess時に参照するため）
+      deletingItemIds.current = existingItemIds;
       executeBulkDelete({
         reviewSpaceId: spaceId,
         checkListItemIds: existingItemIds,
