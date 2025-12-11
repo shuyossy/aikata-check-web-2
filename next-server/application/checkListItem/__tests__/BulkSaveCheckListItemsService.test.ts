@@ -49,6 +49,7 @@ describe("BulkSaveCheckListItemsService", () => {
       countByReviewSpaceId: vi.fn().mockResolvedValue(0),
       save: vi.fn(),
       bulkSave: vi.fn(),
+      bulkInsert: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
       deleteByReviewSpaceId: vi.fn(),

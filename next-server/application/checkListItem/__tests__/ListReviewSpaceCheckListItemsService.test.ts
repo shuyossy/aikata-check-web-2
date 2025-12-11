@@ -61,12 +61,14 @@ describe("ListReviewSpaceCheckListItemsService", () => {
   beforeEach(() => {
     mockCheckListItemRepository = {
       findById: vi.fn(),
+      findByIds: vi.fn().mockResolvedValue([]),
       findByReviewSpaceId: vi
         .fn()
         .mockResolvedValue([mockCheckListItem1, mockCheckListItem2]),
       countByReviewSpaceId: vi.fn().mockResolvedValue(2),
       save: vi.fn(),
       bulkSave: vi.fn(),
+      bulkInsert: vi.fn(),
       delete: vi.fn(),
       deleteMany: vi.fn(),
       deleteByReviewSpaceId: vi.fn(),

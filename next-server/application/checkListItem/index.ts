@@ -15,3 +15,10 @@ export {
   type BulkDeleteCheckListItemsCommand,
   type BulkDeleteCheckListItemsResult,
 } from "./BulkDeleteCheckListItemsService";
+
+export {
+  ImportCheckListFromFileService,
+  type ImportCheckListFromFileCommand,
+  type ImportCheckListFromFileOptions,
+  type ImportCheckListFromFileResult,
+} from "./ImportCheckListFromFileService";

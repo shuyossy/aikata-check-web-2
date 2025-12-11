@@ -63,6 +63,12 @@ export interface ICheckListItemRepository {
   bulkSave(reviewSpaceId: ReviewSpaceId, items: CheckListItem[]): Promise<void>;
 
   /**
+   * チェック項目を一括追加（既存項目は保持）
+   * @param items 追加するチェック項目エンティティの配列
+   */
+  bulkInsert(items: CheckListItem[]): Promise<void>;
+
+  /**
    * チェック項目を削除
    * @param id チェック項目ID
    */

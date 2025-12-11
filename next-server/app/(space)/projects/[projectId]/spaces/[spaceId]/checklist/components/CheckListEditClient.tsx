@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { useAction } from "next-safe-action/hooks";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   Plus,
@@ -23,6 +24,7 @@ import {
 } from "../actions";
 import { CheckListItemListItemDto } from "@/domain/checkListItem";
 import { extractServerErrorMessage } from "@/hooks";
+import { CheckListImportModal } from "./CheckListImportModal";
 
 interface CheckListEditClientProps {
   projectId: string;
@@ -49,6 +51,8 @@ export function CheckListEditClient({
   spaceName,
   initialItems,
 }: CheckListEditClientProps) {
+  const router = useRouter();
+
   // 編集中のアイテムリスト
   const [items, setItems] = useState<EditableItem[]>(
     initialItems.map((item) => ({
@@ -65,6 +69,21 @@ export function CheckListEditClient({
 
   // 変更があったかどうか
   const [hasChanges, setHasChanges] = useState(false);
+
+  // インポートモーダルの表示状態
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // initialItemsが変更されたときにitemsを更新（インポート成功後のrouter.refresh()で反映）
+  useEffect(() => {
+    setItems(
+      initialItems.map((item) => ({
+        id: item.id,
+        content: item.content,
+      })),
+    );
+    setHasChanges(false);
+    setSelectedIds(new Set());
+  }, [initialItems]);
 
   // 一括保存アクション
   const { execute: executeBulkSave, isExecuting: isSaving } = useAction(
@@ -243,6 +262,12 @@ export function CheckListEditClient({
     return items.some((item) => !item.content.trim());
   }, [items]);
 
+  // インポート成功時のハンドラー
+  const handleImportSuccess = useCallback(() => {
+    // ページをリフレッシュして最新のデータを取得
+    router.refresh();
+  }, [router]);
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Page Content */}
@@ -271,7 +296,7 @@ export function CheckListEditClient({
             <Button
               variant="outline"
               className="flex items-center gap-2"
-              disabled
+              onClick={() => setIsImportModalOpen(true)}
             >
               <Upload className="w-4 h-4" />
               インポート
@@ -466,12 +491,20 @@ export function CheckListEditClient({
                 <li>
                   Shiftキーを押しながらクリックすると、範囲選択ができます
                 </li>
-                <li>CSV出力・インポート・AI生成機能は今後追加予定です</li>
+                <li>CSV出力・AI生成機能は今後追加予定です</li>
               </ul>
             </div>
           </div>
         </div>
       </main>
+
+      {/* インポートモーダル */}
+      <CheckListImportModal
+        open={isImportModalOpen}
+        onOpenChange={setIsImportModalOpen}
+        reviewSpaceId={spaceId}
+        onImportSuccess={handleImportSuccess}
+      />
     </div>
   );
 }

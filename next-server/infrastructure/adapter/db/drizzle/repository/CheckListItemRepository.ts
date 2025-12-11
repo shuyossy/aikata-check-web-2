@@ -156,6 +156,25 @@ export class CheckListItemRepository implements ICheckListItemRepository {
   }
 
   /**
+   * チェック項目を一括追加（既存項目は保持）
+   */
+  async bulkInsert(items: CheckListItem[]): Promise<void> {
+    if (items.length === 0) {
+      return;
+    }
+
+    const data = items.map((item) => ({
+      id: item.id.value,
+      reviewSpaceId: item.reviewSpaceId.value,
+      content: item.content.value,
+      createdAt: item.createdAt,
+      updatedAt: item.updatedAt,
+    }));
+
+    await db.insert(checkListItems).values(data);
+  }
+
+  /**
    * チェック項目を削除
    */
   async delete(id: CheckListItemId): Promise<void> {
