@@ -152,7 +152,7 @@ describe("ListProjectReviewSpacesService", () => {
           projectId: validProjectId,
           userId: validUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_NOT_FOUND" });
     });
 
     it("プロジェクトにアクセス権がない場合はエラー", async () => {
@@ -163,7 +163,7 @@ describe("ListProjectReviewSpacesService", () => {
           projectId: validProjectId,
           userId: otherUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_ACCESS_DENIED" });
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {

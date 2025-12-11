@@ -118,7 +118,9 @@ describe("SyncUserService", () => {
       };
 
       // Act & Assert
-      await expect(syncUserService.execute(command)).rejects.toThrow();
+      await expect(syncUserService.execute(command)).rejects.toMatchObject({
+        messageCode: "EMPLOYEE_ID_EMPTY",
+      });
       expect(mockUserRepository.findByEmployeeId).not.toHaveBeenCalled();
       expect(mockUserRepository.save).not.toHaveBeenCalled();
     });
@@ -131,7 +133,9 @@ describe("SyncUserService", () => {
       };
 
       // Act & Assert
-      await expect(syncUserService.execute(command)).rejects.toThrow();
+      await expect(syncUserService.execute(command)).rejects.toMatchObject({
+        messageCode: "EMPLOYEE_ID_TOO_LONG",
+      });
       expect(mockUserRepository.findByEmployeeId).not.toHaveBeenCalled();
       expect(mockUserRepository.save).not.toHaveBeenCalled();
     });
@@ -145,7 +149,9 @@ describe("SyncUserService", () => {
       };
 
       // Act & Assert
-      await expect(syncUserService.execute(command)).rejects.toThrow();
+      await expect(syncUserService.execute(command)).rejects.toMatchObject({
+        messageCode: "DISPLAY_NAME_EMPTY",
+      });
       // findByEmployeeIdは呼ばれるが、saveは呼ばれない
       expect(mockUserRepository.save).not.toHaveBeenCalled();
     });

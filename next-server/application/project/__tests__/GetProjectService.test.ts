@@ -89,7 +89,7 @@ describe("GetProjectService", () => {
           projectId: validProjectId,
           userId: validMemberId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_NOT_FOUND" });
     });
 
     it("メンバーでないユーザはアクセスできない", async () => {
@@ -102,7 +102,7 @@ describe("GetProjectService", () => {
           projectId: validProjectId,
           userId: nonMemberId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_ACCESS_DENIED" });
     });
 
     it("プロジェクトIDが不正な形式の場合はエラー", async () => {
@@ -111,7 +111,7 @@ describe("GetProjectService", () => {
           projectId: "invalid-id",
           userId: validMemberId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_ID_INVALID_FORMAT" });
     });
   });
 });

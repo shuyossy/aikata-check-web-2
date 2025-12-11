@@ -83,7 +83,7 @@ describe("GetReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_NOT_FOUND" });
     });
 
     it("プロジェクトが存在しない場合はエラー", async () => {
@@ -94,7 +94,7 @@ describe("GetReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_NOT_FOUND" });
     });
 
     it("プロジェクトにアクセス権がない場合はエラー", async () => {
@@ -105,7 +105,7 @@ describe("GetReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: otherUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_ACCESS_DENIED" });
     });
   });
 });

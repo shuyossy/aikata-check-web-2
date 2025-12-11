@@ -158,7 +158,7 @@ describe("UpdateProjectMembersService", () => {
           userId: validMemberId,
           memberIds: [validMemberId],
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_NOT_FOUND" });
     });
 
     it("メンバーでないユーザがアクセスした場合はエラー", async () => {
@@ -171,7 +171,7 @@ describe("UpdateProjectMembersService", () => {
           userId: validMemberId2, // メンバーでないユーザ
           memberIds: [validMemberId],
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_ACCESS_DENIED" });
     });
 
     it("メンバーリストが空の場合はエラー", async () => {
@@ -184,7 +184,7 @@ describe("UpdateProjectMembersService", () => {
           userId: validMemberId,
           memberIds: [], // 空のメンバーリスト
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_MEMBER_REQUIRED" });
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {

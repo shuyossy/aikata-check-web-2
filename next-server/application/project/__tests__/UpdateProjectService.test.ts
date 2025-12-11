@@ -140,7 +140,7 @@ describe("UpdateProjectService", () => {
           userId: validMemberId,
           name: "新しい名前",
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_NOT_FOUND" });
     });
 
     it("メンバーでないユーザは更新できない", async () => {
@@ -154,7 +154,7 @@ describe("UpdateProjectService", () => {
           userId: nonMemberId,
           name: "新しい名前",
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_ACCESS_DENIED" });
     });
 
     it("プロジェクト名が空の場合はエラー", async () => {
@@ -168,7 +168,7 @@ describe("UpdateProjectService", () => {
           userId: validMemberId,
           name: "",
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_NAME_EMPTY" });
     });
   });
 });

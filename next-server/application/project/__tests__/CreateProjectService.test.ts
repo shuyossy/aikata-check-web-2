@@ -149,7 +149,7 @@ describe("CreateProjectService", () => {
           name: "",
           memberIds: [validMemberId],
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_NAME_EMPTY" });
     });
 
     it("メンバーが空の場合はエラー", async () => {
@@ -158,7 +158,7 @@ describe("CreateProjectService", () => {
           name: "テストプロジェクト",
           memberIds: [],
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_MEMBER_USER_NOT_FOUND" });
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {

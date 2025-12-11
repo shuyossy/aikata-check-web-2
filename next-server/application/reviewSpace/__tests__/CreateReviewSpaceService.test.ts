@@ -102,7 +102,7 @@ describe("CreateReviewSpaceService", () => {
           name: "テストスペース",
           userId: validUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_NOT_FOUND" });
     });
 
     it("プロジェクトにアクセス権がない場合はエラー", async () => {
@@ -114,7 +114,7 @@ describe("CreateReviewSpaceService", () => {
           name: "テストスペース",
           userId: otherUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "PROJECT_ACCESS_DENIED" });
     });
 
     it("スペース名が空の場合はエラー", async () => {
@@ -124,7 +124,7 @@ describe("CreateReviewSpaceService", () => {
           name: "",
           userId: validUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_NAME_EMPTY" });
     });
 
     it("スペース名が長すぎる場合はエラー", async () => {
@@ -134,7 +134,7 @@ describe("CreateReviewSpaceService", () => {
           name: "あ".repeat(101),
           userId: validUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_NAME_TOO_LONG" });
     });
 
     it("説明が長すぎる場合はエラー", async () => {
@@ -145,7 +145,7 @@ describe("CreateReviewSpaceService", () => {
           description: "あ".repeat(1001),
           userId: validUserId,
         }),
-      ).rejects.toThrow();
+      ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_DESCRIPTION_TOO_LONG" });
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {
