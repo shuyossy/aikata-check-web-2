@@ -25,7 +25,6 @@ interface CheckListImportModalProps {
 }
 
 const ACCEPTED_FILE_TYPES = {
-  "text/plain": [".txt"],
   "text/csv": [".csv"],
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
     ".xlsx",
@@ -33,7 +32,7 @@ const ACCEPTED_FILE_TYPES = {
   "application/vnd.ms-excel": [".xls"],
 };
 
-const ACCEPTED_EXTENSIONS = [".txt", ".csv", ".xlsx", ".xls"];
+const ACCEPTED_EXTENSIONS = [".csv", ".xlsx", ".xls"];
 
 /**
  * チェックリストインポートモーダル
@@ -78,7 +77,7 @@ export function CheckListImportModal({
     const extension = "." + file.name.split(".").pop()?.toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
       toast.error(
-        "サポートされていないファイル形式です。txt, csv, xlsx, xlsファイルを選択してください。",
+        "サポートされていないファイル形式です。csv, xlsx, xlsファイルを選択してください。",
       );
       return false;
     }
@@ -155,7 +154,7 @@ export function CheckListImportModal({
         <DialogHeader>
           <DialogTitle>チェックリストのインポート</DialogTitle>
           <DialogDescription>
-            txt, csv, xlsx, xlsファイルからチェックリストをインポートします。
+            csv, xlsx, xlsファイルからチェックリストをインポートします。
           </DialogDescription>
         </DialogHeader>
 
@@ -215,7 +214,7 @@ export function CheckListImportModal({
                   </span>
                 </p>
                 <p className="text-xs text-gray-500">
-                  対応形式: txt, csv, xlsx, xls
+                  対応形式: csv, xlsx, xls
                 </p>
               </div>
             )}

@@ -150,8 +150,6 @@ export class ImportCheckListFromFileService {
    */
   private getFileType(extension: string): string {
     switch (extension) {
-      case ".txt":
-        return "txt";
       case ".csv":
         return "csv";
       case ".xlsx":
@@ -175,14 +173,12 @@ export class ImportCheckListFromFileService {
     options: { skipHeaderRow: boolean },
   ): string[] {
     switch (fileType) {
-      case "txt":
-        return this.parseTxtItems(text, options);
       case "csv":
         return this.parseCsvItems(text, options);
       case "xlsx":
         return this.parseXlsxItems(text, options);
       default:
-        return this.parseTxtItems(text, options);
+        return this.parseCsvItems(text, options);
     }
   }
 

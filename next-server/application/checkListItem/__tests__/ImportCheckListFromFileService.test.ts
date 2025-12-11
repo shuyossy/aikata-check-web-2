@@ -85,34 +85,7 @@ describe("ImportCheckListFromFileService", () => {
   });
 
   describe("正常系", () => {
-    it("txtファイルからチェックリストをインポートできる", async () => {
-      const fileBuffer = Buffer.from("項目1\n項目2\n項目3", "utf-8");
-      vi.mocked(mockFileTextExtractor.extract).mockResolvedValue(
-        "項目1\n項目2\n項目3",
-      );
-
-      const result = await service.execute({
-        reviewSpaceId: validReviewSpaceId,
-        userId: validUserId,
-        fileBuffer,
-        fileName: "checklist.txt",
-      });
-
-      expect(result.importedCount).toBe(3);
-      expect(result.fileType).toBe("txt");
-      expect(mockCheckListItemRepository.bulkInsert).toHaveBeenCalledTimes(1);
-
-      // bulkInsertの第1引数（チェック項目配列）を取得
-      const savedItems = vi.mocked(mockCheckListItemRepository.bulkInsert).mock
-        .calls[0][0];
-
-      expect(savedItems).toHaveLength(3);
-      expect(savedItems[0].content.value).toBe("項目1");
-      expect(savedItems[1].content.value).toBe("項目2");
-      expect(savedItems[2].content.value).toBe("項目3");
-    });
-
-    it("csvファイルからチェックリストをインポートできる", async () => {
+    it("csvファイルからチェックリストをインポートできる（1列目のみ抽出）", async () => {
       const fileBuffer = Buffer.from("項目1,値1\n項目2,値2", "utf-8");
       vi.mocked(mockFileTextExtractor.extract).mockResolvedValue(
         "項目1,値1\n項目2,値2",
@@ -127,6 +100,39 @@ describe("ImportCheckListFromFileService", () => {
 
       expect(result.importedCount).toBe(2);
       expect(result.fileType).toBe("csv");
+
+      // 1列目のみが項目として抽出されることを確認
+      const savedItems = vi.mocked(mockCheckListItemRepository.bulkInsert).mock
+        .calls[0][0];
+      expect(savedItems).toHaveLength(2);
+      expect(savedItems[0].content.value).toBe("項目1");
+      expect(savedItems[1].content.value).toBe("項目2");
+    });
+
+    it("csvファイルでセル内改行を含む項目をインポートできる", async () => {
+      // RFC 4180形式: クォートで囲まれたセル内の改行は許可される
+      const csvContent = `"項目1
+改行あり",値1
+項目2,値2`;
+      const fileBuffer = Buffer.from(csvContent, "utf-8");
+      vi.mocked(mockFileTextExtractor.extract).mockResolvedValue(csvContent);
+
+      const result = await service.execute({
+        reviewSpaceId: validReviewSpaceId,
+        userId: validUserId,
+        fileBuffer,
+        fileName: "checklist.csv",
+      });
+
+      expect(result.importedCount).toBe(2);
+      expect(result.fileType).toBe("csv");
+
+      // セル内改行を含む項目が正しく抽出されることを確認
+      const savedItems = vi.mocked(mockCheckListItemRepository.bulkInsert).mock
+        .calls[0][0];
+      expect(savedItems).toHaveLength(2);
+      expect(savedItems[0].content.value).toBe("項目1\n改行あり");
+      expect(savedItems[1].content.value).toBe("項目2");
     });
 
     it("xlsxファイルからチェックリストをインポートできる", async () => {
@@ -145,6 +151,13 @@ describe("ImportCheckListFromFileService", () => {
 
       expect(result.importedCount).toBe(2);
       expect(result.fileType).toBe("xlsx");
+
+      // 項目内容が正しく抽出されることを確認
+      const savedItems = vi.mocked(mockCheckListItemRepository.bulkInsert).mock
+        .calls[0][0];
+      expect(savedItems).toHaveLength(2);
+      expect(savedItems[0].content.value).toBe("項目1");
+      expect(savedItems[1].content.value).toBe("項目2");
     });
 
     it("xlsファイルからチェックリストをインポートできる", async () => {
@@ -164,7 +177,7 @@ describe("ImportCheckListFromFileService", () => {
       expect(result.fileType).toBe("xlsx");
     });
 
-    it("ヘッダー行スキップオプションが適用される（txtファイル）", async () => {
+    it("ヘッダー行スキップオプションが適用される（csvファイル）", async () => {
       const fileBuffer = Buffer.from("ヘッダー\n項目1\n項目2", "utf-8");
       vi.mocked(mockFileTextExtractor.extract).mockResolvedValue(
         "ヘッダー\n項目1\n項目2",
@@ -174,7 +187,7 @@ describe("ImportCheckListFromFileService", () => {
         reviewSpaceId: validReviewSpaceId,
         userId: validUserId,
         fileBuffer,
-        fileName: "checklist.txt",
+        fileName: "checklist.csv",
         options: { skipHeaderRow: true },
       });
 
@@ -182,7 +195,7 @@ describe("ImportCheckListFromFileService", () => {
       expect(result.importedCount).toBe(2);
     });
 
-    it("空行は常に除外される（txtファイル）", async () => {
+    it("空行は常に除外される（csvファイル）", async () => {
       const fileBuffer = Buffer.from("項目1\n\n項目2", "utf-8");
       vi.mocked(mockFileTextExtractor.extract).mockResolvedValue(
         "項目1\n\n項目2",
@@ -192,7 +205,7 @@ describe("ImportCheckListFromFileService", () => {
         reviewSpaceId: validReviewSpaceId,
         userId: validUserId,
         fileBuffer,
-        fileName: "checklist.txt",
+        fileName: "checklist.csv",
       });
 
       // 空行は常に除外されて2件になる
@@ -200,17 +213,19 @@ describe("ImportCheckListFromFileService", () => {
     });
 
     it("大文字拡張子も処理できる", async () => {
-      const fileBuffer = Buffer.from("項目1\n項目2", "utf-8");
-      vi.mocked(mockFileTextExtractor.extract).mockResolvedValue("項目1\n項目2");
+      const fileBuffer = Buffer.from("項目1,値1\n項目2,値2", "utf-8");
+      vi.mocked(mockFileTextExtractor.extract).mockResolvedValue(
+        "項目1,値1\n項目2,値2",
+      );
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
         userId: validUserId,
         fileBuffer,
-        fileName: "checklist.TXT",
+        fileName: "checklist.CSV",
       });
 
-      expect(result.fileType).toBe("txt");
+      expect(result.fileType).toBe("csv");
     });
 
     it("複数シートのxlsxから全項目をインポートできる", async () => {
@@ -274,7 +289,7 @@ describe("ImportCheckListFromFileService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           fileBuffer,
-          fileName: "checklist.txt",
+          fileName: "checklist.csv",
         }),
       ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_NOT_FOUND" });
     });
@@ -288,7 +303,7 @@ describe("ImportCheckListFromFileService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           fileBuffer,
-          fileName: "checklist.txt",
+          fileName: "checklist.csv",
         }),
       ).rejects.toMatchObject({ messageCode: "PROJECT_NOT_FOUND" });
     });
@@ -302,7 +317,7 @@ describe("ImportCheckListFromFileService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: otherUserId,
           fileBuffer,
-          fileName: "checklist.txt",
+          fileName: "checklist.csv",
         }),
       ).rejects.toMatchObject({ messageCode: "PROJECT_ACCESS_DENIED" });
     });
@@ -316,7 +331,7 @@ describe("ImportCheckListFromFileService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           fileBuffer,
-          fileName: "checklist.txt",
+          fileName: "checklist.csv",
         }),
       ).rejects.toMatchObject({
         messageCode: "CHECK_LIST_FILE_IMPORT_NO_ITEMS",
@@ -352,7 +367,7 @@ describe("ImportCheckListFromFileService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           fileBuffer,
-          fileName: "checklist.txt",
+          fileName: "checklist.csv",
         }),
       ).rejects.toThrow("DB Error");
     });

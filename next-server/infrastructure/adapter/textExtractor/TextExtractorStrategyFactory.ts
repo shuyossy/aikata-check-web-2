@@ -10,7 +10,6 @@ import { XlsxSheetJsStrategy } from "./strategies/XlsxSheetJsStrategy";
  * 拡張子ごとのデフォルト戦略マッピング
  */
 const DEFAULT_STRATEGY_MAP: Record<string, TextExtractorType> = {
-  ".txt": "txt-default",
   ".csv": "csv-default",
   ".xlsx": "xlsx-sheetjs",
   ".xls": "xlsx-sheetjs",

@@ -39,7 +39,7 @@ export const template = {
   CHECK_LIST_ITEM_CONTENT_EMPTY: `チェック項目の内容は必須です。`,
   CHECK_LIST_ITEM_NOT_FOUND: `指定されたチェック項目が見つかりません。`,
   // チェックリストファイルインポートエラー
-  CHECK_LIST_FILE_IMPORT_UNSUPPORTED_FORMAT: `サポートされていないファイル形式です。txt, csv, xlsxファイルのみ対応しています。`,
+  CHECK_LIST_FILE_IMPORT_UNSUPPORTED_FORMAT: `サポートされていないファイル形式です。csv, xlsxファイルのみ対応しています。`,
   CHECK_LIST_FILE_IMPORT_FILE_TOO_LARGE: `ファイルサイズが上限（{maxSize}MB）を超えています。`,
   CHECK_LIST_FILE_IMPORT_PARSE_ERROR: `ファイルの解析に失敗しました。{detail}`,
   CHECK_LIST_FILE_IMPORT_NO_ITEMS: `チェック項目が見つかりませんでした。`,
