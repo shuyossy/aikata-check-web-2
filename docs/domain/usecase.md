@@ -42,3 +42,36 @@
       - 内部エラーとしてスローする
   - 事後処理
     - なし
+
+---
+
+## チェックリスト管理
+
+- チェックリストCSV出力
+  - 識別子: ExportCheckListToCsvService
+  - 前提条件
+    - 認証済みユーザであること
+    - 対象レビュースペースが属するプロジェクトのメンバーであること
+  - 入力: ExportCheckListToCsvCommand { reviewSpaceId: string, userId: string }
+  - 出力: ExportCheckListToCsvResult { csvContent: string, exportedCount: number }
+  - メインフロー
+    1. 入力されたレビュースペースIDでレビュースペースの存在を確認する
+    2. レビュースペースが属するプロジェクトの存在を確認する
+    3. ユーザがプロジェクトのメンバーであることを確認する
+    4. レビュースペース配下のチェック項目数を確認する
+    5. チェック項目一覧を取得する
+    6. チェック項目をCSV形式（ヘッダなし、1列目にチェック項目内容）に変換する
+    7. UTF-8 BOMを付与してCSVコンテンツを返却する
+  - 例外
+    - パターン1: レビュースペースが存在しない場合
+      - ドメインバリデーションエラー（REVIEW_SPACE_NOT_FOUND）を返す
+    - パターン2: プロジェクトが存在しない場合
+      - ドメインバリデーションエラー（PROJECT_NOT_FOUND）を返す
+    - パターン3: プロジェクトへのアクセス権がない場合
+      - ドメインバリデーションエラー（PROJECT_ACCESS_DENIED）を返す
+    - パターン4: チェック項目が0件の場合
+      - 内部エラー（CHECK_LIST_EXPORT_NO_ITEMS）を返す
+    - パターン5: チェック項目数が上限を超えている場合
+      - 内部エラー（CHECK_LIST_EXPORT_TOO_MANY_ITEMS）を返す
+  - 事後処理
+    - なし

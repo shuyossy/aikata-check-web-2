@@ -22,3 +22,9 @@ export {
   type ImportCheckListFromFileOptions,
   type ImportCheckListFromFileResult,
 } from "./ImportCheckListFromFileService";
+
+export {
+  ExportCheckListToCsvService,
+  type ExportCheckListToCsvCommand,
+  type ExportCheckListToCsvResult,
+} from "./ExportCheckListToCsvService";

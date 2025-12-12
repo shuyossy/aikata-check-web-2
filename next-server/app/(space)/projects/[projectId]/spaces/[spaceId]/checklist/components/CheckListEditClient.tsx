@@ -21,6 +21,7 @@ import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import {
   bulkSaveCheckListItemsAction,
   bulkDeleteCheckListItemsAction,
+  exportCheckListToCsvAction,
 } from "../actions";
 import { CheckListItemListItemDto } from "@/domain/checkListItem";
 import { extractServerErrorMessage } from "@/hooks";
@@ -136,6 +137,43 @@ export function CheckListEditClient({
         );
         toast.error(message);
         deletingItemIds.current = [];
+      },
+    },
+  );
+
+  // CSV出力アクション
+  const { execute: executeExportCsv, isExecuting: isExporting } = useAction(
+    exportCheckListToCsvAction,
+    {
+      onSuccess: (result) => {
+        if (result.data?.csvContent) {
+          // BlobからダウンロードURLを生成
+          const blob = new Blob([result.data.csvContent], {
+            type: "text/csv;charset=utf-8",
+          });
+          const url = URL.createObjectURL(blob);
+
+          // ダウンロードリンクを作成してクリック
+          const a = document.createElement("a");
+          a.href = url;
+          const dateStr = new Date().toISOString().slice(0, 10);
+          a.download = `checklist_${spaceName}_${dateStr}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          toast.success(
+            `${result.data.exportedCount}件のチェック項目をエクスポートしました`,
+          );
+        }
+      },
+      onError: ({ error: actionError }) => {
+        const message = extractServerErrorMessage(
+          actionError,
+          "エクスポートに失敗しました",
+        );
+        toast.error(message);
       },
     },
   );
@@ -268,6 +306,11 @@ export function CheckListEditClient({
     router.refresh();
   }, [router]);
 
+  // CSV出力ハンドラ
+  const handleExportCsv = useCallback(() => {
+    executeExportCsv({ reviewSpaceId: spaceId });
+  }, [spaceId, executeExportCsv]);
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Page Content */}
@@ -288,10 +331,11 @@ export function CheckListEditClient({
             <Button
               variant="outline"
               className="flex items-center gap-2"
-              disabled
+              disabled={isExporting || items.length === 0}
+              onClick={handleExportCsv}
             >
               <Download className="w-4 h-4" />
-              CSV出力
+              {isExporting ? "出力中..." : "CSV出力"}
             </Button>
             <Button
               variant="outline"
@@ -491,7 +535,7 @@ export function CheckListEditClient({
                 <li>
                   Shiftキーを押しながらクリックすると、範囲選択ができます
                 </li>
-                <li>CSV出力・AI生成機能は今後追加予定です</li>
+                <li>AI生成機能は今後追加予定です</li>
               </ul>
             </div>
           </div>

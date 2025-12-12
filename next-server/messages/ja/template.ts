@@ -44,4 +44,7 @@ export const template = {
   CHECK_LIST_FILE_IMPORT_PARSE_ERROR: `ファイルの解析に失敗しました。{detail}`,
   CHECK_LIST_FILE_IMPORT_NO_ITEMS: `チェック項目が見つかりませんでした。`,
   CHECK_LIST_FILE_IMPORT_CSV_INVALID_QUOTE: `CSVファイルのクォートが正しく閉じられていません。`,
+  // チェックリストCSV出力エラー
+  CHECK_LIST_EXPORT_NO_ITEMS: `チェック項目がありません。出力するにはチェック項目を追加してください。`,
+  CHECK_LIST_EXPORT_TOO_MANY_ITEMS: `チェック項目数が上限（{maxItems}件）を超えています。`,
 } as const;
