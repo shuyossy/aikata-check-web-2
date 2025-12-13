@@ -10,22 +10,6 @@ import { runWithRequestContext } from "./requestContext";
 import { v4 as uuidv4 } from "uuid";
 
 /**
- * エラーを安全にシリアライズするヘルパー関数
- * JavaScriptのErrorオブジェクトのプロパティは列挙可能ではないため、
- * JSONシリアライズすると{}になってしまう問題を解決する
- */
-function serializeError(error: unknown): object {
-  if (error instanceof Error) {
-    return {
-      name: error.name,
-      message: error.message,
-      stack: error.stack,
-    };
-  }
-  return { value: error };
-}
-
-/**
  * 認証済みユーザコンテキスト
  */
 export interface AuthContext {
@@ -46,22 +30,12 @@ export interface AuthContext {
 export const baseAction = createSafeActionClient({
   // エラーハンドリング
   handleServerError(error) {
-    getLogger().error(
-      { rawError: serializeError(error) },
-      "Error captured in baseAction",
-    );
+    // シリアライザーが自動でエラーオブジェクトをシリアライズ
+    getLogger().error({ err: error }, "Error captured in baseAction");
     const appError = normalizeUnknownError(error);
 
-    // エラーログ出力
-    getLogger().error(
-      {
-        errorCode: appError.errorCode,
-        messageCode: appError.messageCode,
-        expose: appError.expose,
-        cause: appError.cause,
-      },
-      "Action error occurred",
-    );
+    // エラーログ出力（シリアライザーが自動でシリアライズ）
+    getLogger().error({ err: appError }, "Action error occurred");
 
     // クライアントに返すエラーメッセージ
     if (appError.expose) {

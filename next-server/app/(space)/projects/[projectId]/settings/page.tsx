@@ -29,23 +29,29 @@ export default function ProjectSettingsPage({ params }: Props) {
   const router = useRouter();
   const { data: session } = useSession();
   const [project, setProject] = useState<ProjectDto | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { error, clearError, handleError } = useServerActionError();
 
-  const { execute: loadProject } = useAction(getProjectAction, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setProject(data);
-        clearError();
-      }
-      setIsLoading(false);
-    },
-    onError: ({ error: actionError }) => {
-      setIsLoading(false);
-      handleError(actionError, "プロジェクト情報の取得に失敗しました。");
-    },
-  });
+  const { execute: loadProject, isPending: isLoadingProject } = useAction(
+    getProjectAction,
+    {
+      onSuccess: ({ data }) => {
+        if (data) {
+          setProject(data);
+          clearError();
+        }
+        setIsInitialLoading(false);
+      },
+      onError: ({ error: actionError }) => {
+        setIsInitialLoading(false);
+        handleError(actionError, "プロジェクト情報の取得に失敗しました。");
+      },
+    }
+  );
+
+  // UI用の統合ローディングフラグ
+  const isLoading = isInitialLoading || isLoadingProject;
 
   const { execute: updateProject, isPending: isUpdating } = useAction(
     updateProjectAction,
@@ -63,17 +69,22 @@ export default function ProjectSettingsPage({ params }: Props) {
     },
   );
 
-  const { execute: updateMembers } = useAction(updateProjectMembersAction, {
-    onSuccess: ({ data }) => {
-      if (data) {
-        setProject(data);
-        clearError();
-      }
-    },
-    onError: ({ error: actionError }) => {
-      handleError(actionError, "メンバーの更新に失敗しました。");
-    },
-  });
+  // isUpdatingMembersは現在UIで使用していないが、ベストプラクティスに従い取得
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { execute: updateMembers, isPending: isUpdatingMembers } = useAction(
+    updateProjectMembersAction,
+    {
+      onSuccess: ({ data }) => {
+        if (data) {
+          setProject(data);
+          clearError();
+        }
+      },
+      onError: ({ error: actionError }) => {
+        handleError(actionError, "メンバーの更新に失敗しました。");
+      },
+    }
+  );
 
   const { execute: deleteProject, isPending: isDeleting } = useAction(
     deleteProjectAction,

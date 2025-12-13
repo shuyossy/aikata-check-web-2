@@ -47,4 +47,15 @@ export const template = {
   // チェックリストCSV出力エラー
   CHECK_LIST_EXPORT_NO_ITEMS: `チェック項目がありません。出力するにはチェック項目を追加してください。`,
   CHECK_LIST_EXPORT_TOO_MANY_ITEMS: `チェック項目数が上限（{maxItems}件）を超えています。`,
+  // AIチェックリスト生成エラー
+  AI_CHECKLIST_GENERATION_NO_FILES: `ファイルが選択されていません。`,
+  AI_CHECKLIST_GENERATION_INVALID_FILE_TYPE: `サポートされていないファイル形式が含まれています。PDF, Word, Excel, PowerPoint, CSV, TXTファイルのみ対応しています。`,
+  AI_CHECKLIST_GENERATION_FILE_TOO_LARGE: `ファイルサイズが上限（{maxSize}MB）を超えています。`,
+  AI_CHECKLIST_GENERATION_TOO_MANY_FILES: `ファイル数が上限（{maxFiles}件）を超えています。`,
+  AI_CHECKLIST_GENERATION_NO_ITEMS_GENERATED: `チェック項目を生成できませんでした。`,
+  AI_CHECKLIST_GENERATION_OVER_MAX_TOKENS: `AIの出力制限を超えました。ファイルを分割してお試しください。`,
+  AI_CHECKLIST_GENERATION_REQUIREMENTS_EMPTY: `チェックリスト生成要件を入力してください。`,
+  AI_CHECKLIST_GENERATION_FAILED: `AIチェックリスト生成に失敗しました。{detail}`,
+  // PDF変換エラー
+  PDF_CONVERSION_FAILED: `PDFの画像変換に失敗しました。{detail}`,
 } as const;

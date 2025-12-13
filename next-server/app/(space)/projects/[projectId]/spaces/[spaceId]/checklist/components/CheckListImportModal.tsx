@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef } from "react";
 import { useAction } from "next-safe-action/hooks";
-import { toast } from "sonner";
 import { Upload, FileText, X, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -16,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { importCheckListFromFileAction } from "../actions/importCheckListFromFile";
 import { extractServerErrorMessage } from "@/hooks";
+import { showError, showSuccess } from "@/lib/client";
 
 interface CheckListImportModalProps {
   open: boolean;
@@ -50,7 +50,7 @@ export function CheckListImportModal({
 
   const { execute, isExecuting } = useAction(importCheckListFromFileAction, {
     onSuccess: (result) => {
-      toast.success(
+      showSuccess(
         `${result.data?.importedCount}件のチェック項目をインポートしました`,
       );
       handleClose();
@@ -61,7 +61,7 @@ export function CheckListImportModal({
         actionError,
         "インポートに失敗しました",
       );
-      toast.error(message);
+      showError(message);
     },
   });
 
@@ -76,7 +76,7 @@ export function CheckListImportModal({
   const validateFile = useCallback((file: File): boolean => {
     const extension = "." + file.name.split(".").pop()?.toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      toast.error(
+      showError(
         "サポートされていないファイル形式です。csv, xlsx, xlsファイルを選択してください。",
       );
       return false;
@@ -138,7 +138,7 @@ export function CheckListImportModal({
 
       execute(formData);
     } catch {
-      toast.error("ファイルの読み込みに失敗しました");
+      showError("ファイルの読み込みに失敗しました");
     }
   }, [file, execute, reviewSpaceId, skipHeaderRow]);
 

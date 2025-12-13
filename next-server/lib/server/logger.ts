@@ -1,8 +1,15 @@
 import pino, { Logger } from "pino";
+import { errWithCause } from "pino-std-serializers";
 import { getRequestContext } from "./requestContext";
 
 const base = pino({
   level: getLogLevel(),
+  serializers: {
+    // errキーでErrorオブジェクトをログ出力すると自動シリアライズ
+    // causeも再帰的にシリアライズされる
+    // 追加プロパティ（errorCode, messageCode等）も出力される
+    err: errWithCause,
+  },
 });
 
 /**

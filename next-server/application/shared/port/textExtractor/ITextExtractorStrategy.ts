@@ -16,6 +16,8 @@ export interface TextExtractionResult {
     originalSize: number;
     /** 抽出後の文字数 */
     extractedLength: number;
+    /** 警告メッセージ（オプション） */
+    warnings?: string[];
   };
 }
 

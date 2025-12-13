@@ -43,12 +43,23 @@
   - ただし、イベント購読(SSE)のためのエンドポイントはRoute Handlersを作成
 
 # エラー設計
+## バックエンドエラーハンドリング
 - 本アプリ専用のエラー型（ユーザ通知あり）として`AppError`を作成
 - ユーザに通知したい独自のエラー型を定義したい場合は`AppError`を継承して作成する（ユーザ通知が不要の場合はNode.jsの`Error`型を継承して作成する）
 - `next-safe-actions`にてエラーを一括ハンドリングする
   - AppErrorであれば、定義に従ってエラーメッセージを返す
   - AppErrorでなければ、「予期せぬエラー」とみなす
   - よって、アプリケーションサービス等でエラーハンドリングをする必要はないので注意する（明確な目的がある場合は、エラーハンドリングを実施する）
+- 各処理でエラーをハンドリングする際は`normalizeUnknownError`を活用すること
+  - mastraのAIエラーなど様々ハンドリング可能
+
+## フロントエンドエラーハンドリング・表示
+- toast通知ライブラリとして`sonner`を採用（shadcn/ui準拠）
+- `lib/client/toast.ts`のユーティリティ関数を使用すること
+  - `showError(message)` - エラー表示（自動削除されない、ユーザーが手動で閉じる必要あり）
+  - `showSuccess(message)` - 成功表示
+  - `showInfo(message)` - 情報表示
+  - `showWarning(message)` - 警告表示
 
 # ユーザ通知設計
 ## 通知(SSE)設計
@@ -70,6 +81,10 @@ Pinoを利用。
 - 認証済みユーザ情報
 - リクエストID
 
+## エラーログ出力方法
+エラーオブジェクトをログ出力する際は、必ず`err`キーを使用すること。
+`pino-std-serializers`の`errWithCause`シリアライザーにより、自動的にシリアライズされる。
+
 # 認証設計
 next-authを利用。
 OIDCで認証する。
@@ -90,15 +105,11 @@ Mastraを利用する。
   - stepの処理を簡潔に保ち、見やすくするため/様々なworkflowで再利用できるようにするため
   - workflow構築時に、step時の入力を柔軟に調整できるmapを利用して、各stepの入力、出力スキーマに合わせる
 - 出力スキーマについては以下の`baseStepOutputSchema`を全てのstepの出力スキーマのベース（継承元）とする
-```
-baseStepOutputSchema = z.object({
-  status: z.enum(["success", "failed"]),
-  errorMessage: z.string().optional(),
-});
-```
 - エラーハンドリングの際の注意点
   - 各stepではエラーで終了しないように処理の先頭からtry catchで例外を検知する
   - 例外を検知した場合は出力スキーマのstatusを`failed`としてstep処理を終了する
+- 完全に期待する結果を得られない場合は、workflowやstepは失敗するように制御
+- workflow実行結果を確認する際は`checkWorkflowResult`を利用する
 
 # フロントエンド作成方針
 - Tailwind CSS、shadcn/uiを利用

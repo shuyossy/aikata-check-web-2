@@ -1,8 +1,13 @@
 import type { NextConfig } from "next";
+import { fileUploadConfig } from "./lib/server/fileUploadConfig";
 
 const nextConfig: NextConfig = {
   /* config options here */
   experimental: {
+    // Server Actionsのbody size limitを設定（デフォルトは1MB）
+    serverActions: {
+      bodySizeLimit: `${fileUploadConfig.maxFileSizeMB}mb` as `${number}mb`,
+    },
     // @ts-expect-error Turbopack types are not yet included in Next.js types
     turbopack: {
       resolve: {
@@ -12,6 +17,13 @@ const nextConfig: NextConfig = {
         ],
       },
     },
+  },
+  // Webpack設定（unpdf用）
+  webpack: (config) => {
+    // canvasモジュールを無効化（unpdfで推奨される設定）
+    config.resolve.alias.canvas = false;
+    config.resolve.alias.encoding = false;
+    return config;
   },
 };
 

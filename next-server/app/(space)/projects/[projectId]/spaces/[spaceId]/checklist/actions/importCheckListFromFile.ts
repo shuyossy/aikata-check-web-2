@@ -12,7 +12,7 @@ import {
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
 import { FileTextExtractor } from "@/infrastructure/adapter/textExtractor";
 import { EmployeeId } from "@/domain/user";
-import { checkListImportConfig } from "@/lib/server/checkListImportConfig";
+import { fileUploadConfig } from "@/lib/server/fileUploadConfig";
 
 /**
  * FormDataをパースするためのスキーマ
@@ -69,11 +69,11 @@ export const importCheckListFromFileAction = authenticatedAction
     const validatedParams = importCheckListFromFileSchema.parse(params);
 
     // ファイルサイズチェック
-    if (validatedParams.fileBuffer.length > checkListImportConfig.maxFileSizeBytes) {
+    if (validatedParams.fileBuffer.length > fileUploadConfig.maxFileSizeBytes) {
       throw internalError({
         expose: true,
         messageCode: "CHECK_LIST_FILE_IMPORT_FILE_TOO_LARGE",
-        messageParams: { maxSize: String(checkListImportConfig.maxFileSizeMB) },
+        messageParams: { maxSize: String(fileUploadConfig.maxFileSizeMB) },
       });
     }
 

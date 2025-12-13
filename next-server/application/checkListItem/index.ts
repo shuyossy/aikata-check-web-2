@@ -28,3 +28,9 @@ export {
   type ExportCheckListToCsvCommand,
   type ExportCheckListToCsvResult,
 } from "./ExportCheckListToCsvService";
+
+export {
+  GenerateCheckListByAIService,
+  type GenerateCheckListByAICommand,
+  type GenerateCheckListByAIResult,
+} from "./GenerateCheckListByAIService";

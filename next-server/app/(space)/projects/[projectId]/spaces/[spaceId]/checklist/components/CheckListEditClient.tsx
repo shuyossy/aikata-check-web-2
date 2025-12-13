@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { useAction } from "next-safe-action/hooks";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import Link from "next/link";
 import {
   Plus,
   Save,
@@ -25,6 +25,7 @@ import {
 } from "../actions";
 import { CheckListItemListItemDto } from "@/domain/checkListItem";
 import { extractServerErrorMessage } from "@/hooks";
+import { showError, showSuccess } from "@/lib/client";
 import { CheckListImportModal } from "./CheckListImportModal";
 
 interface CheckListEditClientProps {
@@ -91,7 +92,7 @@ export function CheckListEditClient({
     bulkSaveCheckListItemsAction,
     {
       onSuccess: () => {
-        toast.success("チェックリストを保存しました");
+        showSuccess("チェックリストを保存しました");
         setHasChanges(false);
         // 空アイテムを除外し、新規フラグをクリア
         setItems((prev) =>
@@ -105,7 +106,7 @@ export function CheckListEditClient({
           actionError,
           "保存に失敗しました",
         );
-        toast.error(message);
+        showError(message);
       },
     },
   );
@@ -118,7 +119,7 @@ export function CheckListEditClient({
     bulkDeleteCheckListItemsAction,
     {
       onSuccess: (result) => {
-        toast.success(`${result.data?.deletedCount}件のチェック項目を削除しました`);
+        showSuccess(`${result.data?.deletedCount}件のチェック項目を削除しました`);
         // 削除したアイテムを除去（refから削除対象IDを取得）
         const deletedIds = new Set(deletingItemIds.current);
         setItems((prev) => prev.filter((item) => !deletedIds.has(item.id)));
@@ -135,7 +136,7 @@ export function CheckListEditClient({
           actionError,
           "削除に失敗しました",
         );
-        toast.error(message);
+        showError(message);
         deletingItemIds.current = [];
       },
     },
@@ -163,7 +164,7 @@ export function CheckListEditClient({
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
 
-          toast.success(
+          showSuccess(
             `${result.data.exportedCount}件のチェック項目をエクスポートしました`,
           );
         }
@@ -173,7 +174,7 @@ export function CheckListEditClient({
           actionError,
           "エクスポートに失敗しました",
         );
-        toast.error(message);
+        showError(message);
       },
     },
   );
@@ -274,7 +275,7 @@ export function CheckListEditClient({
         checkListItemIds: existingItemIds,
       });
     } else if (newItemIds.length > 0) {
-      toast.success(`${newItemIds.length}件のチェック項目を削除しました`);
+      showSuccess(`${newItemIds.length}件のチェック項目を削除しました`);
       setHasChanges(true);
     }
   }, [selectedIds, spaceId, executeBulkDelete]);
@@ -348,10 +349,12 @@ export function CheckListEditClient({
             <Button
               variant="outline"
               className="flex items-center gap-2 bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
-              disabled
+              asChild
             >
-              <Sparkles className="w-4 h-4" />
-              AI生成
+              <Link href={`/projects/${projectId}/spaces/${spaceId}/checklist/ai-generate`}>
+                <Sparkles className="w-4 h-4" />
+                AI生成
+              </Link>
             </Button>
             <Button
               onClick={handleAddItem}
@@ -535,7 +538,7 @@ export function CheckListEditClient({
                 <li>
                   Shiftキーを押しながらクリックすると、範囲選択ができます
                 </li>
-                <li>AI生成機能は今後追加予定です</li>
+                <li>AI生成機能でドキュメントからチェック項目を自動生成できます</li>
               </ul>
             </div>
           </div>

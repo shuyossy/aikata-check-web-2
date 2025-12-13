@@ -181,8 +181,8 @@ describe("FileTextExtractor", () => {
         const buffer = Buffer.from("content", "utf-8");
 
         await expect(
-          extractor.extract(buffer, "test.pdf"),
-        ).rejects.toThrow("サポートされていないファイル形式です: .pdf");
+          extractor.extract(buffer, "test.unknown"),
+        ).rejects.toThrow("サポートされていないファイル形式です: .unknown");
       });
 
       it("拡張子のないファイルでエラーを投げる", async () => {
@@ -212,7 +212,7 @@ describe("FileTextExtractor", () => {
     });
 
     it("サポートされていない拡張子は空配列を返す", () => {
-      const strategies = extractor.getAvailableStrategies(".pdf");
+      const strategies = extractor.getAvailableStrategies(".unknown");
       expect(strategies).toEqual([]);
     });
   });
@@ -240,12 +240,16 @@ describe("FileTextExtractor", () => {
       expect(extractor.isSupported(".XLSX")).toBe(true);
     });
 
-    it(".pdfはサポートしていない", () => {
-      expect(extractor.isSupported(".pdf")).toBe(false);
+    it(".pdfをサポートしている", () => {
+      expect(extractor.isSupported(".pdf")).toBe(true);
     });
 
-    it(".docxはサポートしていない", () => {
-      expect(extractor.isSupported(".docx")).toBe(false);
+    it(".docxをサポートしている", () => {
+      expect(extractor.isSupported(".docx")).toBe(true);
+    });
+
+    it(".pptxをサポートしている", () => {
+      expect(extractor.isSupported(".pptx")).toBe(true);
     });
   });
 });

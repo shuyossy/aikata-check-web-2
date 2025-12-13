@@ -1,11 +1,11 @@
 /**
- * チェックリストインポート設定
- * 環境変数から読み込む
+ * ファイルアップロード共通設定
+ * 環境変数から読み込み、全機能で統一的に利用
  */
-export const checkListImportConfig = {
+export const fileUploadConfig = {
   /** ファイルサイズ上限（MB） */
   maxFileSizeMB: parseInt(
-    process.env.CHECK_LIST_IMPORT_MAX_FILE_SIZE_MB || "10",
+    process.env.FILE_UPLOAD_MAX_FILE_SIZE_MB || "50",
     10,
   ),
 

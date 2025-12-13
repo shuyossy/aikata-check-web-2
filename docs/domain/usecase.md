@@ -75,3 +75,38 @@
       - 内部エラー（CHECK_LIST_EXPORT_TOO_MANY_ITEMS）を返す
   - 事後処理
     - なし
+
+- AIチェックリスト生成
+  - 識別子: GenerateCheckListByAIService
+  - 前提条件
+    - 認証済みユーザであること
+    - 対象レビュースペースが属するプロジェクトのメンバーであること
+  - 入力: GenerateCheckListByAICommand { reviewSpaceId: string, userId: string, files: ProcessedFile[], checklistRequirements: string }
+    - ProcessedFile: { id: string, name: string, type: string, processMode: "text" | "image", textContent?: string, imageData?: string[] }
+  - 出力: GenerateCheckListByAIResult { generatedCount: number, items: string[] }
+  - メインフロー
+    1. 入力されたレビュースペースIDでレビュースペースの存在を確認する
+    2. レビュースペースが属するプロジェクトの存在を確認する
+    3. ユーザがプロジェクトのメンバーであることを確認する
+    4. Mastraチェックリスト生成ワークフローを実行する
+       4.1. トピック抽出ステップ: ドキュメントから独立したトピックを抽出する
+       4.2. トピック別チェックリスト作成ステップ: 各トピックに対してチェックリスト項目を生成する（並列処理）
+    5. 生成されたチェック項目をレビュースペースに保存する
+    6. 生成結果を返却する
+  - 例外
+    - パターン1: レビュースペースが存在しない場合
+      - ドメインバリデーションエラー（REVIEW_SPACE_NOT_FOUND）を返す
+    - パターン2: プロジェクトが存在しない場合
+      - ドメインバリデーションエラー（PROJECT_NOT_FOUND）を返す
+    - パターン3: プロジェクトへのアクセス権がない場合
+      - ドメインバリデーションエラー（PROJECT_ACCESS_DENIED）を返す
+    - パターン4: ファイルが指定されていない場合
+      - ドメインバリデーションエラー（AI_CHECKLIST_GENERATION_NO_FILES）を返す
+    - パターン5: チェックリスト生成要件が空の場合
+      - ドメインバリデーションエラー（AI_CHECKLIST_GENERATION_REQUIREMENTS_EMPTY）を返す
+    - パターン6: AIワークフロー実行中にエラーが発生した場合
+      - ワークフローからのエラーメッセージを含む内部エラーを返す
+    - パターン7: チェック項目が1件も生成されなかった場合
+      - 内部エラー（AI_CHECKLIST_GENERATION_NO_ITEMS_GENERATED）を返す
+  - 事後処理
+    - なし

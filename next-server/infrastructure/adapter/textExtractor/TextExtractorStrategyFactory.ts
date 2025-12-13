@@ -5,14 +5,21 @@ import type {
 import { TxtExtractorStrategy } from "./strategies/TxtExtractorStrategy";
 import { CsvExtractorStrategy } from "./strategies/CsvExtractorStrategy";
 import { XlsxSheetJsStrategy } from "./strategies/XlsxSheetJsStrategy";
+import { DocxExtractorStrategy } from "./strategies/DocxExtractorStrategy";
+import { PptxExtractorStrategy } from "./strategies/PptxExtractorStrategy";
+import { PdfExtractorStrategy } from "./strategies/PdfExtractorStrategy";
 
 /**
  * 拡張子ごとのデフォルト戦略マッピング
  */
 const DEFAULT_STRATEGY_MAP: Record<string, TextExtractorType> = {
+  ".txt": "txt-default",
   ".csv": "csv-default",
   ".xlsx": "xlsx-sheetjs",
   ".xls": "xlsx-sheetjs",
+  ".docx": "docx-mammoth",
+  ".pptx": "pptx-officeparser",
+  ".pdf": "unpdf",
 };
 
 /**
@@ -34,6 +41,9 @@ export class TextExtractorStrategyFactory {
     this.registerStrategy(new TxtExtractorStrategy());
     this.registerStrategy(new CsvExtractorStrategy());
     this.registerStrategy(new XlsxSheetJsStrategy());
+    this.registerStrategy(new DocxExtractorStrategy());
+    this.registerStrategy(new PptxExtractorStrategy());
+    this.registerStrategy(new PdfExtractorStrategy());
   }
 
   /**
