@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Clock, ChevronRight, Folder } from "lucide-react";
+import { Clock, ChevronRight, Folder, MoreVertical } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { ReviewSpaceListItemDto } from "@/domain/reviewSpace";
 import { formatDate } from "@/lib/formatters";
 
@@ -21,6 +23,11 @@ export function ReviewSpaceCard({ space, projectId }: ReviewSpaceCardProps) {
   // カードクリック時のナビゲーション
   const handleCardClick = () => {
     router.push(`/projects/${projectId}/spaces/${space.id}`);
+  };
+
+  // 設定ボタンクリック時（イベント伝播を止めて設定ページへ）
+  const handleSettingsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
   };
 
   return (
@@ -42,6 +49,20 @@ export function ReviewSpaceCard({ space, projectId }: ReviewSpaceCardProps) {
               {space.description || "説明なし"}
             </p>
           </div>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            asChild
+            className="text-gray-400 hover:text-gray-600 ml-2"
+            title="設定"
+          >
+            <Link
+              href={`/projects/${projectId}/spaces/${space.id}/settings`}
+              onClick={handleSettingsClick}
+            >
+              <MoreVertical className="size-5" />
+            </Link>
+          </Button>
         </div>
 
         {/* Meta Info */}

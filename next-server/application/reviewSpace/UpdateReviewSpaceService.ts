@@ -1,6 +1,10 @@
 import { IProjectRepository } from "@/application/shared/port/repository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { ReviewSpaceDto, ReviewSpaceId } from "@/domain/reviewSpace";
+import {
+  ReviewSpaceDto,
+  ReviewSpaceId,
+  ReviewSettingsProps,
+} from "@/domain/reviewSpace";
 import { domainValidationError } from "@/lib/server/error";
 
 /**
@@ -15,6 +19,8 @@ export interface UpdateReviewSpaceCommand {
   name?: string;
   /** スペース説明（更新する場合のみ指定） */
   description?: string | null;
+  /** 既定のレビュー設定 */
+  defaultReviewSettings: ReviewSettingsProps;
 }
 
 /**
@@ -34,7 +40,8 @@ export class UpdateReviewSpaceService {
    * @throws ドメインバリデーションエラー - レビュースペースが存在しない、またはアクセス権がない場合
    */
   async execute(command: UpdateReviewSpaceCommand): Promise<ReviewSpaceDto> {
-    const { reviewSpaceId, userId, name, description } = command;
+    const { reviewSpaceId, userId, name, description, defaultReviewSettings } =
+      command;
 
     // レビュースペースの存在確認
     const reviewSpaceIdVo = ReviewSpaceId.reconstruct(reviewSpaceId);
@@ -67,6 +74,10 @@ export class UpdateReviewSpaceService {
     if (description !== undefined) {
       updatedReviewSpace = updatedReviewSpace.updateDescription(description);
     }
+
+    // レビュー設定の更新
+    updatedReviewSpace =
+      updatedReviewSpace.updateDefaultReviewSettings(defaultReviewSettings);
 
     // 保存
     await this.reviewSpaceRepository.save(updatedReviewSpace);

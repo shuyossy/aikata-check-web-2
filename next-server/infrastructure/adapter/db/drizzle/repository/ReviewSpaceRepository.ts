@@ -4,7 +4,11 @@ import {
   FindReviewSpacesOptions,
 } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { ProjectId } from "@/domain/project";
-import { ReviewSpace, ReviewSpaceId } from "@/domain/reviewSpace";
+import {
+  ReviewSpace,
+  ReviewSpaceId,
+  ReviewSettingsProps,
+} from "@/domain/reviewSpace";
 import { db } from "../index";
 import { reviewSpaces } from "@/drizzle/schema";
 
@@ -33,6 +37,7 @@ export class ReviewSpaceRepository implements IReviewSpaceRepository {
       projectId: row.projectId,
       name: row.name,
       description: row.description,
+      defaultReviewSettings: row.defaultReviewSettings as ReviewSettingsProps,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -66,6 +71,7 @@ export class ReviewSpaceRepository implements IReviewSpaceRepository {
         projectId: row.projectId,
         name: row.name,
         description: row.description,
+        defaultReviewSettings: row.defaultReviewSettings as ReviewSettingsProps,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }),
@@ -97,6 +103,7 @@ export class ReviewSpaceRepository implements IReviewSpaceRepository {
       projectId: reviewSpace.projectId.value,
       name: reviewSpace.name.value,
       description: reviewSpace.description.value,
+      defaultReviewSettings: reviewSpace.defaultReviewSettings.toDto(),
       createdAt: reviewSpace.createdAt,
       updatedAt: reviewSpace.updatedAt,
     };
@@ -109,6 +116,7 @@ export class ReviewSpaceRepository implements IReviewSpaceRepository {
         set: {
           name: data.name,
           description: data.description,
+          defaultReviewSettings: data.defaultReviewSettings,
           updatedAt: data.updatedAt,
         },
       });

@@ -150,6 +150,122 @@
 
 ---
 
+## レビュースペース管理
+
+- レビュースペースID
+  - 識別子: ReviewSpaceId
+  - 種類: 値オブジェクト
+  - 不変条件
+    - UUIDv4形式であること
+  - 属性
+    - value: string - UUID文字列
+  - 振る舞い
+    - create: 新規UUIDを生成して返却する
+    - reconstruct: 既存のUUID文字列から復元する
+
+- レビュースペース名
+  - 識別子: ReviewSpaceName
+  - 種類: 値オブジェクト
+  - 不変条件
+    - 空文字でないこと
+    - 100文字以内であること
+  - 属性
+    - value: string - レビュースペース名
+  - 振る舞い
+    - create: 文字列からレビュースペース名を生成する
+    - reconstruct: 既存の文字列から復元する
+
+- レビュースペース説明
+  - 識別子: ReviewSpaceDescription
+  - 種類: 値オブジェクト
+  - 不変条件
+    - 1000文字以内であること（nullも許可）
+  - 属性
+    - value: string | null - レビュースペース説明
+  - 振る舞い
+    - create: 文字列からレビュースペース説明を生成する（null許可）
+    - reconstruct: 既存の文字列から復元する
+
+- 評定項目
+  - 識別子: EvaluationItem
+  - 種類: 値オブジェクト
+  - 不変条件
+    - ラベルは空文字でないこと
+    - ラベルは10文字以内であること
+    - 説明は空文字でないこと
+    - 説明は200文字以内であること
+  - 属性
+    - label: string - 評定ラベル（例: A, B, C, -）
+    - description: string - ラベルの定義・説明
+  - 振る舞い
+    - create: ラベルと説明から評定項目を生成する
+    - reconstruct: 既存のデータから復元する
+    - equals: 等価性を比較する
+    - toJSON: JSON形式に変換する
+
+- 評定基準
+  - 識別子: EvaluationCriteria
+  - 種類: 値オブジェクト
+  - 不変条件
+    - 評定項目は1項目以上であること
+    - 評定項目は10項目以内であること
+    - ラベルは重複しないこと
+  - 属性
+    - items: EvaluationItem[] - 評定項目のリスト
+  - 振る舞い
+    - create: 評定項目リストから評定基準を生成する
+    - createDefault: デフォルト評定基準（A/B/C/-）を生成する
+    - reconstruct: 既存のデータから復元する
+    - fromJSON: JSON形式から復元する
+    - toJSON: JSON形式に変換する
+    - equals: 等価性を比較する
+
+- レビュー設定
+  - 識別子: ReviewSettings
+  - 種類: 値オブジェクト
+  - 不変条件
+    - 追加指示は2000文字以内であること（nullも許可）
+    - 同時レビュー項目数は1以上100以下であること（nullも許可）
+    - コメントフォーマットは2000文字以内であること（nullも許可）
+  - 属性
+    - additionalInstructions: string | null - AIへの追加指示
+    - concurrentReviewItems: number | null - 同時レビュー項目数
+    - commentFormat: string | null - コメントフォーマット
+    - evaluationCriteria: EvaluationCriteria | null - 評定基準
+  - 振る舞い
+    - create: レビュー設定を生成する
+    - createDefault: デフォルト設定（評定基準のみデフォルト値）を生成する
+    - reconstruct: 既存のデータから復元する
+    - toDto: DTOに変換する
+    - equals: 等価性を比較する
+
+- レビュースペース
+  - 識別子: ReviewSpace
+  - 種類: 集約ルート
+  - 不変条件
+    - レビュースペースIDは空ではないこと（UUID形式）
+    - プロジェクトIDは空ではないこと（UUID形式）
+    - レビュースペース名は空ではないこと（100文字以内）
+    - 説明は1000文字以内であること
+  - 属性
+    - id: ReviewSpaceId - レビュースペースID
+    - projectId: ProjectId - 所属プロジェクトID
+    - name: ReviewSpaceName - レビュースペース名
+    - description: ReviewSpaceDescription - レビュースペース説明（任意）
+    - defaultReviewSettings: ReviewSettings | null - 既定のレビュー設定（任意）
+    - createdAt: Date - 作成日時
+    - updatedAt: Date - 更新日時
+  - 振る舞い
+    - create: 新規レビュースペースを作成する
+    - reconstruct: DBから取得したデータからレビュースペースを復元する
+    - updateName: レビュースペース名を更新する
+    - updateDescription: 説明を更新する
+    - updateDefaultReviewSettings: 既定のレビュー設定を更新する
+    - toDto: DTOに変換する
+    - toListItemDto: 一覧用DTOに変換する
+
+---
+
 ## チェックリスト管理
 
 - チェック項目ID

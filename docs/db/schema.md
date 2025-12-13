@@ -93,6 +93,7 @@
 | project_id | UUID | NOT NULL | - | 所属プロジェクトID（FK → projects.id） |
 | name | VARCHAR(100) | NOT NULL | - | スペース名 |
 | description | TEXT | NULL | - | スペース説明 |
+| default_review_settings | JSONB | NULL | - | 既定のレビュー設定（JSON形式） |
 | created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
 | updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
 
@@ -108,10 +109,48 @@
 - **project_id**: レビュースペースが所属するプロジェクトへの参照。CASCADE削除によりプロジェクト削除時に関連するスペースも自動的に削除される。
 - **name**: スペースを識別するための名称。100文字以内に制限。例: 「設計書レビュー」「コードレビュー」「テスト仕様レビュー」
 - **description**: スペースの詳細説明。任意項目のためNULL許可。
+- **default_review_settings**: レビュースペースの既定のレビュー設定をJSONB形式で保存。任意項目のためNULL許可。新規レビュー実行時にデフォルト値として使用される。
 - **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。タイムゾーン付きで国際化に対応。
 
+### default_review_settings JSON構造
+
+```json
+{
+  "additionalInstructions": "string | null",
+  "concurrentReviewItems": "number | null",
+  "commentFormat": "string | null",
+  "evaluationCriteria": [
+    {
+      "label": "string",
+      "description": "string"
+    }
+  ] | null
+}
+```
+
+| プロパティ | 型 | 説明 |
+|-----------|------|------|
+| additionalInstructions | string \| null | AIへの追加指示（最大2000文字） |
+| concurrentReviewItems | number \| null | 同時レビュー項目数（1〜100） |
+| commentFormat | string \| null | コメントフォーマット（最大2000文字） |
+| evaluationCriteria | array \| null | 評定基準（1〜10項目、ラベル重複不可） |
+
+#### evaluationCriteria 各要素
+
+| プロパティ | 型 | 説明 |
+|-----------|------|------|
+| label | string | 評定ラベル（1〜10文字）例: A, B, C, - |
+| description | string | ラベルの定義・説明（1〜200文字） |
+
+#### デフォルト評定基準
+
+新規作成時のデフォルト値として以下を使用:
+- A: 基準を完全に満たしている
+- B: 基準をある程度満たしている
+- C: 基準を満たしていない
+- -: 評価の対象外、または評価できない
+
 ### 備考
-- 将来的に「レビュー時ユーザ設定項目」（追加指示、同時レビュー項目数、コメントフォーマット、評定基準）を追加する可能性がある。
 - レビュースペースへのアクセス権限は、所属プロジェクトのメンバーシップに基づいて判定する。
 
 ---

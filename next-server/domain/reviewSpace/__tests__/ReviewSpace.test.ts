@@ -1,8 +1,21 @@
 import { describe, it, expect } from "vitest";
 import { ReviewSpace } from "../ReviewSpace";
+import { DEFAULT_EVALUATION_CRITERIA } from "../EvaluationCriteria";
+import {
+  ReviewSettingsProps,
+  DEFAULT_CONCURRENT_REVIEW_ITEMS,
+  DEFAULT_COMMENT_FORMAT,
+} from "../ReviewSettings";
 
 describe("ReviewSpace", () => {
   const validProjectId = "123e4567-e89b-12d3-a456-426614174000";
+
+  const validReviewSettings: ReviewSettingsProps = {
+    additionalInstructions: "セキュリティに注意してレビューしてください",
+    concurrentReviewItems: 5,
+    commentFormat: "【評価理由】\n【改善提案】",
+    evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+  };
 
   describe("正常系", () => {
     describe("create", () => {
@@ -45,6 +58,36 @@ describe("ReviewSpace", () => {
           reviewSpace.updatedAt.getTime(),
         );
       });
+
+      it("デフォルトレビュー設定付きで新規レビュースペースを作成できる", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "設定付きスペース",
+          defaultReviewSettings: validReviewSettings,
+        });
+
+        expect(reviewSpace.defaultReviewSettings).not.toBeNull();
+        expect(reviewSpace.defaultReviewSettings?.additionalInstructions).toBe(
+          validReviewSettings.additionalInstructions,
+        );
+        expect(reviewSpace.defaultReviewSettings?.concurrentReviewItems).toBe(5);
+      });
+
+      it("デフォルトレビュー設定なしの場合はデフォルト値が設定される", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "設定なしスペース",
+        });
+
+        // デフォルト値が設定される
+        expect(reviewSpace.defaultReviewSettings).not.toBeNull();
+        expect(reviewSpace.defaultReviewSettings.concurrentReviewItems).toBe(
+          DEFAULT_CONCURRENT_REVIEW_ITEMS,
+        );
+        expect(reviewSpace.defaultReviewSettings.commentFormat).toBe(
+          DEFAULT_COMMENT_FORMAT,
+        );
+      });
     });
 
     describe("reconstruct", () => {
@@ -81,6 +124,21 @@ describe("ReviewSpace", () => {
         });
 
         expect(reviewSpace.description.value).toBeNull();
+      });
+
+      it("デフォルトレビュー設定付きでDBから復元できる", () => {
+        const reviewSpace = ReviewSpace.reconstruct({
+          id: "223e4567-e89b-12d3-a456-426614174001",
+          projectId: validProjectId,
+          name: "設定付きスペース",
+          description: null,
+          defaultReviewSettings: validReviewSettings,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+
+        expect(reviewSpace.defaultReviewSettings).not.toBeNull();
+        expect(reviewSpace.defaultReviewSettings?.concurrentReviewItems).toBe(5);
       });
     });
 
@@ -151,6 +209,49 @@ describe("ReviewSpace", () => {
       });
     });
 
+    describe("updateDefaultReviewSettings", () => {
+      it("デフォルトレビュー設定を更新できる", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "テスト",
+        });
+
+        const updated = reviewSpace.updateDefaultReviewSettings(validReviewSettings);
+
+        expect(updated.defaultReviewSettings).not.toBeNull();
+        expect(updated.defaultReviewSettings?.additionalInstructions).toBe(
+          validReviewSettings.additionalInstructions,
+        );
+      });
+
+      it("更新時にupdatedAtが更新される", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "テスト",
+        });
+
+        const originalUpdatedAt = reviewSpace.updatedAt;
+        const updated = reviewSpace.updateDefaultReviewSettings(validReviewSettings);
+
+        expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(
+          originalUpdatedAt.getTime(),
+        );
+      });
+
+      it("元のインスタンスは変更されない（不変性）", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "テスト",
+        });
+
+        const originalSettings = reviewSpace.defaultReviewSettings;
+        reviewSpace.updateDefaultReviewSettings(validReviewSettings);
+
+        // 元のインスタンスのdefaultReviewSettingsは変更されない
+        expect(reviewSpace.defaultReviewSettings).toBe(originalSettings);
+      });
+    });
+
     describe("toDto", () => {
       it("DTOに変換できる", () => {
         const reviewSpace = ReviewSpace.create({
@@ -167,6 +268,27 @@ describe("ReviewSpace", () => {
         expect(dto.description).toBe("DTO説明");
         expect(dto.createdAt).toBeInstanceOf(Date);
         expect(dto.updatedAt).toBeInstanceOf(Date);
+        // defaultReviewSettingsはデフォルト値が設定されている
+        expect(dto.defaultReviewSettings).not.toBeNull();
+        expect(dto.defaultReviewSettings.concurrentReviewItems).toBe(
+          DEFAULT_CONCURRENT_REVIEW_ITEMS,
+        );
+      });
+
+      it("デフォルトレビュー設定付きでDTOに変換できる", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "設定付きDTOテスト",
+          description: null,
+          defaultReviewSettings: validReviewSettings,
+        });
+
+        const dto = reviewSpace.toDto();
+
+        expect(dto.defaultReviewSettings).not.toBeNull();
+        expect(dto.defaultReviewSettings?.additionalInstructions).toBe(
+          validReviewSettings.additionalInstructions,
+        );
       });
     });
 

@@ -1,7 +1,7 @@
 import { IProjectRepository } from "@/application/shared/port/repository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { ProjectId } from "@/domain/project";
-import { ReviewSpace, ReviewSpaceDto } from "@/domain/reviewSpace";
+import { ReviewSpace, ReviewSpaceDto, ReviewSettingsProps } from "@/domain/reviewSpace";
 import { domainValidationError } from "@/lib/server/error";
 
 /**
@@ -16,6 +16,8 @@ export interface CreateReviewSpaceCommand {
   description?: string | null;
   /** 実行ユーザーID（権限確認用） */
   userId: string;
+  /** デフォルトのレビュー設定 */
+  defaultReviewSettings?: ReviewSettingsProps | null;
 }
 
 /**
@@ -35,7 +37,7 @@ export class CreateReviewSpaceService {
    * @throws ドメインバリデーションエラー - 入力が不正な場合
    */
   async execute(command: CreateReviewSpaceCommand): Promise<ReviewSpaceDto> {
-    const { projectId, name, description, userId } = command;
+    const { projectId, name, description, userId, defaultReviewSettings } = command;
 
     // プロジェクトの存在確認
     const projectIdVo = ProjectId.reconstruct(projectId);
@@ -54,6 +56,7 @@ export class CreateReviewSpaceService {
       projectId,
       name,
       description,
+      defaultReviewSettings,
     });
 
     // 保存

@@ -3,7 +3,11 @@ import { UpdateReviewSpaceService } from "../UpdateReviewSpaceService";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { IProjectRepository } from "@/application/shared/port/repository";
 import { Project } from "@/domain/project";
-import { ReviewSpace } from "@/domain/reviewSpace";
+import {
+  ReviewSpace,
+  DEFAULT_EVALUATION_CRITERIA,
+  ReviewSettingsProps,
+} from "@/domain/reviewSpace";
 
 // 暗号化関数をモック
 vi.mock("@/lib/server/encryption", () => ({
@@ -61,11 +65,19 @@ describe("UpdateReviewSpaceService", () => {
   });
 
   describe("正常系", () => {
+    const validReviewSettings: ReviewSettingsProps = {
+      additionalInstructions: null,
+      concurrentReviewItems: 5,
+      commentFormat: "【評価理由】\n【改善提案】",
+      evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+    };
+
     it("名前を更新できる", async () => {
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
         userId: validUserId,
         name: "コードレビュー",
+        defaultReviewSettings: validReviewSettings,
       });
 
       expect(result.name).toBe("コードレビュー");
@@ -78,6 +90,7 @@ describe("UpdateReviewSpaceService", () => {
         reviewSpaceId: validReviewSpaceId,
         userId: validUserId,
         description: "新しい説明",
+        defaultReviewSettings: validReviewSettings,
       });
 
       expect(result.name).toBe("設計書レビュー"); // 変更なし
@@ -91,6 +104,7 @@ describe("UpdateReviewSpaceService", () => {
         userId: validUserId,
         name: "新しいスペース名",
         description: "新しい説明",
+        defaultReviewSettings: validReviewSettings,
       });
 
       expect(result.name).toBe("新しいスペース名");
@@ -103,25 +117,66 @@ describe("UpdateReviewSpaceService", () => {
         reviewSpaceId: validReviewSpaceId,
         userId: validUserId,
         description: null,
+        defaultReviewSettings: validReviewSettings,
       });
 
       expect(result.description).toBeNull();
     });
 
-    it("更新対象がない場合でも正常終了する", async () => {
+    it("既定のレビュー設定を追加できる", async () => {
+      const reviewSettings: ReviewSettingsProps = {
+        additionalInstructions: "セキュリティに注意してレビュー",
+        concurrentReviewItems: 5,
+        commentFormat: "【評価理由】\\n【改善提案】",
+        evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+      };
+
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
         userId: validUserId,
+        defaultReviewSettings: reviewSettings,
       });
 
-      expect(result.name).toBe("設計書レビュー");
-      expect(result.description).toBe("設計書のレビュー");
-      // saveは呼ばれるがデータは変わらない
+      expect(result.defaultReviewSettings).not.toBeNull();
+      expect(result.defaultReviewSettings?.additionalInstructions).toBe(
+        "セキュリティに注意してレビュー",
+      );
+      expect(result.defaultReviewSettings?.concurrentReviewItems).toBe(5);
+      expect(mockReviewSpaceRepository.save).toHaveBeenCalledTimes(1);
+    });
+
+    it("名前と既定のレビュー設定を同時に更新できる", async () => {
+      const reviewSettings: ReviewSettingsProps = {
+        additionalInstructions: "更新された指示",
+        concurrentReviewItems: 10,
+        commentFormat: "【評価】",
+        evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+      };
+
+      const result = await service.execute({
+        reviewSpaceId: validReviewSpaceId,
+        userId: validUserId,
+        name: "新しいスペース名",
+        defaultReviewSettings: reviewSettings,
+      });
+
+      expect(result.name).toBe("新しいスペース名");
+      expect(result.defaultReviewSettings).not.toBeNull();
+      expect(result.defaultReviewSettings?.additionalInstructions).toBe(
+        "更新された指示",
+      );
       expect(mockReviewSpaceRepository.save).toHaveBeenCalledTimes(1);
     });
   });
 
   describe("異常系", () => {
+    const validReviewSettings: ReviewSettingsProps = {
+      additionalInstructions: null,
+      concurrentReviewItems: 5,
+      commentFormat: "【評価理由】\n【改善提案】",
+      evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+    };
+
     it("存在しないレビュースペースの場合はエラー", async () => {
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(null);
 
@@ -130,6 +185,7 @@ describe("UpdateReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           name: "新しい名前",
+          defaultReviewSettings: validReviewSettings,
         }),
       ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_NOT_FOUND" });
     });
@@ -142,6 +198,7 @@ describe("UpdateReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           name: "新しい名前",
+          defaultReviewSettings: validReviewSettings,
         }),
       ).rejects.toMatchObject({ messageCode: "PROJECT_NOT_FOUND" });
     });
@@ -154,6 +211,7 @@ describe("UpdateReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: otherUserId,
           name: "新しい名前",
+          defaultReviewSettings: validReviewSettings,
         }),
       ).rejects.toMatchObject({ messageCode: "PROJECT_ACCESS_DENIED" });
     });
@@ -164,6 +222,7 @@ describe("UpdateReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           name: "",
+          defaultReviewSettings: validReviewSettings,
         }),
       ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_NAME_EMPTY" });
     });
@@ -174,6 +233,7 @@ describe("UpdateReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           name: "あ".repeat(101),
+          defaultReviewSettings: validReviewSettings,
         }),
       ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_NAME_TOO_LONG" });
     });
@@ -184,6 +244,7 @@ describe("UpdateReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           description: "あ".repeat(1001),
+          defaultReviewSettings: validReviewSettings,
         }),
       ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_DESCRIPTION_TOO_LONG" });
     });
@@ -198,8 +259,56 @@ describe("UpdateReviewSpaceService", () => {
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
           name: "新しい名前",
+          defaultReviewSettings: validReviewSettings,
         }),
       ).rejects.toThrow("DB Error");
+    });
+
+    it("追加指示が長すぎる場合はエラー", async () => {
+      await expect(
+        service.execute({
+          reviewSpaceId: validReviewSpaceId,
+          userId: validUserId,
+          defaultReviewSettings: {
+            additionalInstructions: "あ".repeat(2001),
+            concurrentReviewItems: 5,
+            commentFormat: "【評価】",
+            evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+          },
+        }),
+      ).rejects.toMatchObject({
+        messageCode: "REVIEW_SETTINGS_ADDITIONAL_INSTRUCTIONS_TOO_LONG",
+      });
+    });
+
+    it("同時レビュー項目数が範囲外の場合はエラー", async () => {
+      await expect(
+        service.execute({
+          reviewSpaceId: validReviewSpaceId,
+          userId: validUserId,
+          defaultReviewSettings: {
+            concurrentReviewItems: 0,
+            commentFormat: "【評価】",
+            evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+          },
+        }),
+      ).rejects.toMatchObject({
+        messageCode: "REVIEW_SETTINGS_CONCURRENT_ITEMS_INVALID",
+      });
+
+      await expect(
+        service.execute({
+          reviewSpaceId: validReviewSpaceId,
+          userId: validUserId,
+          defaultReviewSettings: {
+            concurrentReviewItems: 101,
+            commentFormat: "【評価】",
+            evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+          },
+        }),
+      ).rejects.toMatchObject({
+        messageCode: "REVIEW_SETTINGS_CONCURRENT_ITEMS_INVALID",
+      });
     });
   });
 });

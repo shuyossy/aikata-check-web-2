@@ -40,6 +40,12 @@ export function NewReviewSpaceClient({
       projectId,
       name: data.name,
       description: data.description || null,
+      defaultReviewSettings: {
+        additionalInstructions: data.additionalInstructions || null,
+        concurrentReviewItems: data.concurrentReviewItems,
+        commentFormat: data.commentFormat,
+        evaluationCriteria: data.evaluationCriteria,
+      },
     });
   };
 

@@ -1,0 +1,1 @@
+ALTER TABLE "review_spaces" ALTER COLUMN "default_review_settings" SET NOT NULL;

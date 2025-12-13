@@ -11,10 +11,32 @@ import {
 } from "@/infrastructure/adapter/db";
 import { EmployeeId } from "@/domain/user";
 
+/**
+ * 評定項目のスキーマ
+ */
+const evaluationItemSchema = z.object({
+  label: z.string().min(1).max(10),
+  description: z.string().min(1).max(200),
+});
+
+/**
+ * レビュー設定のスキーマ
+ */
+const reviewSettingsSchema = z
+  .object({
+    additionalInstructions: z.string().max(2000).nullable().optional(),
+    concurrentReviewItems: z.number().min(1).max(100),
+    commentFormat: z.string().min(1).max(2000),
+    evaluationCriteria: z.array(evaluationItemSchema).min(1).max(10),
+  })
+  .nullable()
+  .optional();
+
 const createReviewSpaceSchema = z.object({
   projectId: z.string().uuid(),
   name: z.string().min(1).max(100),
   description: z.string().max(1000).optional().nullable(),
+  defaultReviewSettings: reviewSettingsSchema,
 });
 
 /**
@@ -46,5 +68,6 @@ export const createReviewSpaceAction = authenticatedAction
       name: parsedInput.name,
       description: parsedInput.description,
       userId: user.id.value,
+      defaultReviewSettings: parsedInput.defaultReviewSettings,
     });
   });

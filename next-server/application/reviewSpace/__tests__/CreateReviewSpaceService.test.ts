@@ -3,6 +3,11 @@ import { CreateReviewSpaceService } from "../CreateReviewSpaceService";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { IProjectRepository } from "@/application/shared/port/repository";
 import { Project } from "@/domain/project";
+import {
+  DEFAULT_EVALUATION_CRITERIA,
+  DEFAULT_CONCURRENT_REVIEW_ITEMS,
+  DEFAULT_COMMENT_FORMAT,
+} from "@/domain/reviewSpace";
 
 // 暗号化関数をモック
 vi.mock("@/lib/server/encryption", () => ({
@@ -73,6 +78,53 @@ describe("CreateReviewSpaceService", () => {
 
       expect(result.name).toBe("コードレビュー");
       expect(result.description).toBeNull();
+    });
+
+    it("デフォルトのレビュー設定付きでレビュースペースを作成できる", async () => {
+      const result = await service.execute({
+        projectId: validProjectId,
+        name: "設計書レビュー",
+        description: "設計書のレビュー",
+        userId: validUserId,
+        defaultReviewSettings: {
+          additionalInstructions: "セキュリティに注意してレビュー",
+          concurrentReviewItems: 5,
+          commentFormat: "【評価理由】\n【改善提案】",
+          evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+        },
+      });
+
+      expect(result.name).toBe("設計書レビュー");
+      expect(result.defaultReviewSettings).not.toBeNull();
+      expect(result.defaultReviewSettings?.additionalInstructions).toBe(
+        "セキュリティに注意してレビュー",
+      );
+      expect(result.defaultReviewSettings?.concurrentReviewItems).toBe(5);
+      expect(result.defaultReviewSettings?.commentFormat).toBe(
+        "【評価理由】\n【改善提案】",
+      );
+      expect(result.defaultReviewSettings?.evaluationCriteria).toEqual(
+        DEFAULT_EVALUATION_CRITERIA,
+      );
+    });
+
+    it("レビュー設定なしで作成するとデフォルトのレビュー設定が適用される", async () => {
+      const result = await service.execute({
+        projectId: validProjectId,
+        name: "テストスペース",
+        userId: validUserId,
+      });
+
+      // デフォルトのレビュー設定が適用される
+      expect(result.defaultReviewSettings).not.toBeNull();
+      expect(result.defaultReviewSettings.additionalInstructions).toBeNull();
+      expect(result.defaultReviewSettings.concurrentReviewItems).toBe(
+        DEFAULT_CONCURRENT_REVIEW_ITEMS,
+      );
+      expect(result.defaultReviewSettings.commentFormat).toBe(DEFAULT_COMMENT_FORMAT);
+      expect(result.defaultReviewSettings.evaluationCriteria).toEqual(
+        DEFAULT_EVALUATION_CRITERIA,
+      );
     });
 
     it("save()が正しい引数で呼ばれる", async () => {

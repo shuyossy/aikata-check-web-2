@@ -1,9 +1,24 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { ClipboardList, Info, HelpCircle, Plus, Edit2 } from "lucide-react";
+import {
+  ClipboardList,
+  Info,
+  HelpCircle,
+  Plus,
+  Settings,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ReviewSettingsDto } from "@/domain/reviewSpace";
 
 interface ReviewTargetListClientProps {
   projectId: string;
@@ -12,6 +27,7 @@ interface ReviewTargetListClientProps {
   spaceName: string;
   spaceDescription: string | null;
   checkListItemCount: number;
+  defaultReviewSettings: ReviewSettingsDto | null;
 }
 
 /**
@@ -24,7 +40,19 @@ export function ReviewTargetListClient({
   spaceName,
   spaceDescription,
   checkListItemCount,
+  defaultReviewSettings,
 }: ReviewTargetListClientProps) {
+  const [isReviewSettingsOpen, setIsReviewSettingsOpen] = useState(false);
+
+  // レビュー設定が設定されているかどうか
+  const hasReviewSettings =
+    defaultReviewSettings &&
+    (defaultReviewSettings.additionalInstructions ||
+      defaultReviewSettings.concurrentReviewItems !== null ||
+      defaultReviewSettings.commentFormat ||
+      (defaultReviewSettings.evaluationCriteria &&
+        defaultReviewSettings.evaluationCriteria.length > 0));
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Page Content */}
@@ -45,11 +73,11 @@ export function ReviewTargetListClient({
                 スペース情報
               </h3>
               <Link
-                href={`/projects/${projectId}/spaces/${spaceId}/edit`}
+                href={`/projects/${projectId}/spaces/${spaceId}/settings`}
                 className="text-sm text-primary hover:text-primary/80 font-medium flex items-center gap-1"
               >
-                <Edit2 className="w-4 h-4" />
-                編集
+                <Settings className="w-4 h-4" />
+                設定
               </Link>
             </div>
 
@@ -84,6 +112,111 @@ export function ReviewTargetListClient({
                   {spaceDescription || "説明はありません"}
                 </p>
               </div>
+            </div>
+
+            {/* Default Review Settings */}
+            <div className="mt-6 pt-6 border-t border-gray-100">
+              <Collapsible
+                open={isReviewSettingsOpen}
+                onOpenChange={setIsReviewSettingsOpen}
+              >
+                <CollapsibleTrigger className="flex items-center gap-2 w-full text-left">
+                  <span className="text-sm font-medium text-gray-700">
+                    既定のレビュー設定
+                  </span>
+                  {isReviewSettingsOpen ? (
+                    <ChevronDown className="h-4 w-4 text-gray-500" />
+                  ) : (
+                    <ChevronRight className="h-4 w-4 text-gray-500" />
+                  )}
+                  {!hasReviewSettings && (
+                    <span className="text-xs text-gray-400 ml-2">
+                      未設定
+                    </span>
+                  )}
+                </CollapsibleTrigger>
+                <CollapsibleContent className="mt-4">
+                  {hasReviewSettings ? (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      {/* Additional Instructions */}
+                      {defaultReviewSettings.additionalInstructions && (
+                        <div className="lg:col-span-2">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">
+                            追加指示
+                          </label>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                            {defaultReviewSettings.additionalInstructions}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Concurrent Review Items */}
+                      {defaultReviewSettings.concurrentReviewItems !== null && (
+                        <div>
+                          <label className="block text-xs font-medium text-gray-500 mb-1">
+                            同時レビュー項目数
+                          </label>
+                          <p className="text-sm text-gray-700">
+                            {defaultReviewSettings.concurrentReviewItems}項目
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Comment Format */}
+                      {defaultReviewSettings.commentFormat && (
+                        <div className="lg:col-span-2">
+                          <label className="block text-xs font-medium text-gray-500 mb-1">
+                            コメントフォーマット
+                          </label>
+                          <p className="text-sm text-gray-700 whitespace-pre-wrap bg-gray-50 p-3 rounded">
+                            {defaultReviewSettings.commentFormat}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Evaluation Criteria */}
+                      {defaultReviewSettings.evaluationCriteria &&
+                        defaultReviewSettings.evaluationCriteria.length > 0 && (
+                          <div className="lg:col-span-2">
+                            <label className="block text-xs font-medium text-gray-500 mb-2">
+                              評定基準
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {defaultReviewSettings.evaluationCriteria.map(
+                                (item, index) => (
+                                  <div
+                                    key={index}
+                                    className="inline-flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg"
+                                  >
+                                    <span className="font-medium text-sm text-gray-900">
+                                      {item.label}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      {item.description}
+                                    </span>
+                                  </div>
+                                ),
+                              )}
+                            </div>
+                          </div>
+                        )}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-gray-500 bg-gray-50 p-4 rounded-lg">
+                      <p>既定のレビュー設定は設定されていません。</p>
+                      <p className="mt-1">
+                        <Link
+                          href={`/projects/${projectId}/spaces/${spaceId}/settings`}
+                          className="text-primary hover:text-primary/80"
+                        >
+                          設定ページ
+                        </Link>
+                        から追加できます。
+                      </p>
+                    </div>
+                  )}
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           </div>
         </div>

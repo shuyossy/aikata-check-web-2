@@ -97,6 +97,7 @@ export default async function ReviewSpacePage({ params }: ReviewSpacePageProps) 
       spaceName={reviewSpace.name}
       spaceDescription={reviewSpace.description}
       checkListItemCount={checkListData.total}
+      defaultReviewSettings={reviewSpace.defaultReviewSettings}
     />
   );
 }

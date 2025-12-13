@@ -6,6 +6,7 @@ import {
   text,
   primaryKey,
   index,
+  jsonb,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -113,6 +114,16 @@ export const reviewSpaces = pgTable(
     name: varchar("name", { length: 100 }).notNull(),
     /** スペース説明 */
     description: text("description"),
+    /**
+     * 既定のレビュー設定（JSON形式）
+     * 構造: {
+     *   additionalInstructions: string | null,
+     *   concurrentReviewItems: number,
+     *   commentFormat: string,
+     *   evaluationCriteria: EvaluationItemProps[]
+     * }
+     */
+    defaultReviewSettings: jsonb("default_review_settings").notNull(),
     /** レコード作成日時 */
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

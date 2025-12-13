@@ -58,4 +58,16 @@ export const template = {
   AI_CHECKLIST_GENERATION_FAILED: `AIチェックリスト生成に失敗しました。{detail}`,
   // PDF変換エラー
   PDF_CONVERSION_FAILED: `PDFの画像変換に失敗しました。{detail}`,
+  // レビュー設定ドメインバリデーションエラー
+  EVALUATION_LABEL_EMPTY: `評定ラベルは必須です。`,
+  EVALUATION_LABEL_TOO_LONG: `評定ラベルは10文字以内で入力してください。`,
+  EVALUATION_DESCRIPTION_EMPTY: `評定の説明は必須です。`,
+  EVALUATION_DESCRIPTION_TOO_LONG: `評定の説明は200文字以内で入力してください。`,
+  EVALUATION_CRITERIA_EMPTY: `評定基準には少なくとも1つの項目が必要です。`,
+  EVALUATION_CRITERIA_TOO_MANY: `評定基準は10項目以内で設定してください。`,
+  EVALUATION_CRITERIA_DUPLICATE_LABEL: `評定ラベルが重複しています。`,
+  REVIEW_SETTINGS_ADDITIONAL_INSTRUCTIONS_TOO_LONG: `追加指示は2000文字以内で入力してください。`,
+  REVIEW_SETTINGS_CONCURRENT_ITEMS_INVALID: `同時レビュー項目数は1以上100以下で設定してください。`,
+  REVIEW_SETTINGS_COMMENT_FORMAT_REQUIRED: `コメントフォーマットは必須です。`,
+  REVIEW_SETTINGS_COMMENT_FORMAT_TOO_LONG: `コメントフォーマットは2000文字以内で入力してください。`,
 } as const;

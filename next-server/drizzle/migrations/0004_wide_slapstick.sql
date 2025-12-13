@@ -1,0 +1,1 @@
+ALTER TABLE "review_spaces" ADD COLUMN "default_review_settings" jsonb;
