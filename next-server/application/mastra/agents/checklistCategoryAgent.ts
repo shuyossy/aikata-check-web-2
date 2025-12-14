@@ -13,7 +13,7 @@ export const checklistCategoryOutputSchema = z.object({
       z.object({
         name: z.string().describe("Category name"),
         checklistIds: z
-          .array(z.string())
+          .array(z.number())
           .describe("Array of checklist IDs belonging to the category"),
       }),
     )

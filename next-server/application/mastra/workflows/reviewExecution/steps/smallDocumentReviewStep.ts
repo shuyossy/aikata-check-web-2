@@ -101,7 +101,7 @@ export const smallDocumentReviewStep = createStep({
 
       const dynamicOutputSchema = z.array(
         z.object({
-          checklistId: z.string(),
+          checklistId: z.number().describe("Checklist item ID"),
           reviewSections: z
             .array(
               z.object({
@@ -130,12 +130,12 @@ export const smallDocumentReviewStep = createStep({
         "Please review this document against the provided checklist items",
       );
 
-      // チェックリストリマインダーを作成する関数
+      // チェックリストリマインダーを作成する関数（1始まりの連番IDを使用してトークン消費を削減）
       const createChecklistReminder = (
         items: typeof checkListItems,
       ): string => {
         return `## Checklist Items to Review:
-${items.map((item) => `- ID: ${item.id} - ${item.content}`).join("\n")}
+${items.map((item, index) => `- ID: ${index + 1} - ${item.content}`).join("\n")}
 
 Please review the document against the above checklist items.`;
       };
@@ -194,8 +194,8 @@ Please review the document against the above checklist items.`;
 
           // レビュー結果を格納（重複は追加しない）
           for (const item of output) {
-            // AIの出力にはchecklistIdが含まれるので、対応するチェック項目を検索
-            const targetItem = targetChecklistItems.find(i => i.id === item.checklistId);
+            // AIの出力にはショートID（1始まり連番）が含まれるので、配列インデックスで取得
+            const targetItem = targetChecklistItems[item.checklistId - 1];
             if (targetItem && !existingContents.has(targetItem.content)) {
               const reviewResult: SingleReviewResult = {
                 checkListItemContent: targetItem.content,
@@ -208,12 +208,12 @@ Please review the document against the above checklist items.`;
             }
           }
 
-          // レビューされたチェック項目IDを取得
-          const reviewedIds = new Set(output.map((r) => r.checklistId));
+          // レビューされたショートIDを取得
+          const reviewedShortIds = new Set(output.map((r) => r.checklistId));
 
-          // まだレビューされていないチェック項目を抽出
+          // まだレビューされていないチェック項目を抽出（インデックス+1がショートID）
           targetChecklistItems = targetChecklistItems.filter(
-            (item) => !reviewedIds.has(item.id),
+            (_, index) => !reviewedShortIds.has(index + 1),
           );
         }
 

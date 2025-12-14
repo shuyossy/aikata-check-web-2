@@ -118,21 +118,21 @@ describe("classifyChecklistStep", () => {
     });
 
     it("concurrentReviewItems>=2の場合、AIカテゴリ分類が実行されること", async () => {
-      // Arrange
+      // Arrange: AIはショートID（1始まりの連番）を返す
       mockChecklistCategoryAgentGenerateLegacy.mockResolvedValue({
         object: {
           categories: [
             {
               name: "セキュリティ",
-              checklistIds: ["check-1"],
+              checklistIds: [1], // check-1のショートID
             },
             {
               name: "エラー処理",
-              checklistIds: ["check-2"],
+              checklistIds: [2], // check-2のショートID
             },
             {
               name: "パフォーマンス",
-              checklistIds: ["check-3", "check-4", "check-5"],
+              checklistIds: [3, 4, 5], // check-3, 4, 5のショートID
             },
           ],
         },
@@ -166,19 +166,19 @@ describe("classifyChecklistStep", () => {
     });
 
     it("AIカテゴリ分類で未分類項目がある場合、その他カテゴリに追加されること", async () => {
-      // Arrange: check-5が未分類
+      // Arrange: check-5（ショートID: 5）が未分類
       mockChecklistCategoryAgentGenerateLegacy.mockResolvedValue({
         object: {
           categories: [
             {
               name: "セキュリティ",
-              checklistIds: ["check-1", "check-2"],
+              checklistIds: [1, 2], // check-1, 2のショートID
             },
             {
               name: "パフォーマンス",
-              checklistIds: ["check-3", "check-4"],
+              checklistIds: [3, 4], // check-3, 4のショートID
             },
-            // check-5が含まれていない
+            // ショートID: 5（check-5）が含まれていない
           ],
         },
       });

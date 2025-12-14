@@ -168,9 +168,9 @@ async function classifyWithAI(
       employeeId,
     });
 
-  // チェックリスト項目をフォーマット
+  // チェックリスト項目をフォーマット（1始まりの連番IDを使用してトークン消費を削減）
   const checklistPrompt = checkListItems
-    .map((item) => `ID: ${item.id} - ${item.content}`)
+    .map((item, index) => `ID: ${index + 1} - ${item.content}`)
     .join("\n");
 
   try {
@@ -190,43 +190,49 @@ async function classifyWithAI(
       throw new Error("AI classification returned empty categories");
     }
 
-    // 全IDセットを作成
-    const allIds = new Set(checkListItems.map((c) => c.id));
-    const assignedIds = new Set(rawCategories.flatMap((c) => c.checklistIds));
+    // 全ショートIDのセットを作成（1始まりの連番）
+    const allShortIds = new Set(checkListItems.map((_, index) => index + 1));
+    const assignedShortIds = new Set(rawCategories.flatMap((c) => c.checklistIds));
 
     // 未分類アイテムがあれば「その他」カテゴリに追加
-    const uncategorized = Array.from(allIds).filter(
-      (id) => !assignedIds.has(id),
+    const uncategorizedShortIds = Array.from(allShortIds).filter(
+      (shortId) => !assignedShortIds.has(shortId),
     );
-    if (uncategorized.length > 0) {
+    if (uncategorizedShortIds.length > 0) {
       rawCategories.push({
         name: "その他",
-        checklistIds: uncategorized,
+        checklistIds: uncategorizedShortIds,
       });
     }
 
     // 重複排除とチャンク分割
-    const seen = new Set<string>();
+    const seen = new Set<number>();
     const chunks: { id: string; content: string }[][] = [];
 
     for (const { checklistIds } of rawCategories) {
       // カテゴリ内の重複排除
       const uniqueInCategory = Array.from(new Set(checklistIds));
 
-      // 他カテゴリで既に割り当て済みのIDを除外
-      const filteredIds = uniqueInCategory.filter((id) => !seen.has(id));
-      filteredIds.forEach((id) => seen.add(id));
+      // 他カテゴリで既に割り当て済みのショートIDを除外
+      const filteredShortIds = uniqueInCategory.filter((shortId) => !seen.has(shortId));
+      filteredShortIds.forEach((shortId) => seen.add(shortId));
 
       // maxChecklistsPerCategory件ずつチャンクに分割
       for (
         let i = 0;
-        i < filteredIds.length;
+        i < filteredShortIds.length;
         i += maxChecklistsPerCategory
       ) {
-        const chunkIds = filteredIds.slice(i, i + maxChecklistsPerCategory);
+        const chunkShortIds = filteredShortIds.slice(i, i + maxChecklistsPerCategory);
 
-        const chunk = chunkIds
-          .map((id) => checkListItems.find((c) => c.id === id))
+        // ショートID（1始まり）から元のチェック項目を取得
+        const chunk = chunkShortIds
+          .map((shortId) => {
+            const index = shortId - 1;
+            return index >= 0 && index < checkListItems.length
+              ? checkListItems[index]
+              : undefined;
+          })
           .filter((item): item is { id: string; content: string } => item !== undefined);
 
         if (chunk.length > 0) {

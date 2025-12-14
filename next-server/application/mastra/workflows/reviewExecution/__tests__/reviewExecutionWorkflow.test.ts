@@ -117,24 +117,24 @@ describe("reviewExecutionWorkflow", () => {
 
   describe("正常系", () => {
     it("全てのチェック項目のレビューが成功すること", async () => {
-      // Arrange
+      // Arrange: AIはショートID（1始まりの連番）を返す
       mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: [
           {
-            checklistId: "check-1",
+            checklistId: 1, // check-1のショートID
             reviewSections: [{ fileName: "test.txt", sectionNames: ["intro"] }],
             comment: "セキュリティ要件を満たしています",
             evaluation: "A",
           },
           {
-            checklistId: "check-2",
+            checklistId: 2, // check-2のショートID
             reviewSections: [{ fileName: "test.txt", sectionNames: ["error"] }],
             comment: "エラーハンドリングは適切です",
             evaluation: "A",
           },
           {
-            checklistId: "check-3",
+            checklistId: 3, // check-3のショートID
             reviewSections: [{ fileName: "test.txt", sectionNames: ["perf"] }],
             comment: "パフォーマンス要件を満たしています",
             evaluation: "B",
@@ -187,12 +187,12 @@ describe("reviewExecutionWorkflow", () => {
     });
 
     it("追加指示とコメントフォーマットがエージェントに渡されること", async () => {
-      // Arrange
+      // Arrange: AIはショートID（1始まりの連番）を返す
       mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: [
           {
-            checklistId: "check-1",
+            checklistId: 1, // check-1のショートID
             reviewSections: [],
             comment: "テストコメント",
             evaluation: "A",
@@ -233,30 +233,31 @@ describe("reviewExecutionWorkflow", () => {
 
     it("一部のチェック項目がリトライで成功すること", async () => {
       // Arrange: 1回目は2項目のみ、2回目で残り1項目がレビューされる
+      // AIはショートID（1始まりの連番）を返す
       mockReviewExecuteAgentGenerateLegacy
         .mockResolvedValueOnce({
           finishReason: "stop",
           object: [
             {
-              checklistId: "check-1",
+              checklistId: 1, // check-1のショートID
               reviewSections: [],
               comment: "コメント1",
               evaluation: "A",
             },
             {
-              checklistId: "check-2",
+              checklistId: 2, // check-2のショートID
               reviewSections: [],
               comment: "コメント2",
               evaluation: "B",
             },
-            // check-3がない
+            // check-3（ショートID: 3）がない
           ],
         })
         .mockResolvedValueOnce({
           finishReason: "stop",
           object: [
             {
-              checklistId: "check-3",
+              checklistId: 1, // リトライ時は残り1項目のみなのでショートID: 1
               reviewSections: [],
               comment: "コメント3",
               evaluation: "A",
@@ -299,11 +300,12 @@ describe("reviewExecutionWorkflow", () => {
 
     it("デフォルト評価基準（A/B/C/-）が使用されること", async () => {
       // Arrange: 評価基準を指定しない場合
+      // AIはショートID（1始まりの連番）を返す
       mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: [
           {
-            checklistId: "check-1",
+            checklistId: 1, // check-1のショートID
             reviewSections: [],
             comment: "コメント",
             evaluation: "A", // デフォルト評価基準
@@ -423,12 +425,13 @@ describe("reviewExecutionWorkflow", () => {
 
     it("一部チャンクでAIエラーが発生しても他のチャンクが成功すればworkflowは成功すること", async () => {
       // Arrange: AIカテゴリ分類で2チャンクに分割、1チャンク目は成功、2チャンク目は失敗
+      // AIはショートID（1始まりの連番）を返す
       mockChecklistCategoryAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: {
           categories: [
-            { name: "セキュリティ", checklistIds: ["check-1"] },
-            { name: "その他", checklistIds: ["check-2", "check-3"] },
+            { name: "セキュリティ", checklistIds: [1] }, // check-1のショートID
+            { name: "その他", checklistIds: [2, 3] }, // check-2, 3のショートID
           ],
         },
       });
@@ -439,7 +442,7 @@ describe("reviewExecutionWorkflow", () => {
           finishReason: "stop",
           object: [
             {
-              checklistId: "check-1",
+              checklistId: 1, // チャンク内でのショートID
               reviewSections: [],
               comment: "コメント1",
               evaluation: "A",
@@ -504,24 +507,37 @@ describe("reviewExecutionWorkflow", () => {
 
     it("最大リトライ回数到達後も未レビュー項目があればエラーとして記録すること", async () => {
       // Arrange: 常にcheck-3がレビューされない
-      mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
-        finishReason: "stop",
-        object: [
-          {
-            checklistId: "check-1",
-            reviewSections: [],
-            comment: "コメント1",
-            evaluation: "A",
-          },
-          {
-            checklistId: "check-2",
-            reviewSections: [],
-            comment: "コメント2",
-            evaluation: "B",
-          },
-          // check-3が常にない
-        ],
-      });
+      // AIはショートID（1始まりの連番）を返す
+      // 1回目: 3項目中、ショートID 1, 2を返す（check-1, check-2がレビューされる）→ check-3が残る
+      // 2回目: 1項目中、空配列を返す（check-3がレビューされない）
+      // 3回目: 1項目中、空配列を返す（check-3がレビューされない）
+      mockReviewExecuteAgentGenerateLegacy
+        .mockResolvedValueOnce({
+          finishReason: "stop",
+          object: [
+            {
+              checklistId: 1, // check-1のショートID
+              reviewSections: [],
+              comment: "コメント1",
+              evaluation: "A",
+            },
+            {
+              checklistId: 2, // check-2のショートID
+              reviewSections: [],
+              comment: "コメント2",
+              evaluation: "B",
+            },
+            // check-3（ショートID: 3）が含まれない
+          ],
+        })
+        .mockResolvedValueOnce({
+          finishReason: "stop",
+          object: [], // リトライ1回目: check-3のみだがレビューされない
+        })
+        .mockResolvedValueOnce({
+          finishReason: "stop",
+          object: [], // リトライ2回目: check-3のみだがレビューされない
+        });
 
       // Act
       const run = await reviewExecutionWorkflow.createRunAsync();
@@ -612,11 +628,12 @@ describe("reviewExecutionWorkflow", () => {
         },
       ];
 
+      // AIはショートID（1始まりの連番）を返す
       mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: [
           {
-            checklistId: "check-1",
+            checklistId: 1, // check-1のショートID
             reviewSections: [],
             comment: "画像からレビュー",
             evaluation: "A",
@@ -654,12 +671,13 @@ describe("reviewExecutionWorkflow", () => {
   describe("concurrentReviewItemsのテスト", () => {
     it("concurrentReviewItems=1の場合、チェック項目が個別にレビューされること", async () => {
       // Arrange: 各チェック項目ごとに個別のレビュー結果を返す
+      // AIはショートID（1始まりの連番）を返す。各チャンクは1件なのでショートID: 1
       mockReviewExecuteAgentGenerateLegacy
         .mockResolvedValueOnce({
           finishReason: "stop",
           object: [
             {
-              checklistId: "check-1",
+              checklistId: 1, // チャンク内でのショートID
               reviewSections: [],
               comment: "コメント1",
               evaluation: "A",
@@ -670,7 +688,7 @@ describe("reviewExecutionWorkflow", () => {
           finishReason: "stop",
           object: [
             {
-              checklistId: "check-2",
+              checklistId: 1, // チャンク内でのショートID
               reviewSections: [],
               comment: "コメント2",
               evaluation: "B",
@@ -681,7 +699,7 @@ describe("reviewExecutionWorkflow", () => {
           finishReason: "stop",
           object: [
             {
-              checklistId: "check-3",
+              checklistId: 1, // チャンク内でのショートID
               reviewSections: [],
               comment: "コメント3",
               evaluation: "A",
@@ -725,24 +743,24 @@ describe("reviewExecutionWorkflow", () => {
     });
 
     it("concurrentReviewItems未指定の場合、全項目が一括でレビューされること", async () => {
-      // Arrange
+      // Arrange: AIはショートID（1始まりの連番）を返す
       mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: [
           {
-            checklistId: "check-1",
+            checklistId: 1, // check-1のショートID
             reviewSections: [],
             comment: "コメント1",
             evaluation: "A",
           },
           {
-            checklistId: "check-2",
+            checklistId: 2, // check-2のショートID
             reviewSections: [],
             comment: "コメント2",
             evaluation: "B",
           },
           {
-            checklistId: "check-3",
+            checklistId: 3, // check-3のショートID
             reviewSections: [],
             comment: "コメント3",
             evaluation: "A",
@@ -786,30 +804,30 @@ describe("reviewExecutionWorkflow", () => {
     });
 
     it("concurrentReviewItems>=2の場合、AIカテゴリ分類が実行されること", async () => {
-      // Arrange: AIカテゴリ分類結果
+      // Arrange: AIカテゴリ分類結果（ショートID使用）
       mockChecklistCategoryAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: {
           categories: [
             {
               name: "セキュリティ",
-              checklistIds: ["check-1"],
+              checklistIds: [1], // check-1のショートID
             },
             {
               name: "その他",
-              checklistIds: ["check-2", "check-3"],
+              checklistIds: [2, 3], // check-2, 3のショートID
             },
           ],
         },
       });
 
-      // 各チャンクのレビュー結果
+      // 各チャンクのレビュー結果（チャンク内でのショートID）
       mockReviewExecuteAgentGenerateLegacy
         .mockResolvedValueOnce({
           finishReason: "stop",
           object: [
             {
-              checklistId: "check-1",
+              checklistId: 1, // チャンク内でのショートID
               reviewSections: [],
               comment: "コメント1",
               evaluation: "A",
@@ -820,13 +838,13 @@ describe("reviewExecutionWorkflow", () => {
           finishReason: "stop",
           object: [
             {
-              checklistId: "check-2",
+              checklistId: 1, // チャンク内でのショートID（check-2）
               reviewSections: [],
               comment: "コメント2",
               evaluation: "B",
             },
             {
-              checklistId: "check-3",
+              checklistId: 2, // チャンク内でのショートID（check-3）
               reviewSections: [],
               comment: "コメント3",
               evaluation: "A",
@@ -914,11 +932,12 @@ describe("reviewExecutionWorkflow", () => {
         },
       ];
 
+      // AIはショートID（1始まりの連番）を返す
       mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: [
           {
-            checklistId: "check-1",
+            checklistId: 1, // check-1のショートID
             reviewSections: [],
             comment: "混合ファイルからレビュー",
             evaluation: "A",
@@ -1016,19 +1035,19 @@ describe("reviewExecutionWorkflow", () => {
 
   describe("DB保存コールバックのテスト", () => {
     it("DB保存コールバックが設定されている場合、レビュー結果ごとに呼び出されること", async () => {
-      // Arrange
+      // Arrange: AIはショートID（1始まりの連番）を返す
       const mockOnReviewResultSaved = vi.fn().mockResolvedValue(undefined);
       mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: [
           {
-            checklistId: "check-1",
+            checklistId: 1, // check-1のショートID
             reviewSections: [],
             comment: "コメント1",
             evaluation: "A",
           },
           {
-            checklistId: "check-2",
+            checklistId: 2, // check-2のショートID
             reviewSections: [],
             comment: "コメント2",
             evaluation: "B",
@@ -1073,12 +1092,12 @@ describe("reviewExecutionWorkflow", () => {
     });
 
     it("DB保存コールバックが未設定でもworkflowが成功すること", async () => {
-      // Arrange
+      // Arrange: AIはショートID（1始まりの連番）を返す
       mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
         object: [
           {
-            checklistId: "check-1",
+            checklistId: 1, // check-1のショートID
             reviewSections: [],
             comment: "コメント",
             evaluation: "A",

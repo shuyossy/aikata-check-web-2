@@ -130,9 +130,9 @@ export function getReviewExecutionPrompt({
   const commentFormat = runtimeContext?.get("commentFormat");
   const evaluationCriteria = runtimeContext?.get("evaluationCriteria");
 
-  // チェック項目一覧をフォーマット
+  // チェック項目一覧をフォーマット（1始まりの連番IDを使用してトークン消費を削減）
   const formattedList = checklistItems
-    .map((item) => `ID: ${item.id} - ${item.content}`)
+    .map((item, index) => `ID: ${index + 1} - ${item.content}`)
     .join("\n");
 
   // デフォルトのコメントフォーマット
@@ -210,6 +210,8 @@ export function getChecklistCategorizePrompt({
   return `
 You are a categorization assistant.
 When given a list of checklists (each with an ID and content), partition them into up to ${maxCategories} meaningful categories.
+
+Each checklist item is identified by a sequential number (1, 2, 3, ...). Use these numbers in your response.
 
 Constraints:
 1. Every single checklist item must be assigned to exactly one category. No items should be left unclassified.
