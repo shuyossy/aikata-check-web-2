@@ -104,4 +104,8 @@ export type MessageCode =
   | "REVIEW_DOCUMENT_CACHE_FILE_NAME_EMPTY"
   | "REVIEW_DOCUMENT_CACHE_PROCESS_MODE_INVALID"
   // レビュータイプエラー
-  | "REVIEW_TYPE_INVALID";
+  | "REVIEW_TYPE_INVALID"
+  // 外部APIレビューエラー
+  | "REVIEW_API_NO_RESULTS"
+  // レビューステータスエラー
+  | "REVIEW_STATUS_NOT_REVIEWING";

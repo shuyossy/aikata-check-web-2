@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useAction } from "next-safe-action/hooks";
 import { useRouter } from "next/navigation";
 import {
@@ -9,10 +9,13 @@ import {
   HelpCircle,
   Loader2,
   Settings,
+  ExternalLink,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { FormSection } from "@/components/ui/form-section";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { FileUploadArea, UploadedFile, isPdfFile } from "@/components/upload";
@@ -35,6 +38,8 @@ import {
 } from "@/lib/client";
 import { executeReviewAction } from "../actions";
 import { extractServerErrorMessage } from "@/hooks";
+import { useApiReview } from "../hooks/useApiReview";
+import type { ExternalReviewDocument } from "@/types/shared/externalReviewApi";
 
 interface ReviewExecutionClientProps {
   projectId: string;
@@ -89,6 +94,9 @@ export function ReviewExecutionClient({
   // レビュー種別
   const [reviewType, setReviewType] = useState<ReviewTypeValue>("small");
 
+  // 外部APIエンドポイント（API呼び出しの場合のみ使用）
+  const [apiEndpoint, setApiEndpoint] = useState("");
+
   // レビュー設定
   const [reviewSettings, setReviewSettings] = useState<ReviewSettingsValue>({
     additionalInstructions:
@@ -104,7 +112,14 @@ export function ReviewExecutionClient({
   // PDF変換中フラグ
   const [isConverting, setIsConverting] = useState(false);
 
-  // レビュー実行アクション
+  // 外部APIレビューフック
+  const {
+    execute: executeApiReview,
+    progress: apiProgress,
+    isExecuting: isApiExecuting,
+  } = useApiReview();
+
+  // レビュー実行アクション（通常のsmall/large）
   const { execute: executeReview, isExecuting } = useAction(
     executeReviewAction,
     {
@@ -126,7 +141,7 @@ export function ReviewExecutionClient({
   );
 
   // UI用の統合ローディングフラグ
-  const isProcessing = isConverting || isExecuting;
+  const isProcessing = isConverting || isExecuting || isApiExecuting;
 
   // ファイル変更時のハンドラー
   const handleFilesChange = useCallback((newFiles: UploadedFile[]) => {
@@ -158,6 +173,17 @@ export function ReviewExecutionClient({
     }
   }, []);
 
+  // URLバリデーション
+  const isValidUrl = useCallback((url: string) => {
+    if (!url.trim()) return false;
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
   // 実行ボタンの有効/無効判定
   const canExecute = useCallback(() => {
     // レビュー対象名が入力されているか
@@ -183,8 +209,11 @@ export function ReviewExecutionClient({
     if (!validateEvaluationCriteria(reviewSettings.evaluationCriteria))
       return false;
 
+    // API呼び出しの場合は、エンドポイントが有効か
+    if (reviewType === "api" && !isValidUrl(apiEndpoint)) return false;
+
     return true;
-  }, [name, files, checklistCount, reviewSettings.evaluationCriteria]);
+  }, [name, files, checklistCount, reviewSettings.evaluationCriteria, reviewType, apiEndpoint, isValidUrl]);
 
   /**
    * PDF画像変換を実行し、ファイルリストを更新
@@ -219,7 +248,7 @@ export function ReviewExecutionClient({
   };
 
   /**
-   * FormDataを構築
+   * FormDataを構築（通常のレビュー用）
    */
   const buildFormData = (
     processedFiles: UploadedFile[],
@@ -278,6 +307,41 @@ export function ReviewExecutionClient({
     return formData;
   };
 
+  /**
+   * ファイルを外部API用ドキュメント形式に変換
+   */
+  const convertToExternalDocuments = async (
+    processedFiles: UploadedFile[]
+  ): Promise<ExternalReviewDocument[]> => {
+    const documents: ExternalReviewDocument[] = [];
+
+    for (const file of processedFiles) {
+      if (file.processMode === "image" && file.convertedImages) {
+        // 画像モード: 各画像をBase64として追加
+        for (let i = 0; i < file.convertedImages.length; i++) {
+          const imgFile = file.convertedImages[i];
+          const arrayBuffer = await imgFile.arrayBuffer();
+          const base64 = Buffer.from(arrayBuffer).toString("base64");
+          documents.push({
+            name: `${file.name}_page${i + 1}.png`,
+            type: "image",
+            content: base64,
+          });
+        }
+      } else {
+        // テキストモード: ファイル内容をテキストとして追加
+        const text = await file.file.text();
+        documents.push({
+          name: file.name,
+          type: "text",
+          content: text,
+        });
+      }
+    }
+
+    return documents;
+  };
+
   // 実行
   const handleExecute = useCallback(async () => {
     if (!canExecute()) return;
@@ -288,22 +352,56 @@ export function ReviewExecutionClient({
       const processedFiles = await processPdfFiles(files);
       setIsConverting(false);
 
-      const formData = buildFormData(
-        processedFiles,
-        spaceId,
-        name.trim(),
-        reviewSettings,
-        reviewType
-      );
+      if (reviewType === "api") {
+        // 外部APIレビュー
+        const documents = await convertToExternalDocuments(processedFiles);
 
-      executeReview(formData);
+        const result = await executeApiReview({
+          reviewSpaceId: spaceId,
+          name: name.trim(),
+          documents,
+          apiEndpoint,
+          reviewSettings: {
+            additionalInstructions: reviewSettings.additionalInstructions || null,
+            concurrentReviewItems: reviewSettings.concurrentReviewItems,
+            commentFormat: reviewSettings.commentFormat || null,
+            evaluationCriteria: reviewSettings.evaluationCriteria,
+          },
+        });
+
+        if (result.success) {
+          showSuccess("外部APIレビューが完了しました");
+          router.push(
+            `/projects/${projectId}/spaces/${spaceId}/review/${result.reviewTargetId}`
+          );
+        } else {
+          showError(result.errorMessage || "外部APIレビューに失敗しました");
+        }
+      } else {
+        // 通常のレビュー（small/large）
+        const formData = buildFormData(
+          processedFiles,
+          spaceId,
+          name.trim(),
+          reviewSettings,
+          reviewType
+        );
+
+        executeReview(formData);
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "PDF変換に失敗しました";
       showError(errorMessage);
       setIsConverting(false);
     }
-  }, [canExecute, files, spaceId, name, reviewSettings, reviewType, executeReview]);
+  }, [canExecute, files, spaceId, name, reviewSettings, reviewType, apiEndpoint, executeReview, executeApiReview, projectId, router]);
+
+  // 外部APIレビューの進捗表示
+  const progressPercentage = useMemo(() => {
+    if (apiProgress.totalChunks === 0) return 0;
+    return Math.round((apiProgress.completedChunks / apiProgress.totalChunks) * 100);
+  }, [apiProgress.completedChunks, apiProgress.totalChunks]);
 
   return (
     <div className="flex-1 flex flex-col">
@@ -417,9 +515,54 @@ export function ReviewExecutionClient({
               />
             </FormSection>
 
-            {/* Section 4: レビュー設定 */}
+            {/* Section 4: 外部APIエンドポイント（API呼び出しの場合のみ） */}
+            {reviewType === "api" && (
+              <FormSection sectionNumber={4} title="外部APIエンドポイント">
+                <Label
+                  htmlFor="apiEndpoint"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  エンドポイントURL <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="apiEndpoint"
+                    value={apiEndpoint}
+                    onChange={(e) => setApiEndpoint(e.target.value)}
+                    placeholder="https://example.com/api/review"
+                    disabled={isProcessing}
+                    className="w-full pl-10"
+                  />
+                </div>
+                <div className="mt-2 flex items-center gap-2">
+                  <p className="text-sm text-gray-500">
+                    レビュー処理を委託する外部APIのエンドポイントURLを入力してください
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-blue-600 hover:text-blue-800 text-sm p-0 h-auto"
+                    onClick={() =>
+                      window.open(`/projects/${projectId}/spaces/${spaceId}/api-spec`, '_blank')
+                    }
+                  >
+                    <ExternalLink className="w-3 h-3 mr-1" />
+                    API仕様を確認
+                  </Button>
+                </div>
+                {apiEndpoint && !isValidUrl(apiEndpoint) && (
+                  <p className="mt-1 text-sm text-red-500">
+                    有効なURLを入力してください
+                  </p>
+                )}
+              </FormSection>
+            )}
+
+            {/* Section 5: レビュー設定 */}
             <FormSection
-              sectionNumber={4}
+              sectionNumber={reviewType === "api" ? 5 : 4}
               title="レビュー設定"
               titleIcon={<Settings className="w-4 h-4 text-gray-400" />}
             >
@@ -429,6 +572,26 @@ export function ReviewExecutionClient({
                 disabled={isProcessing}
               />
             </FormSection>
+
+            {/* 外部APIレビュー進捗表示 */}
+            {isApiExecuting && apiProgress.totalChunks > 0 && (
+              <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-800">
+                    外部API呼び出し中...
+                  </span>
+                  <span className="text-sm text-blue-700">
+                    {apiProgress.completedChunks} / {apiProgress.totalChunks} チャンク完了
+                  </span>
+                </div>
+                <Progress value={progressPercentage} className="h-2" />
+                <p className="mt-2 text-xs text-blue-600">
+                  {apiProgress.status === "starting" && "レビューを開始しています..."}
+                  {apiProgress.status === "processing" && `チャンク ${apiProgress.currentChunk + 1} を処理中`}
+                  {apiProgress.status === "completing" && "レビューを完了しています..."}
+                </p>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-gray-200">
@@ -449,12 +612,12 @@ export function ReviewExecutionClient({
                 {isProcessing ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    レビュー実行中...
+                    {reviewType === "api" ? "外部API呼び出し中..." : "レビュー実行中..."}
                   </>
                 ) : (
                   <>
                     <PlayCircle className="w-5 h-5" />
-                    レビューを実行
+                    {reviewType === "api" ? "外部APIでレビュー" : "レビューを実行"}
                   </>
                 )}
               </Button>
@@ -479,6 +642,11 @@ export function ReviewExecutionClient({
                   </li>
                   <li>レビュー結果は保存され、後からいつでも確認できます</li>
                   <li>レビューには数分程度かかる場合があります</li>
+                  {reviewType === "api" && (
+                    <li className="text-amber-700">
+                      API呼び出しの場合、リトライ・Q&A機能は利用できません
+                    </li>
+                  )}
                 </ul>
               </div>
             </div>

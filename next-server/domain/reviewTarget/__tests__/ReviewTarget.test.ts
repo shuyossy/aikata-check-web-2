@@ -249,6 +249,54 @@ describe("ReviewTarget", () => {
 
         expect(errorTarget.canRetry()).toBe(true);
       });
+
+      it("外部APIレビュー（reviewType=api）の場合、completed状態でもリトライ不可（false）", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+          reviewType: "api",
+        });
+
+        const completedTarget = reviewTarget.startReviewing().completeReview();
+
+        expect(completedTarget.canRetry()).toBe(false);
+      });
+
+      it("外部APIレビュー（reviewType=api）の場合、error状態でもリトライ不可（false）", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+          reviewType: "api",
+        });
+
+        const errorTarget = reviewTarget.markAsError();
+
+        expect(errorTarget.canRetry()).toBe(false);
+      });
+
+      it("smallレビューの場合、completed状態でリトライ可能（true）", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+          reviewType: "small",
+        });
+
+        const completedTarget = reviewTarget.startReviewing().completeReview();
+
+        expect(completedTarget.canRetry()).toBe(true);
+      });
+
+      it("largeレビューの場合、completed状態でリトライ可能（true）", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+          reviewType: "large",
+        });
+
+        const completedTarget = reviewTarget.startReviewing().completeReview();
+
+        expect(completedTarget.canRetry()).toBe(true);
+      });
     });
 
     describe("prepareForRetry", () => {

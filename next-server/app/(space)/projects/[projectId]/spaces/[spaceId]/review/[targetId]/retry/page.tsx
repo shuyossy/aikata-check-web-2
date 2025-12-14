@@ -128,6 +128,19 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
     };
   }
 
+  // 外部APIレビュー（reviewType="api"）の場合、リトライ不可として扱う
+  // RetryReviewClientはapiタイプを除外した型を期待するため、適切に変換する
+  const isApiReview = retryInfo.reviewType === "api";
+  const retryInfoForClient = {
+    ...retryInfo,
+    // apiタイプの場合はnullに変換（リトライ画面ではapiタイプは扱わない）
+    reviewType: (isApiReview ? null : retryInfo.reviewType) as Exclude<typeof retryInfo.reviewType, "api">,
+    // apiタイプの場合はcanRetryもfalseにする
+    canRetry: isApiReview ? false : retryInfo.canRetry,
+    // リトライ不可の理由（外部APIレビューの場合のみ設定）
+    retryNotAllowedReason: isApiReview ? ("api_review" as const) : undefined,
+  };
+
   return (
     <RetryReviewClient
       projectId={projectId}
@@ -136,7 +149,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
       spaceName={reviewSpace.name}
       targetId={targetId}
       targetName={reviewTargetData.name}
-      retryInfo={retryInfo}
+      retryInfo={retryInfoForClient}
     />
   );
 }

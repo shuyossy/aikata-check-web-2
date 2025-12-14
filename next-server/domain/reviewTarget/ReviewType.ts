@@ -6,6 +6,7 @@ import { domainValidationError } from "@/lib/server/error";
 export const REVIEW_TYPE = {
   SMALL: "small",
   LARGE: "large",
+  API: "api",
 } as const;
 
 export type ReviewTypeValue = (typeof REVIEW_TYPE)[keyof typeof REVIEW_TYPE];
@@ -69,6 +70,13 @@ export class ReviewType {
    */
   isLarge(): boolean {
     return this._value === REVIEW_TYPE.LARGE;
+  }
+
+  /**
+   * 外部API呼び出しレビューかどうか
+   */
+  isApi(): boolean {
+    return this._value === REVIEW_TYPE.API;
   }
 
   /**

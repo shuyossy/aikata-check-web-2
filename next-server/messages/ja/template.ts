@@ -107,5 +107,13 @@ export const template = {
   REVIEW_DOCUMENT_CACHE_FILE_NAME_EMPTY: `ファイル名は必須です。`,
   REVIEW_DOCUMENT_CACHE_PROCESS_MODE_INVALID: `処理モードが不正です。textまたはimageである必要があります。`,
   // レビュータイプエラー
-  REVIEW_TYPE_INVALID: `レビュー種別が不正です。smallまたはlargeである必要があります。`,
+  REVIEW_TYPE_INVALID: `レビュー種別が不正です。small、large、apiのいずれかである必要があります。`,
+  // 外部APIレビューエラー
+  REVIEW_API_CALL_FAILED: `外部APIの呼び出しに失敗しました。{detail}`,
+  REVIEW_API_RESPONSE_INVALID: `外部APIのレスポンス形式が不正です。{detail}`,
+  REVIEW_API_ENDPOINT_REQUIRED: `外部APIエンドポイントは必須です。`,
+  REVIEW_API_CANNOT_RETRY: `外部APIレビューはリトライできません。新規レビューを実行してください。`,
+  REVIEW_API_NO_RESULTS: `保存するレビュー結果がありません。`,
+  // レビューステータスエラー
+  REVIEW_STATUS_NOT_REVIEWING: `レビュー実行中ではありません。`,
 } as const;

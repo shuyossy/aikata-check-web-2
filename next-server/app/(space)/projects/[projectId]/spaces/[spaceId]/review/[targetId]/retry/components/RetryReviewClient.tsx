@@ -48,6 +48,11 @@ type ChecklistSource = "previous" | "latest";
  */
 type RetryReviewType = Exclude<ReviewTypeValue, "api">;
 
+/**
+ * リトライ不可の理由
+ */
+type RetryNotAllowedReason = "api_review";
+
 interface RetryInfoData {
   canRetry: boolean;
   reviewType: RetryReviewType | null;
@@ -62,6 +67,8 @@ interface RetryInfoData {
   hasChecklistDiff: boolean;
   snapshotChecklistCount: number;
   currentChecklistCount: number;
+  /** リトライ不可の理由 */
+  retryNotAllowedReason?: RetryNotAllowedReason;
 }
 
 interface RetryReviewClientProps {
@@ -182,8 +189,25 @@ export function RetryReviewClient({
     reviewSettings,
   ]);
 
+  // リトライ不可の理由に応じたメッセージを取得
+  const getRetryNotAllowedMessage = (): { title: string; description: string } => {
+    if (retryInfo.retryNotAllowedReason === "api_review") {
+      return {
+        title: "外部APIレビューはリトライできません",
+        description:
+          "外部APIレビューではリトライ機能を利用できません。新規でレビューを実行してください。",
+      };
+    }
+    return {
+      title: "リトライを実行できません",
+      description:
+        "このレビュー対象はリトライを実行できる状態ではありません。アップロードしたファイルが存在しないか、レビューが実行中の可能性があります。",
+    };
+  };
+
   // リトライ不可の場合の表示
   if (!retryInfo.canRetry) {
+    const { title, description } = getRetryNotAllowedMessage();
     return (
       <div className="flex-1 flex flex-col">
         <main className="flex-1 p-6">
@@ -206,12 +230,9 @@ export function RetryReviewClient({
             <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8">
               <div className="flex items-center gap-3 text-red-600 mb-4">
                 <AlertCircle className="w-8 h-8" />
-                <h3 className="text-xl font-bold">リトライを実行できません</h3>
+                <h3 className="text-xl font-bold">{title}</h3>
               </div>
-              <p className="text-gray-600 mb-6">
-                このレビュー対象はリトライを実行できる状態ではありません。
-                ドキュメントキャッシュが存在しないか、レビューが実行中の可能性があります。
-              </p>
+              <p className="text-gray-600 mb-6">{description}</p>
               <Button
                 variant="outline"
                 onClick={() =>

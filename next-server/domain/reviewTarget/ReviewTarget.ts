@@ -213,9 +213,16 @@ export class ReviewTarget {
 
   /**
    * リトライ可能かどうかを判定する
-   * completedまたはerror状態かつレビュー実行中でない場合にリトライ可能
+   * - completedまたはerror状態かつレビュー実行中でない場合にリトライ可能
+   * - ただし、外部API呼び出しレビュー（reviewType=api）の場合はリトライ不可
+   *   （ドキュメントキャッシュが保存されないため）
    */
   canRetry(): boolean {
+    // 外部API呼び出しレビューの場合はリトライ不可
+    if (this._reviewType?.isApi()) {
+      return false;
+    }
+
     return (
       (this._status.isCompleted() || this._status.isError()) &&
       !this._status.isReviewing()

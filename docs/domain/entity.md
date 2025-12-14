@@ -315,6 +315,21 @@
 
 ## レビュー対象管理
 
+- レビュー種別
+  - 識別子: ReviewType
+  - 種類: 値オブジェクト
+  - 不変条件
+    - small, large, api のいずれかであること
+  - 属性
+    - value: string - レビュー種別文字列
+  - 振る舞い
+    - create: レビュー種別文字列から生成する
+    - reconstruct: 既存の文字列から復元する
+    - isSmall: 少量レビューか確認する
+    - isLarge: 大量レビューか確認する
+    - isApi: API呼び出しレビューか確認する
+    - canRetry: リトライ可能か確認する（apiの場合はfalseを返す）
+
 - レビュー対象ID
   - 識別子: ReviewTargetId
   - 種類: 値オブジェクト
@@ -361,11 +376,13 @@
     - レビュースペースIDは空ではないこと（UUID形式）
     - レビュー対象名は空ではないこと（255文字以内）
     - ステータスは有効な値であること
+    - レビュー種別は有効な値であること
   - 属性
     - id: ReviewTargetId - レビュー対象ID
     - reviewSpaceId: ReviewSpaceId - 所属レビュースペースID
     - name: ReviewTargetName - レビュー対象名
     - status: ReviewTargetStatus - レビューステータス
+    - reviewType: ReviewType - レビュー種別（small/large/api）
     - reviewSettings: ReviewSettings | null - レビュー実行時に使用した設定
     - createdAt: Date - 作成日時
     - updatedAt: Date - 更新日時
@@ -375,7 +392,7 @@
     - startReview: レビューを開始する（status→reviewing）
     - completeReview: レビューを完了する（status→completed）
     - failReview: レビューを失敗状態にする（status→error）
-    - canRetry: リトライ可能か確認する（completed or error）
+    - canRetry: リトライ可能か確認する（completed or errorかつreviewType.canRetry()がtrue）
     - toDto: DTOに変換する
     - toListItemDto: 一覧用DTOに変換する
 

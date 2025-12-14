@@ -18,6 +18,16 @@ describe("ReviewType", () => {
         expect(reviewType.value).toBe(REVIEW_TYPE.LARGE);
         expect(reviewType.isSmall()).toBe(false);
         expect(reviewType.isLarge()).toBe(true);
+        expect(reviewType.isApi()).toBe(false);
+      });
+
+      it("api種別で生成できる", () => {
+        const reviewType = ReviewType.create("api");
+
+        expect(reviewType.value).toBe(REVIEW_TYPE.API);
+        expect(reviewType.isSmall()).toBe(false);
+        expect(reviewType.isLarge()).toBe(false);
+        expect(reviewType.isApi()).toBe(true);
       });
     });
 
@@ -35,23 +45,44 @@ describe("ReviewType", () => {
         expect(reviewType.value).toBe(REVIEW_TYPE.LARGE);
         expect(reviewType.isLarge()).toBe(true);
       });
+
+      it("api種別を復元できる", () => {
+        const reviewType = ReviewType.reconstruct("api");
+
+        expect(reviewType.value).toBe(REVIEW_TYPE.API);
+        expect(reviewType.isApi()).toBe(true);
+      });
     });
 
     describe("判定メソッド", () => {
       it("isSmall()はsmall種別のときのみtrueを返す", () => {
         const small = ReviewType.reconstruct("small");
         const large = ReviewType.reconstruct("large");
+        const api = ReviewType.reconstruct("api");
 
         expect(small.isSmall()).toBe(true);
         expect(large.isSmall()).toBe(false);
+        expect(api.isSmall()).toBe(false);
       });
 
       it("isLarge()はlarge種別のときのみtrueを返す", () => {
         const small = ReviewType.reconstruct("small");
         const large = ReviewType.reconstruct("large");
+        const api = ReviewType.reconstruct("api");
 
         expect(small.isLarge()).toBe(false);
         expect(large.isLarge()).toBe(true);
+        expect(api.isLarge()).toBe(false);
+      });
+
+      it("isApi()はapi種別のときのみtrueを返す", () => {
+        const small = ReviewType.reconstruct("small");
+        const large = ReviewType.reconstruct("large");
+        const api = ReviewType.reconstruct("api");
+
+        expect(small.isApi()).toBe(false);
+        expect(large.isApi()).toBe(false);
+        expect(api.isApi()).toBe(true);
       });
     });
 
@@ -75,9 +106,11 @@ describe("ReviewType", () => {
       it("種別値を文字列で返す", () => {
         const small = ReviewType.reconstruct("small");
         const large = ReviewType.reconstruct("large");
+        const api = ReviewType.reconstruct("api");
 
         expect(small.toString()).toBe("small");
         expect(large.toString()).toBe("large");
+        expect(api.toString()).toBe("api");
       });
     });
   });

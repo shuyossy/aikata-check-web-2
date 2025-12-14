@@ -37,3 +37,25 @@ export type {
   RetryReviewResult,
   RetryScope,
 } from "./RetryReviewService";
+
+// 外部APIレビュー関連
+export { StartApiReviewService } from "./StartApiReviewService";
+export type {
+  StartApiReviewCommand,
+  StartApiReviewResult,
+  ApiReviewSettingsCommand,
+  CheckListItemDto,
+} from "./StartApiReviewService";
+
+export { SaveApiReviewResultsService } from "./SaveApiReviewResultsService";
+export type {
+  SaveApiReviewResultsCommand,
+  SaveApiReviewResultsResult,
+  ApiReviewResultInput,
+} from "./SaveApiReviewResultsService";
+
+export { CompleteApiReviewService } from "./CompleteApiReviewService";
+export type {
+  CompleteApiReviewCommand,
+  CompleteApiReviewResult,
+} from "./CompleteApiReviewService";
