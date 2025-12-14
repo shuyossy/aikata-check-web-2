@@ -6,12 +6,12 @@ import { useRouter } from "next/navigation";
 /**
  * ポーリング間隔（ミリ秒）
  */
-const POLLING_INTERVAL = 10000;
+export const POLLING_INTERVAL = 10000;
 
 /**
  * レビュー実行中のステータス
  */
-const REVIEWING_STATUS = "reviewing";
+export const REVIEWING_STATUS = "reviewing";
 
 /**
  * レビュー結果ポーリングフックの引数
