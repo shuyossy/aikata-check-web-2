@@ -97,4 +97,15 @@ export const template = {
   REVIEW_UNEXPECTED_NO_DATA: `予期せぬエラーが発生しました（分割対象データなし）`,
   REVIEW_UNKNOWN_ERROR: `不明なエラーが発生しました`,
   REVIEW_UNEXPECTED_ERROR: `予期せぬエラーが発生しました`,
+  // レビューリトライエラー
+  RETRY_NOT_AVAILABLE: `リトライを実行できません。レビューが完了またはエラー状態であることを確認してください。`,
+  RETRY_NO_CACHE: `ドキュメントキャッシュが見つかりません。新規レビューを実行してください。`,
+  RETRY_REVIEWING: `レビュー実行中のためリトライできません。`,
+  RETRY_NO_ITEMS: `リトライ対象のチェック項目がありません。`,
+  // レビュードキュメントキャッシュエラー
+  REVIEW_DOCUMENT_CACHE_ID_INVALID_FORMAT: `ドキュメントキャッシュIDの形式が不正です。有効なUUID形式である必要があります。`,
+  REVIEW_DOCUMENT_CACHE_FILE_NAME_EMPTY: `ファイル名は必須です。`,
+  REVIEW_DOCUMENT_CACHE_PROCESS_MODE_INVALID: `処理モードが不正です。textまたはimageである必要があります。`,
+  // レビュータイプエラー
+  REVIEW_TYPE_INVALID: `レビュー種別が不正です。smallまたはlargeである必要があります。`,
 } as const;

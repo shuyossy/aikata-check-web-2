@@ -7,11 +7,20 @@ import type { IReviewTargetRepository } from "@/application/shared/port/reposito
 import type { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository } from "@/application/shared/port/repository";
+import type { IProjectRepository, IReviewDocumentCacheRepository } from "@/application/shared/port/repository";
 import { ReviewSpace } from "@/domain/reviewSpace";
+import { ReviewDocumentCache } from "@/domain/reviewTarget";
 import { Project } from "@/domain/project";
 import { CheckListItem } from "@/domain/checkListItem";
 import type { RawUploadFileMeta, FileBuffersMap } from "@/application/mastra";
+
+// ReviewCacheHelperのモック
+vi.mock("@/lib/server/reviewCacheHelper", () => ({
+  ReviewCacheHelper: {
+    saveTextCache: vi.fn().mockResolvedValue("/cache/path/text.txt"),
+    saveImageCache: vi.fn().mockResolvedValue("/cache/path/images"),
+  },
+}));
 
 // Mastraワークフローのモック
 const mockStart = vi.fn();
@@ -80,6 +89,13 @@ describe("ExecuteReviewService", () => {
     countByMemberId: vi.fn(),
     save: vi.fn(),
     delete: vi.fn(),
+  };
+
+  const mockReviewDocumentCacheRepository: IReviewDocumentCacheRepository = {
+    findByReviewTargetId: vi.fn(),
+    save: vi.fn(),
+    saveMany: vi.fn(),
+    deleteByReviewTargetId: vi.fn(),
   };
 
   let service: ExecuteReviewService;
@@ -177,6 +193,7 @@ describe("ExecuteReviewService", () => {
       mockCheckListItemRepository,
       mockReviewSpaceRepository,
       mockProjectRepository,
+      mockReviewDocumentCacheRepository,
     );
   });
 
@@ -427,6 +444,155 @@ describe("ExecuteReviewService", () => {
       await expect(service.execute(command)).rejects.toMatchObject({
         messageCode: "REVIEW_EXECUTION_FAILED",
       });
+    });
+  });
+
+  describe("キャッシュ保存機能", () => {
+    it("レビュー成功時にonExtractedFilesCachedコールバックがRuntimeContextに設定される", async () => {
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
+        testCheckListItems,
+      );
+      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
+
+      const command: ExecuteReviewCommand = {
+        reviewSpaceId: testReviewSpaceId,
+        name: "テストレビュー",
+        userId: testUserId,
+        files: testFiles,
+        fileBuffers: createTestFileBuffers(),
+      };
+
+      const result = await service.execute(command);
+
+      expect(result.status).toBe("completed");
+
+      // ワークフロー実行時のRuntimeContextにonExtractedFilesCachedが設定されていることを確認
+      expect(mockStart).toHaveBeenCalled();
+      const startCall = mockStart.mock.calls[0][0];
+      const runtimeContext = startCall.runtimeContext;
+      const callback = runtimeContext.get("onExtractedFilesCached");
+      expect(callback).toBeDefined();
+      expect(typeof callback).toBe("function");
+    });
+
+    it("onExtractedFilesCachedコールバックがテキストモードのキャッシュを正しく保存する", async () => {
+      const { ReviewCacheHelper } = await import("@/lib/server/reviewCacheHelper");
+
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
+        testCheckListItems,
+      );
+      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
+
+      const command: ExecuteReviewCommand = {
+        reviewSpaceId: testReviewSpaceId,
+        name: "テストレビュー",
+        userId: testUserId,
+        files: testFiles,
+        fileBuffers: createTestFileBuffers(),
+      };
+
+      await service.execute(command);
+
+      // RuntimeContextからコールバックを取得して実行
+      const startCall = mockStart.mock.calls[0][0];
+      const runtimeContext = startCall.runtimeContext;
+      const callback = runtimeContext.get("onExtractedFilesCached");
+      const reviewTargetId = runtimeContext.get("reviewTargetId");
+
+      // テキストモードのExtractedFileでコールバックを実行
+      await callback(
+        [
+          {
+            id: "doc-1",
+            name: "test.txt",
+            type: "text/plain",
+            processMode: "text",
+            textContent: "テストドキュメントの内容",
+          },
+        ],
+        reviewTargetId,
+      );
+
+      // ReviewCacheHelper.saveTextCacheが呼ばれることを確認
+      expect(ReviewCacheHelper.saveTextCache).toHaveBeenCalledWith(
+        reviewTargetId,
+        "doc-1",
+        "テストドキュメントの内容",
+      );
+
+      // ReviewDocumentCacheが保存されることを確認
+      expect(mockReviewDocumentCacheRepository.save).toHaveBeenCalled();
+      const savedCache = vi.mocked(mockReviewDocumentCacheRepository.save).mock.calls[0][0];
+      expect(savedCache).toBeInstanceOf(ReviewDocumentCache);
+      expect(savedCache.fileName).toBe("test.txt");
+      expect(savedCache.processMode).toBe("text");
+      expect(savedCache.cachePath).toBe("/cache/path/text.txt");
+    });
+
+    it("onExtractedFilesCachedコールバックが画像モードのキャッシュを正しく保存する", async () => {
+      const { ReviewCacheHelper } = await import("@/lib/server/reviewCacheHelper");
+
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
+        testCheckListItems,
+      );
+      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
+
+      const command: ExecuteReviewCommand = {
+        reviewSpaceId: testReviewSpaceId,
+        name: "テストレビュー",
+        userId: testUserId,
+        files: testFiles,
+        fileBuffers: createTestFileBuffers(),
+      };
+
+      await service.execute(command);
+
+      // RuntimeContextからコールバックを取得して実行
+      const startCall = mockStart.mock.calls[0][0];
+      const runtimeContext = startCall.runtimeContext;
+      const callback = runtimeContext.get("onExtractedFilesCached");
+      const reviewTargetId = runtimeContext.get("reviewTargetId");
+
+      // 画像モードのExtractedFileでコールバックを実行
+      await callback(
+        [
+          {
+            id: "doc-2",
+            name: "test.pdf",
+            type: "application/pdf",
+            processMode: "image",
+            imageData: ["base64image1", "base64image2"],
+          },
+        ],
+        reviewTargetId,
+      );
+
+      // ReviewCacheHelper.saveImageCacheが呼ばれることを確認
+      expect(ReviewCacheHelper.saveImageCache).toHaveBeenCalledWith(
+        reviewTargetId,
+        "doc-2",
+        ["base64image1", "base64image2"],
+      );
+
+      // ReviewDocumentCacheが保存されることを確認
+      expect(mockReviewDocumentCacheRepository.save).toHaveBeenCalled();
+      const savedCache = vi.mocked(mockReviewDocumentCacheRepository.save).mock.calls[0][0];
+      expect(savedCache).toBeInstanceOf(ReviewDocumentCache);
+      expect(savedCache.fileName).toBe("test.pdf");
+      expect(savedCache.processMode).toBe("image");
+      expect(savedCache.cachePath).toBe("/cache/path/images");
     });
   });
 });

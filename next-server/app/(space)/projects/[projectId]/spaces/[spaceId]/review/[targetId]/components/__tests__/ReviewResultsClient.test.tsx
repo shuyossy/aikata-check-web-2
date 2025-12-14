@@ -27,6 +27,7 @@ describe("ReviewResultsClient", () => {
     spaceId: "space-1",
     spaceName: "テストスペース",
     targetId: "target-1",
+    canRetry: false,
   };
 
   // テスト用のレビュー対象データ型
@@ -281,43 +282,73 @@ describe("ReviewResultsClient", () => {
       expect(csvButton).toBeDisabled();
     });
 
-    it('status === "completed"の場合、Q&A/リトライ/CSV出力ボタンが有効になる', () => {
+    it('status === "completed"の場合、Q&A/CSV出力ボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "completed" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={false} />);
 
       const qaButton = screen.getByRole("button", { name: /Q&A/i });
-      const retryButton = screen.getByRole("button", { name: /リトライ/i });
       const csvButton = screen.getByRole("button", { name: /CSV出力/i });
 
       expect(qaButton).not.toBeDisabled();
-      expect(retryButton).not.toBeDisabled();
       expect(csvButton).not.toBeDisabled();
     });
 
-    it('status === "error"の場合、Q&A/リトライ/CSV出力ボタンが有効になる', () => {
+    it('status === "completed"かつcanRetry === trueの場合、リトライボタンが有効になる', () => {
+      const reviewTarget = createReviewTarget({ status: "completed" });
+      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={true} />);
+
+      const retryButton = screen.getByRole("button", { name: /リトライ/i });
+
+      expect(retryButton).not.toBeDisabled();
+    });
+
+    it('status === "completed"かつcanRetry === falseの場合、リトライボタンが無効になる', () => {
+      const reviewTarget = createReviewTarget({ status: "completed" });
+      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={false} />);
+
+      const retryButton = screen.getByRole("button", { name: /リトライ/i });
+
+      expect(retryButton).toBeDisabled();
+    });
+
+    it('status === "error"の場合、Q&A/CSV出力ボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "error" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={false} />);
 
       const qaButton = screen.getByRole("button", { name: /Q&A/i });
-      const retryButton = screen.getByRole("button", { name: /リトライ/i });
       const csvButton = screen.getByRole("button", { name: /CSV出力/i });
 
       expect(qaButton).not.toBeDisabled();
-      expect(retryButton).not.toBeDisabled();
       expect(csvButton).not.toBeDisabled();
     });
 
-    it('status === "pending"の場合、Q&A/リトライ/CSV出力ボタンが有効になる', () => {
+    it('status === "error"かつcanRetry === trueの場合、リトライボタンが有効になる', () => {
+      const reviewTarget = createReviewTarget({ status: "error" });
+      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={true} />);
+
+      const retryButton = screen.getByRole("button", { name: /リトライ/i });
+
+      expect(retryButton).not.toBeDisabled();
+    });
+
+    it('status === "pending"の場合、Q&A/CSV出力ボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "pending" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={false} />);
 
       const qaButton = screen.getByRole("button", { name: /Q&A/i });
-      const retryButton = screen.getByRole("button", { name: /リトライ/i });
       const csvButton = screen.getByRole("button", { name: /CSV出力/i });
 
       expect(qaButton).not.toBeDisabled();
-      expect(retryButton).not.toBeDisabled();
       expect(csvButton).not.toBeDisabled();
+    });
+
+    it('status === "pending"かつcanRetry === trueの場合、リトライボタンが有効になる', () => {
+      const reviewTarget = createReviewTarget({ status: "pending" });
+      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={true} />);
+
+      const retryButton = screen.getByRole("button", { name: /リトライ/i });
+
+      expect(retryButton).not.toBeDisabled();
     });
   });
 

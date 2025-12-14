@@ -71,6 +71,7 @@ describe("DeleteReviewTargetService", () => {
       reviewSpaceId: testReviewSpaceId,
       name: "テストレビュー対象",
       status,
+      reviewType: null,
       reviewSettings: null,
       createdAt: now,
       updatedAt: now,

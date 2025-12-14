@@ -1,4 +1,4 @@
-import { createWorkflow } from "@mastra/core/workflows";
+import { createWorkflow, createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import { baseStepOutputSchema } from "../schema";
 import {
@@ -7,6 +7,8 @@ import {
   checkListItemSchema,
   evaluationCriterionSchema,
   reviewTypeSchema,
+  type ReviewExecutionWorkflowRuntimeContext,
+  type CachedDocument,
 } from "./types";
 import {
   smallDocumentReviewStep,
@@ -16,7 +18,7 @@ import {
   classifyChecklistStep,
   classifyChecklistOutputSchema,
 } from "./steps/classifyChecklistStep";
-import { fileProcessingStep, extractedFileSchema } from "../shared";
+import { fileProcessingStep, extractedFileSchema, type ExtractedFile } from "../shared";
 import {
   largeDocumentReviewWorkflow,
   largeDocumentReviewOutputSchema,
@@ -112,12 +114,29 @@ const chunkReviewWorkflow = createWorkflow({
   .commit();
 
 /**
+ * キャッシュされたドキュメントをExtractedFile形式に変換する
+ */
+function convertCachedDocumentsToExtractedFiles(
+  cachedDocuments: CachedDocument[],
+): ExtractedFile[] {
+  return cachedDocuments.map((doc) => ({
+    id: doc.id,
+    name: doc.name,
+    type: doc.type,
+    processMode: doc.processMode,
+    textContent: doc.textContent,
+    imageData: doc.imageData,
+  }));
+}
+
+/**
  * レビュー実行ワークフロー
  * ドキュメントをチェック項目に基づいてAIレビューする
  *
  * フロー:
  * 1. parallel: ファイル処理とチェックリスト分類を並列実行（少量/大量共通）
  *    - fileProcessingStep: バイナリファイルからテキスト抽出/画像Base64変換
+ *      ※リトライ時（useCachedDocuments=true）の場合はスキップし、キャッシュを使用
  *    - classifyChecklistStep: チェックリストを分類・分割
  * 2. foreach: 各チェックリストチャンクに対して
  *    - branch: reviewTypeに基づいて分岐
@@ -125,6 +144,53 @@ const chunkReviewWorkflow = createWorkflow({
  *      - large: largeDocumentReviewWorkflow
  * 3. 全チャンクの結果を統合
  */
+/**
+ * キャッシュモード判定ステップ
+ * RuntimeContextからキャッシュモードかどうかを判定し、キャッシュモードの場合は
+ * キャッシュデータをExtractedFilesに変換して返す
+ * 通常モードの場合は、ファイル処理用の入力形式に変換する
+ */
+const cacheCheckStep = createStep({
+  id: "cache-check",
+  inputSchema: triggerSchema,
+  outputSchema: z.object({
+    useCacheMode: z.boolean(),
+    // キャッシュモードの場合の結果
+    cacheResult: baseStepOutputSchema.extend({
+      extractedFiles: z.array(extractedFileSchema).optional(),
+    }).optional(),
+    // 通常モードの場合のファイル入力
+    files: z.array(z.any()).optional(),
+  }),
+  execute: async ({ inputData, runtimeContext }) => {
+    // RuntimeContextからキャッシュ設定を取得
+    const useCachedDocuments = runtimeContext.get("useCachedDocuments") as
+      | ReviewExecutionWorkflowRuntimeContext["useCachedDocuments"]
+      | undefined;
+    const cachedDocuments = runtimeContext.get("cachedDocuments") as
+      | ReviewExecutionWorkflowRuntimeContext["cachedDocuments"]
+      | undefined;
+
+    // キャッシュモードの場合はキャッシュからExtractedFilesを生成
+    if (useCachedDocuments && cachedDocuments && cachedDocuments.length > 0) {
+      const extractedFiles = convertCachedDocumentsToExtractedFiles(cachedDocuments);
+      return {
+        useCacheMode: true,
+        cacheResult: {
+          status: "success" as const,
+          extractedFiles,
+        },
+      };
+    }
+
+    // 通常モード: fileProcessingStepへ渡す
+    return {
+      useCacheMode: false,
+      files: inputData.files,
+    };
+  },
+});
+
 export const reviewExecutionWorkflow = createWorkflow({
   id: "review-execution-workflow",
   inputSchema: triggerSchema,
@@ -132,7 +198,7 @@ export const reviewExecutionWorkflow = createWorkflow({
 })
   // Step 1: ファイル処理とチェックリスト分類を並列実行
   .parallel([
-    // ファイル処理
+    // ファイル処理（リトライ時はキャッシュを使用）
     createWorkflow({
       id: "file-processing",
       inputSchema: triggerSchema,
@@ -140,10 +206,63 @@ export const reviewExecutionWorkflow = createWorkflow({
         extractedFiles: z.array(extractedFileSchema).optional(),
       }),
     })
+      .then(cacheCheckStep)
+      .branch([
+        // キャッシュモード: キャッシュ結果をそのまま返す
+        [
+          async ({ inputData }) => (inputData as { useCacheMode?: boolean }).useCacheMode === true,
+          createWorkflow({
+            id: "use-cache-result",
+            inputSchema: z.object({
+              useCacheMode: z.boolean(),
+              cacheResult: baseStepOutputSchema.extend({
+                extractedFiles: z.array(extractedFileSchema).optional(),
+              }).optional(),
+              files: z.array(z.any()).optional(),
+            }),
+            outputSchema: baseStepOutputSchema.extend({
+              extractedFiles: z.array(extractedFileSchema).optional(),
+            }),
+          })
+            .map(async ({ inputData }) => ({
+              status: inputData.cacheResult?.status ?? "failed",
+              extractedFiles: inputData.cacheResult?.extractedFiles,
+            }))
+            .commit(),
+        ],
+        // 通常モード: ファイル処理を実行
+        [
+          async ({ inputData }) => (inputData as { useCacheMode?: boolean }).useCacheMode === false,
+          createWorkflow({
+            id: "normal-file-processing",
+            inputSchema: z.object({
+              useCacheMode: z.boolean(),
+              cacheResult: baseStepOutputSchema.extend({
+                extractedFiles: z.array(extractedFileSchema).optional(),
+              }).optional(),
+              files: z.array(z.any()).optional(),
+            }),
+            outputSchema: baseStepOutputSchema.extend({
+              extractedFiles: z.array(extractedFileSchema).optional(),
+            }),
+          })
+            .map(async ({ inputData }) => ({ files: inputData.files ?? [] }))
+            .then(fileProcessingStep)
+            .commit(),
+        ],
+      ])
       .map(async ({ inputData }) => {
-        return { files: inputData.files };
+        // branchの結果を取得
+        const cacheResult = inputData["use-cache-result"];
+        const normalResult = inputData["normal-file-processing"];
+
+        const result = cacheResult || normalResult;
+        return {
+          status: result?.status ?? "failed",
+          extractedFiles: result?.extractedFiles,
+          errorMessage: (result as { errorMessage?: string } | undefined)?.errorMessage,
+        };
       })
-      .then(fileProcessingStep)
       .commit(),
     // チェックリスト分類
     createWorkflow({
@@ -162,7 +281,7 @@ export const reviewExecutionWorkflow = createWorkflow({
       .commit(),
   ])
   // Step 2: 並列処理の結果を統合してforeach用の配列を作成
-  .map(async ({ inputData, bail, getInitData }) => {
+  .map(async ({ inputData, bail, getInitData, runtimeContext }) => {
     const fileProcessingResult = inputData["file-processing"];
     const classificationResult = inputData["checklist-classification"];
 
@@ -184,6 +303,26 @@ export const reviewExecutionWorkflow = createWorkflow({
         status: "failed" as const,
         errorMessage: "ファイルを処理できませんでした",
       });
+    }
+
+    // 通常モード（初回レビュー）時のみ、抽出済みファイルをキャッシュ保存
+    // リトライ時（useCachedDocuments=true）はスキップ
+    const useCachedDocuments = runtimeContext.get("useCachedDocuments") as
+      | ReviewExecutionWorkflowRuntimeContext["useCachedDocuments"]
+      | undefined;
+    if (!useCachedDocuments) {
+      const onExtractedFilesCached = runtimeContext.get("onExtractedFilesCached") as
+        | ReviewExecutionWorkflowRuntimeContext["onExtractedFilesCached"]
+        | undefined;
+      const reviewTargetId = runtimeContext.get("reviewTargetId") as
+        | ReviewExecutionWorkflowRuntimeContext["reviewTargetId"]
+        | undefined;
+      if (onExtractedFilesCached && reviewTargetId) {
+        await onExtractedFilesCached(
+          fileProcessingResult.extractedFiles,
+          reviewTargetId,
+        );
+      }
     }
 
     // チェックリスト分類が失敗した場合
@@ -269,6 +408,8 @@ export type {
   SingleReviewResult,
   ReviewExecutionWorkflowRuntimeContext,
   ReviewType,
+  CachedDocument,
+  OnExtractedFilesCachedCallback,
 } from "./types";
 
 // shared typesも再エクスポート（ワークフロー利用者の便宜のため）

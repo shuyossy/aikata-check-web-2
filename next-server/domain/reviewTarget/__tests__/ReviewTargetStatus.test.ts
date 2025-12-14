@@ -73,6 +73,20 @@ describe("ReviewTargetStatus", () => {
 
         expect(error.isError()).toBe(true);
       });
+
+      it("completed → reviewing に遷移できる（リトライ）", () => {
+        const completed = ReviewTargetStatus.reconstruct("completed");
+        const reviewing = completed.toReviewing();
+
+        expect(reviewing.isReviewing()).toBe(true);
+      });
+
+      it("error → reviewing に遷移できる（リトライ）", () => {
+        const error = ReviewTargetStatus.reconstruct("error");
+        const reviewing = error.toReviewing();
+
+        expect(reviewing.isReviewing()).toBe(true);
+      });
     });
 
     describe("判定メソッド", () => {
@@ -126,7 +140,7 @@ describe("ReviewTargetStatus", () => {
     });
 
     describe("遷移可能判定メソッド", () => {
-      it("canTransitionToReviewing()はpending状態のときのみtrueを返す", () => {
+      it("canTransitionToReviewing()はpending/completed/error状態のときtrueを返す（リトライ対応）", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
@@ -134,8 +148,8 @@ describe("ReviewTargetStatus", () => {
 
         expect(pending.canTransitionToReviewing()).toBe(true);
         expect(reviewing.canTransitionToReviewing()).toBe(false);
-        expect(completed.canTransitionToReviewing()).toBe(false);
-        expect(error.canTransitionToReviewing()).toBe(false);
+        expect(completed.canTransitionToReviewing()).toBe(true);
+        expect(error.canTransitionToReviewing()).toBe(true);
       });
 
       it("canTransitionToCompleted()はreviewing状態のときのみtrueを返す", () => {
@@ -212,17 +226,7 @@ describe("ReviewTargetStatus", () => {
         expect(() => reviewing.toReviewing()).toThrow();
       });
 
-      it("completed状態からtoReviewing()でエラーをスローする", () => {
-        const completed = ReviewTargetStatus.reconstruct("completed");
-
-        expect(() => completed.toReviewing()).toThrow();
-      });
-
-      it("error状態からtoReviewing()でエラーをスローする", () => {
-        const error = ReviewTargetStatus.reconstruct("error");
-
-        expect(() => error.toReviewing()).toThrow();
-      });
+      // completed/error状態からtoReviewing()はリトライのため許可されるのでテスト削除
 
       it("pending状態からtoCompleted()でエラーをスローする", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");

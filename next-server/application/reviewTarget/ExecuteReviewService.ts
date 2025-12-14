@@ -3,9 +3,9 @@ import { IReviewTargetRepository } from "@/application/shared/port/repository/IR
 import { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository } from "@/application/shared/port/repository";
-import { ReviewTarget } from "@/domain/reviewTarget";
-import { ReviewResult } from "@/domain/reviewResult";
+import { IProjectRepository, IReviewDocumentCacheRepository } from "@/application/shared/port/repository";
+import { ReviewTarget, ReviewDocumentCache } from "@/domain/reviewTarget";
+import { createReviewResultSavedCallback } from "./createReviewResultSavedCallback";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
 import {
@@ -22,7 +22,9 @@ import type {
   EvaluationCriterion,
   SingleReviewResult,
   ReviewType,
+  ExtractedFile,
 } from "@/application/mastra";
+import { ReviewCacheHelper } from "@/lib/server/reviewCacheHelper";
 import { FILE_BUFFERS_CONTEXT_KEY } from "@/application/mastra";
 
 /**
@@ -88,6 +90,7 @@ export class ExecuteReviewService {
     private readonly checkListItemRepository: ICheckListItemRepository,
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
+    private readonly reviewDocumentCacheRepository: IReviewDocumentCacheRepository,
   ) {}
 
   /**
@@ -157,6 +160,7 @@ export class ExecuteReviewService {
             evaluationCriteria: reviewSettings.evaluationCriteria,
           }
         : null,
+      reviewType,
     });
 
     // レビュー対象をDBに保存（ステータス: pending）
@@ -190,32 +194,46 @@ export class ExecuteReviewService {
 
       // DB保存コールバックを設定
       // チャンクごとのレビュー完了時に呼び出される
-      const onReviewResultSaved = async (
-        results: SingleReviewResult[],
+      const onReviewResultSaved = createReviewResultSavedCallback(
+        this.reviewResultRepository,
+      );
+      runtimeContext.set("onReviewResultSaved", onReviewResultSaved);
+
+      // ドキュメントキャッシュ保存コールバックを設定
+      // ファイル処理完了時に呼び出される（リトライ用のキャッシュ保存）
+      const onExtractedFilesCached = async (
+        extractedFiles: ExtractedFile[],
         targetId: string,
       ): Promise<void> => {
-        const entities: ReviewResult[] = [];
-        for (const result of results) {
-          let entity: ReviewResult;
-          if (result.errorMessage) {
-            entity = ReviewResult.createError({
-              reviewTargetId: targetId,
-              checkListItemContent: result.checkListItemContent,
-              errorMessage: result.errorMessage,
-            });
+        for (const file of extractedFiles) {
+          let cachePath: string;
+          if (file.processMode === "text") {
+            // テキストモード: テキスト内容をファイルに保存
+            cachePath = await ReviewCacheHelper.saveTextCache(
+              targetId,
+              file.id,
+              file.textContent ?? "",
+            );
           } else {
-            entity = ReviewResult.createSuccess({
-              reviewTargetId: targetId,
-              checkListItemContent: result.checkListItemContent,
-              evaluation: result.evaluation ?? "",
-              comment: result.comment ?? "",
-            });
+            // 画像モード: 画像データ配列をディレクトリに保存
+            cachePath = await ReviewCacheHelper.saveImageCache(
+              targetId,
+              file.id,
+              file.imageData ?? [],
+            );
           }
-          entities.push(entity);
+
+          // ReviewDocumentCacheエンティティを作成してDBに保存
+          const cache = ReviewDocumentCache.create({
+            reviewTargetId: targetId,
+            fileName: file.name,
+            processMode: file.processMode,
+            cachePath,
+          });
+          await this.reviewDocumentCacheRepository.save(cache);
         }
-        await this.reviewResultRepository.saveMany(entities);
       };
-      runtimeContext.set("onReviewResultSaved", onReviewResultSaved);
+      runtimeContext.set("onExtractedFilesCached", onExtractedFilesCached);
 
       // チェックリスト項目をワークフロー入力形式に変換
       const checkListItemsInput = checkListItems.map((item) => ({

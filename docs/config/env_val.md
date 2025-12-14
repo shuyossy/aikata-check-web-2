@@ -16,3 +16,4 @@
 | ログ         | AIKATA_LOG_DEBUG | No   | -      | 設定されている場合、ログレベルを debug に強制設定                         | lib/server/logger.ts                          |
 | セキュリティ | ENCRYPTION_KEY   | Yes  | -      | APIキー等の暗号化に使用するAES-256キー（64桁の16進数文字列）              | lib/server/encryption.ts                      |
 | ファイルアップロード | FILE_UPLOAD_MAX_FILE_SIZE_MB | No | 50 | ファイルアップロード時のサイズ上限（MB）。チェックリストインポート、AIチェックリスト生成で共通利用 | lib/server/fileUploadConfig.ts |
+| キャッシュ | REVIEW_CACHE_DIR | No | ./review_cache | レビュードキュメントキャッシュの保存先ディレクトリ。リトライ時にドキュメントの再処理を省略するために使用 | lib/server/reviewCacheHelper.ts |

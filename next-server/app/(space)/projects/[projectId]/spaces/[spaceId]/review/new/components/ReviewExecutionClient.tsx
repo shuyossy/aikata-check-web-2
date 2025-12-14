@@ -13,48 +13,28 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { FormSection } from "@/components/ui/form-section";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { FileUploadArea, UploadedFile, isPdfFile } from "@/components/upload";
 import {
   ReviewSettingsEditor,
   ReviewSettingsValue,
+  EvaluationCriterionItem,
+  ReviewTypeSelector,
+  ReviewTypeValue,
 } from "@/components/reviewSpace";
-import { convertPdfFileToFiles, showError, showSuccess } from "@/lib/client";
+import {
+  DEFAULT_EVALUATION_CRITERIA,
+  DEFAULT_COMMENT_FORMAT,
+} from "@/domain/reviewSpace";
+import {
+  convertPdfFileToFiles,
+  showError,
+  showSuccess,
+  validateEvaluationCriteria,
+} from "@/lib/client";
 import { executeReviewAction } from "../actions";
 import { extractServerErrorMessage } from "@/hooks";
-
-/**
- * 評価基準項目
- */
-interface EvaluationCriterionItem {
-  label: string;
-  description: string;
-}
-
-/**
- * レビュー種別
- */
-type ReviewType = "small" | "large" | "api";
-
-/**
- * デフォルトの評価基準
- */
-const DEFAULT_EVALUATION_CRITERIA: EvaluationCriterionItem[] = [
-  { label: "A", description: "基準を完全に満たしている" },
-  { label: "B", description: "基準をある程度満たしている" },
-  { label: "C", description: "基準を満たしていない" },
-  { label: "-", description: "評価の対象外、または評価できない" },
-];
-
-/**
- * デフォルトのコメントフォーマット
- */
-const DEFAULT_COMMENT_FORMAT = `【評価理由・根拠】
-（具体的な理由と根拠を記載）
-
-【改善提案】
-（改善のための具体的な提案を記載）`;
 
 interface ReviewExecutionClientProps {
   projectId: string;
@@ -107,7 +87,7 @@ export function ReviewExecutionClient({
   const [files, setFiles] = useState<UploadedFile[]>([]);
 
   // レビュー種別
-  const [reviewType, setReviewType] = useState<ReviewType>("small");
+  const [reviewType, setReviewType] = useState<ReviewTypeValue>("small");
 
   // レビュー設定
   const [reviewSettings, setReviewSettings] = useState<ReviewSettingsValue>({
@@ -200,13 +180,7 @@ export function ReviewExecutionClient({
     if (checklistCount === 0) return false;
 
     // 評価基準が有効か
-    const validCriteria = reviewSettings.evaluationCriteria.every(
-      (c) => c.label.trim() && c.description.trim()
-    );
-    if (
-      !validCriteria ||
-      reviewSettings.evaluationCriteria.length === 0
-    )
+    if (!validateEvaluationCriteria(reviewSettings.evaluationCriteria))
       return false;
 
     return true;
@@ -252,7 +226,7 @@ export function ReviewExecutionClient({
     reviewSpaceId: string,
     reviewName: string,
     settings: ReviewSettingsValue,
-    type: ReviewType
+    type: ReviewTypeValue
   ): FormData => {
     const formData = new FormData();
 
@@ -395,172 +369,66 @@ export function ReviewExecutionClient({
             )}
 
             {/* Section 1: レビュー対象名 */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
-                  1
-                </div>
-                <h4 className="text-lg font-semibold text-gray-900">
-                  レビュー対象名
-                </h4>
-              </div>
-
-              <div className="ml-11">
-                <Label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  レビュー対象名 <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="例: 要件定義書 v1.0"
-                  disabled={isProcessing}
-                  className="w-full"
-                />
-                <p className="mt-1 text-sm text-gray-500">
-                  レビュー対象を識別するための名前を入力してください
-                </p>
-              </div>
-            </div>
+            <FormSection sectionNumber={1} title="レビュー対象名">
+              <Label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                レビュー対象名 <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="例: 要件定義書 v1.0"
+                disabled={isProcessing}
+                className="w-full"
+              />
+              <p className="mt-1 text-sm text-gray-500">
+                レビュー対象を識別するための名前を入力してください
+              </p>
+            </FormSection>
 
             {/* Section 2: ドキュメントアップロード */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
-                  2
-                </div>
-                <h4 className="text-lg font-semibold text-gray-900">
-                  レビュー対象ドキュメント
-                </h4>
-              </div>
-
-              <div className="ml-11">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  ドキュメント <span className="text-red-500">*</span>
-                </label>
-                <FileUploadArea
-                  files={files}
-                  onFilesChange={handleFilesChange}
-                  showImageConversion={true}
-                  enableMultiSelect={true}
-                  disabled={isProcessing}
-                  maxFileSize={maxFileSize}
-                />
-                <p className="mt-2 text-sm text-gray-500">
-                  PDFファイルは処理モードを選択できます。図表が多い場合は「画像変換」を推奨します。
-                </p>
-              </div>
-            </div>
+            <FormSection sectionNumber={2} title="レビュー対象ドキュメント">
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                ドキュメント <span className="text-red-500">*</span>
+              </label>
+              <FileUploadArea
+                files={files}
+                onFilesChange={handleFilesChange}
+                showImageConversion={true}
+                enableMultiSelect={true}
+                disabled={isProcessing}
+                maxFileSize={maxFileSize}
+              />
+              <p className="mt-2 text-sm text-gray-500">
+                PDFファイルは処理モードを選択できます。図表が多い場合は「画像変換」を推奨します。
+              </p>
+            </FormSection>
 
             {/* Section 3: レビュー種別 */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
-                  3
-                </div>
-                <h4 className="text-lg font-semibold text-gray-900">
-                  レビュー種別
-                </h4>
-              </div>
-
-              <div className="ml-11">
-                <RadioGroup
-                  value={reviewType}
-                  onValueChange={(v) => setReviewType(v as ReviewType)}
-                  className="space-y-3"
-                >
-                  {/* 少量レビュー */}
-                  <div className="flex items-start space-x-3 p-3 border rounded-lg bg-white hover:bg-gray-50">
-                    <RadioGroupItem
-                      value="small"
-                      id="review-small"
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Label
-                        htmlFor="review-small"
-                        className="font-medium cursor-pointer"
-                      >
-                        少量レビュー
-                      </Label>
-                      <p className="text-sm text-gray-500">
-                        コンテキストウィンドウに収まるドキュメントをそのまま処理します
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 大量レビュー */}
-                  <div className="flex items-start space-x-3 p-3 border rounded-lg bg-white hover:bg-gray-50">
-                    <RadioGroupItem
-                      value="large"
-                      id="review-large"
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <Label
-                        htmlFor="review-large"
-                        className="font-medium cursor-pointer"
-                      >
-                        大量レビュー
-                      </Label>
-                      <p className="text-sm text-gray-500">
-                        大きなドキュメントを分割して処理し、結果を統合します。コンテキストウィンドウに収まらない大きなドキュメントに適しています。
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 外部API呼び出し（無効） */}
-                  <div className="flex items-start space-x-3 p-3 border rounded-lg bg-gray-100 opacity-60">
-                    <RadioGroupItem
-                      value="api"
-                      id="review-api"
-                      disabled
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Label
-                          htmlFor="review-api"
-                          className="font-medium text-gray-400"
-                        >
-                          外部API呼び出し
-                        </Label>
-                        <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-500 rounded">
-                          準備中
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-400">
-                        外部サービスに処理を委託します
-                      </p>
-                    </div>
-                  </div>
-                </RadioGroup>
-              </div>
-            </div>
+            <FormSection sectionNumber={3} title="レビュー種別">
+              <ReviewTypeSelector
+                value={reviewType}
+                onChange={setReviewType}
+                disabled={isProcessing}
+                showApiOption={true}
+              />
+            </FormSection>
 
             {/* Section 4: レビュー設定 */}
-            <div className="mb-8">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold">
-                  4
-                </div>
-                <h4 className="text-lg font-semibold text-gray-900">
-                  レビュー設定
-                </h4>
-                <Settings className="w-4 h-4 text-gray-400" />
-              </div>
-
-              <div className="ml-11">
-                <ReviewSettingsEditor
-                  value={reviewSettings}
-                  onChange={setReviewSettings}
-                  disabled={isProcessing}
-                />
-              </div>
-            </div>
+            <FormSection
+              sectionNumber={4}
+              title="レビュー設定"
+              titleIcon={<Settings className="w-4 h-4 text-gray-400" />}
+            >
+              <ReviewSettingsEditor
+                value={reviewSettings}
+                onChange={setReviewSettings}
+                disabled={isProcessing}
+              />
+            </FormSection>
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-gray-200">

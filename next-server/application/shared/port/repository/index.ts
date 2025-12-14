@@ -12,3 +12,4 @@ export type {
   FindReviewTargetsOptions,
 } from "./IReviewTargetRepository";
 export type { IReviewResultRepository } from "./IReviewResultRepository";
+export type { IReviewDocumentCacheRepository } from "./IReviewDocumentCacheRepository";

@@ -10,6 +10,7 @@ import {
   ReviewTargetStatus,
   ReviewTargetStatusType,
 } from "./ReviewTargetStatus";
+import { ReviewType, ReviewTypeValue } from "./ReviewType";
 
 /**
  * レビュー対象作成パラメータ
@@ -18,6 +19,7 @@ export interface CreateReviewTargetParams {
   reviewSpaceId: string;
   name: string;
   reviewSettings?: ReviewSettingsProps | null;
+  reviewType?: string | null;
 }
 
 /**
@@ -29,6 +31,7 @@ export interface ReconstructReviewTargetParams {
   name: string;
   status: string;
   reviewSettings: ReviewSettingsProps | null;
+  reviewType: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -42,6 +45,7 @@ export interface ReviewTargetDto {
   name: string;
   status: ReviewTargetStatusType;
   reviewSettings: ReviewSettingsDto | null;
+  reviewType: ReviewTypeValue | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -67,6 +71,7 @@ export class ReviewTarget {
   private readonly _name: ReviewTargetName;
   private readonly _status: ReviewTargetStatus;
   private readonly _reviewSettings: ReviewSettings | null;
+  private readonly _reviewType: ReviewType | null;
   private readonly _createdAt: Date;
   private readonly _updatedAt: Date;
 
@@ -76,6 +81,7 @@ export class ReviewTarget {
     name: ReviewTargetName,
     status: ReviewTargetStatus,
     reviewSettings: ReviewSettings | null,
+    reviewType: ReviewType | null,
     createdAt: Date,
     updatedAt: Date,
   ) {
@@ -84,6 +90,7 @@ export class ReviewTarget {
     this._name = name;
     this._status = status;
     this._reviewSettings = reviewSettings;
+    this._reviewType = reviewType;
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
   }
@@ -93,7 +100,7 @@ export class ReviewTarget {
    * @throws ドメインバリデーションエラー - バリデーション失敗時
    */
   static create(params: CreateReviewTargetParams): ReviewTarget {
-    const { reviewSpaceId, name, reviewSettings } = params;
+    const { reviewSpaceId, name, reviewSettings, reviewType } = params;
     const now = new Date();
 
     // レビュー設定の生成（nullの場合はnullを維持）
@@ -101,12 +108,16 @@ export class ReviewTarget {
       ? ReviewSettings.create(reviewSettings)
       : null;
 
+    // レビュー種別の生成（nullの場合はnullを維持）
+    const type = reviewType ? ReviewType.create(reviewType) : null;
+
     return new ReviewTarget(
       ReviewTargetId.create(),
       ReviewSpaceId.reconstruct(reviewSpaceId),
       ReviewTargetName.create(name),
       ReviewTargetStatus.create(), // 初期状態はpending
       settings,
+      type,
       now,
       now,
     );
@@ -121,12 +132,18 @@ export class ReviewTarget {
       ? ReviewSettings.reconstruct(params.reviewSettings)
       : null;
 
+    // レビュー種別の復元（nullの場合はnullを維持）
+    const type = params.reviewType
+      ? ReviewType.reconstruct(params.reviewType)
+      : null;
+
     return new ReviewTarget(
       ReviewTargetId.reconstruct(params.id),
       ReviewSpaceId.reconstruct(params.reviewSpaceId),
       ReviewTargetName.reconstruct(params.name),
       ReviewTargetStatus.reconstruct(params.status),
       settings,
+      type,
       params.createdAt,
       params.updatedAt,
     );
@@ -144,6 +161,7 @@ export class ReviewTarget {
       this._name,
       this._status.toReviewing(),
       this._reviewSettings,
+      this._reviewType,
       this._createdAt,
       new Date(),
     );
@@ -161,6 +179,7 @@ export class ReviewTarget {
       this._name,
       this._status.toCompleted(),
       this._reviewSettings,
+      this._reviewType,
       this._createdAt,
       new Date(),
     );
@@ -178,6 +197,7 @@ export class ReviewTarget {
       this._name,
       this._status.toError(),
       this._reviewSettings,
+      this._reviewType,
       this._createdAt,
       new Date(),
     );
@@ -192,6 +212,67 @@ export class ReviewTarget {
   }
 
   /**
+   * リトライ可能かどうかを判定する
+   * completedまたはerror状態かつレビュー実行中でない場合にリトライ可能
+   */
+  canRetry(): boolean {
+    return (
+      (this._status.isCompleted() || this._status.isError()) &&
+      !this._status.isReviewing()
+    );
+  }
+
+  /**
+   * リトライ用に状態を準備する（reviewing状態に遷移）
+   * 新しいReviewTargetインスタンスを返す（不変性を保持）
+   * @throws ドメインバリデーションエラー - リトライ不可能な状態の場合
+   */
+  prepareForRetry(): ReviewTarget {
+    return new ReviewTarget(
+      this._id,
+      this._reviewSpaceId,
+      this._name,
+      this._status.toReviewing(),
+      this._reviewSettings,
+      this._reviewType,
+      this._createdAt,
+      new Date(),
+    );
+  }
+
+  /**
+   * レビュー設定を更新した新しいインスタンスを返す
+   */
+  withUpdatedSettings(settings: ReviewSettings | null): ReviewTarget {
+    return new ReviewTarget(
+      this._id,
+      this._reviewSpaceId,
+      this._name,
+      this._status,
+      settings,
+      this._reviewType,
+      this._createdAt,
+      new Date(),
+    );
+  }
+
+  /**
+   * レビュー種別を設定した新しいインスタンスを返す
+   */
+  withReviewType(reviewType: ReviewType): ReviewTarget {
+    return new ReviewTarget(
+      this._id,
+      this._reviewSpaceId,
+      this._name,
+      this._status,
+      this._reviewSettings,
+      reviewType,
+      this._createdAt,
+      new Date(),
+    );
+  }
+
+  /**
    * DTOに変換する
    */
   toDto(): ReviewTargetDto {
@@ -201,6 +282,7 @@ export class ReviewTarget {
       name: this._name.value,
       status: this._status.value,
       reviewSettings: this._reviewSettings?.toDto() ?? null,
+      reviewType: this._reviewType?.value ?? null,
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
     };
@@ -238,6 +320,10 @@ export class ReviewTarget {
 
   get reviewSettings(): ReviewSettings | null {
     return this._reviewSettings;
+  }
+
+  get reviewType(): ReviewType | null {
+    return this._reviewType;
   }
 
   get createdAt(): Date {

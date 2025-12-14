@@ -206,6 +206,11 @@ export const reviewTargets = pgTable(
      * }
      */
     reviewSettings: jsonb("review_settings"),
+    /**
+     * レビュー種別（small: 少量レビュー, large: 大量レビュー）
+     * リトライ時に必要な情報として保存
+     */
+    reviewType: varchar("review_type", { length: 10 }),
     /** レコード作成日時 */
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

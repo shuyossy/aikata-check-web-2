@@ -14,20 +14,18 @@ import {
   ReviewDocumentCacheRepository,
 } from "@/infrastructure/adapter/db";
 import { EmployeeId } from "@/domain/user";
-import { ReviewResultsClient } from "./components/ReviewResultsClient";
+import { RetryReviewClient } from "./components/RetryReviewClient";
 
 export const dynamic = "force-dynamic";
 
-interface ReviewResultsPageProps {
+interface RetryReviewPageProps {
   params: Promise<{ projectId: string; spaceId: string; targetId: string }>;
 }
 
 /**
- * レビュー結果ページ（サーバコンポーネント）
+ * リトライレビューページ（サーバコンポーネント）
  */
-export default async function ReviewResultsPage({
-  params,
-}: ReviewResultsPageProps) {
+export default async function RetryReviewPage({ params }: RetryReviewPageProps) {
   const { projectId, spaceId, targetId } = await params;
 
   // 認証チェック
@@ -82,7 +80,7 @@ export default async function ReviewResultsPage({
     notFound();
   }
 
-  // レビュー対象とレビュー結果を取得
+  // レビュー対象情報を取得
   const getReviewTargetService = new GetReviewTargetService(
     reviewTargetRepository,
     reviewResultRepository,
@@ -110,27 +108,35 @@ export default async function ReviewResultsPage({
     projectRepository
   );
 
-  let canRetry = false;
+  let retryInfo;
   try {
-    const retryInfo = await getRetryInfoService.execute({
+    retryInfo = await getRetryInfoService.execute({
       reviewTargetId: targetId,
       userId: user.id.value,
     });
-    canRetry = retryInfo.canRetry;
   } catch {
-    // リトライ情報取得に失敗した場合はリトライ不可
-    canRetry = false;
+    // リトライ情報取得に失敗した場合はリトライ不可として扱う
+    retryInfo = {
+      canRetry: false,
+      reviewType: null,
+      previousSettings: null,
+      failedItemCount: 0,
+      totalItemCount: 0,
+      hasChecklistDiff: false,
+      snapshotChecklistCount: 0,
+      currentChecklistCount: 0,
+    };
   }
 
   return (
-    <ReviewResultsClient
+    <RetryReviewClient
       projectId={projectId}
       projectName={project.name}
       spaceId={spaceId}
       spaceName={reviewSpace.name}
       targetId={targetId}
-      reviewTarget={reviewTargetData}
-      canRetry={canRetry}
+      targetName={reviewTargetData.name}
+      retryInfo={retryInfo}
     />
   );
 }

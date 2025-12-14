@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   rawUploadFileMetaSchema,
   FileBuffersMap,
+  ExtractedFile,
 } from "../shared/types";
 import { BaseRuntimeContext } from "../../types";
 
@@ -71,6 +72,27 @@ export type OnReviewResultSavedCallback = (
 ) => Promise<void>;
 
 /**
+ * 抽出済みファイルキャッシュ保存コールバック関数の型
+ * ファイル処理完了後に呼び出される（リトライ用のキャッシュ保存）
+ */
+export type OnExtractedFilesCachedCallback = (
+  extractedFiles: ExtractedFile[],
+  reviewTargetId: string,
+) => Promise<void>;
+
+/**
+ * キャッシュされたドキュメント（リトライ時に使用）
+ */
+export interface CachedDocument {
+  id: string;
+  name: string;
+  type: string;
+  processMode: "text" | "image";
+  textContent?: string;
+  imageData?: string[];
+}
+
+/**
  * レビュー実行ワークフローのRuntimeContext
  * Bufferなど、zodでシリアライズできないデータを保持
  */
@@ -80,6 +102,12 @@ export interface ReviewExecutionWorkflowRuntimeContext extends BaseRuntimeContex
   reviewTargetId?: string;
   /** レビュー結果保存コールバック */
   onReviewResultSaved?: OnReviewResultSavedCallback;
+  /** 抽出済みファイルキャッシュ保存コールバック（初回レビュー時にリトライ用キャッシュを保存） */
+  onExtractedFilesCached?: OnExtractedFilesCachedCallback;
+  /** キャッシュされたドキュメントを使用するか（リトライ時） */
+  useCachedDocuments?: boolean;
+  /** キャッシュされたドキュメント配列（リトライ時） */
+  cachedDocuments?: CachedDocument[];
 }
 
 /**

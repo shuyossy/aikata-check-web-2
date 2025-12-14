@@ -37,6 +37,7 @@ export class ReviewTargetRepository implements IReviewTargetRepository {
       name: row.name,
       status: row.status,
       reviewSettings: row.reviewSettings as ReviewSettingsProps | null,
+      reviewType: row.reviewType,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -71,6 +72,7 @@ export class ReviewTargetRepository implements IReviewTargetRepository {
         name: row.name,
         status: row.status,
         reviewSettings: row.reviewSettings as ReviewSettingsProps | null,
+        reviewType: row.reviewType,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }),
@@ -99,6 +101,7 @@ export class ReviewTargetRepository implements IReviewTargetRepository {
       name: reviewTarget.name.value,
       status: reviewTarget.status.value,
       reviewSettings: reviewTarget.reviewSettings?.toDto() ?? null,
+      reviewType: reviewTarget.reviewType?.value ?? null,
       createdAt: reviewTarget.createdAt,
       updatedAt: reviewTarget.updatedAt,
     };
@@ -112,6 +115,7 @@ export class ReviewTargetRepository implements IReviewTargetRepository {
           name: data.name,
           status: data.status,
           reviewSettings: data.reviewSettings,
+          reviewType: data.reviewType,
           updatedAt: data.updatedAt,
         },
       });

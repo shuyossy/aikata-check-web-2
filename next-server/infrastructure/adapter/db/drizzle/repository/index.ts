@@ -3,3 +3,5 @@ export { ProjectRepository } from "./ProjectRepository";
 export { ReviewSpaceRepository } from "./ReviewSpaceRepository";
 export { ReviewTargetRepository } from "./ReviewTargetRepository";
 export { ReviewResultRepository } from "./ReviewResultRepository";
+export { CheckListItemRepository } from "./CheckListItemRepository";
+export { ReviewDocumentCacheRepository } from "./ReviewDocumentCacheRepository";

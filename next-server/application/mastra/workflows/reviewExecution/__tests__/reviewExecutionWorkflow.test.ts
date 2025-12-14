@@ -1121,6 +1121,347 @@ describe("reviewExecutionWorkflow", () => {
     });
   });
 
+  describe("ドキュメントキャッシュ保存コールバックのテスト", () => {
+    it("onExtractedFilesCachedコールバックが設定されている場合、ファイル処理後に呼び出されること", async () => {
+      // Arrange
+      const mockOnExtractedFilesCached = vi.fn().mockResolvedValue(undefined);
+      mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
+        finishReason: "stop",
+        object: [
+          {
+            checklistId: 1,
+            reviewSections: [],
+            comment: "コメント",
+            evaluation: "A",
+          },
+        ],
+      });
+
+      // RuntimeContextにコールバックを設定
+      const runtimeContext = createTestRuntimeContext();
+      runtimeContext.set("reviewTargetId", "target-123");
+      runtimeContext.set("onExtractedFilesCached", mockOnExtractedFilesCached);
+
+      // Act
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: testFiles,
+          checkListItems: [testCheckListItems[0]],
+        },
+        runtimeContext,
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("success");
+      expect(mockOnExtractedFilesCached).toHaveBeenCalledTimes(1);
+      expect(mockOnExtractedFilesCached).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: "file-1",
+            name: "test-document.txt",
+            type: "text/plain",
+            processMode: "text",
+            textContent: "テストドキュメントの内容",
+          }),
+        ]),
+        "target-123"
+      );
+    });
+
+    it("キャッシュモード（useCachedDocuments=true）の場合、onExtractedFilesCachedは呼び出されないこと", async () => {
+      // Arrange: キャッシュモードの設定
+      const mockOnExtractedFilesCached = vi.fn().mockResolvedValue(undefined);
+      const cachedDocuments = [
+        {
+          id: "cached-file-1",
+          name: "cached-document.txt",
+          type: "text/plain",
+          processMode: "text" as const,
+          textContent: "キャッシュされたドキュメントの内容",
+        },
+      ];
+
+      mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
+        finishReason: "stop",
+        object: [
+          {
+            checklistId: 1,
+            reviewSections: [],
+            comment: "コメント",
+            evaluation: "A",
+          },
+        ],
+      });
+
+      // RuntimeContextにキャッシュモード設定
+      const runtimeContext = createTestRuntimeContext();
+      runtimeContext.set("reviewTargetId", "target-123");
+      runtimeContext.set("onExtractedFilesCached", mockOnExtractedFilesCached);
+      runtimeContext.set("useCachedDocuments", true);
+      runtimeContext.set("cachedDocuments", cachedDocuments);
+
+      // Act
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: [], // キャッシュモード時は空
+          checkListItems: [testCheckListItems[0]],
+        },
+        runtimeContext,
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("success");
+      // キャッシュモードではコールバックは呼ばれない
+      expect(mockOnExtractedFilesCached).not.toHaveBeenCalled();
+    });
+
+    it("onExtractedFilesCachedコールバックが未設定でもworkflowが成功すること", async () => {
+      // Arrange
+      mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
+        finishReason: "stop",
+        object: [
+          {
+            checklistId: 1,
+            reviewSections: [],
+            comment: "コメント",
+            evaluation: "A",
+          },
+        ],
+      });
+
+      // コールバック未設定のRuntimeContext
+      const runtimeContext = createTestRuntimeContext();
+      runtimeContext.set("reviewTargetId", "target-123");
+      // onExtractedFilesCachedは設定しない
+
+      // Act
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: testFiles,
+          checkListItems: [testCheckListItems[0]],
+        },
+        runtimeContext,
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("success");
+    });
+
+    it("reviewTargetIdが未設定の場合、onExtractedFilesCachedは呼び出されないこと", async () => {
+      // Arrange
+      const mockOnExtractedFilesCached = vi.fn().mockResolvedValue(undefined);
+      mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
+        finishReason: "stop",
+        object: [
+          {
+            checklistId: 1,
+            reviewSections: [],
+            comment: "コメント",
+            evaluation: "A",
+          },
+        ],
+      });
+
+      // reviewTargetIdを設定しない
+      const runtimeContext = createTestRuntimeContext();
+      runtimeContext.set("onExtractedFilesCached", mockOnExtractedFilesCached);
+      // reviewTargetIdは設定しない
+
+      // Act
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: testFiles,
+          checkListItems: [testCheckListItems[0]],
+        },
+        runtimeContext,
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("success");
+      // reviewTargetIdがないためコールバックは呼ばれない
+      expect(mockOnExtractedFilesCached).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("キャッシュモードのテスト（リトライ用）", () => {
+    it("useCachedDocuments=trueの場合、fileProcessingStepがスキップされキャッシュデータが使用されること", async () => {
+      // Arrange: キャッシュデータを用意
+      const cachedDocuments = [
+        {
+          id: "cached-file-1",
+          name: "cached-document.txt",
+          type: "text/plain",
+          processMode: "text" as const,
+          textContent: "キャッシュされたドキュメントの内容",
+        },
+      ];
+
+      // AIはショートID（1始まりの連番）を返す
+      mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
+        finishReason: "stop",
+        object: [
+          {
+            checklistId: 1,
+            reviewSections: [],
+            comment: "キャッシュからレビュー",
+            evaluation: "A",
+          },
+        ],
+      });
+
+      // RuntimeContextにキャッシュモード設定
+      const runtimeContext = createTestRuntimeContext();
+      runtimeContext.set("useCachedDocuments", true);
+      runtimeContext.set("cachedDocuments", cachedDocuments);
+
+      // Act
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: [], // キャッシュモード時は空で渡す
+          checkListItems: [testCheckListItems[0]],
+          reviewSettings: {
+            evaluationCriteria: testEvaluationCriteria,
+          },
+        },
+        runtimeContext,
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("success");
+
+      // fileProcessingStepは呼ばれない（キャッシュモードでスキップ）
+      expect(mockFileProcessingStep).not.toHaveBeenCalled();
+
+      // レビュー結果が正しく返される
+      if (result.status === "success") {
+        const workflowResult = result.result as {
+          status: string;
+          reviewResults?: Array<{
+            checkListItemContent: string;
+            evaluation: string | null;
+            comment: string | null;
+            errorMessage: string | null;
+          }>;
+        };
+        expect(workflowResult.reviewResults).toHaveLength(1);
+        expect(workflowResult.reviewResults?.[0]).toEqual({
+          checkListItemContent: "セキュリティ要件を満たしているか",
+          evaluation: "A",
+          comment: "キャッシュからレビュー",
+          errorMessage: null,
+        });
+      }
+    });
+
+    it("useCachedDocuments=falseの場合、通常通りfileProcessingStepが実行されること", async () => {
+      // Arrange
+      mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
+        finishReason: "stop",
+        object: [
+          {
+            checklistId: 1,
+            reviewSections: [],
+            comment: "通常モードからレビュー",
+            evaluation: "A",
+          },
+        ],
+      });
+
+      // RuntimeContextにキャッシュモード設定（無効）
+      const runtimeContext = createTestRuntimeContext();
+      runtimeContext.set("useCachedDocuments", false);
+
+      // Act
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: testFiles,
+          checkListItems: [testCheckListItems[0]],
+        },
+        runtimeContext,
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("success");
+
+      // fileProcessingStepが呼ばれる（通常モード）
+      expect(mockFileProcessingStep).toHaveBeenCalledTimes(1);
+    });
+
+    it("キャッシュモードで画像データも処理できること", async () => {
+      // 前のテストでモックが呼ばれている可能性があるため、まずクリア
+      mockFileProcessingStep.mockClear();
+
+      // Arrange: 画像キャッシュデータを用意
+      const cachedDocuments = [
+        {
+          id: "cached-image-1",
+          name: "cached-document.pdf",
+          type: "application/pdf",
+          processMode: "image" as const,
+          imageData: ["base64encodedcachedimage1", "base64encodedcachedimage2"],
+        },
+      ];
+
+      // AIはショートID（1始まりの連番）を返す
+      mockReviewExecuteAgentGenerateLegacy.mockResolvedValue({
+        finishReason: "stop",
+        object: [
+          {
+            checklistId: 1,
+            reviewSections: [],
+            comment: "キャッシュ画像からレビュー",
+            evaluation: "B",
+          },
+        ],
+      });
+
+      // RuntimeContextにキャッシュモード設定
+      const runtimeContext = createTestRuntimeContext();
+      runtimeContext.set("useCachedDocuments", true);
+      runtimeContext.set("cachedDocuments", cachedDocuments);
+
+      // Act
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: [],
+          checkListItems: [testCheckListItems[0]],
+        },
+        runtimeContext,
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("success");
+
+      // fileProcessingStepは呼ばれない
+      expect(mockFileProcessingStep).not.toHaveBeenCalled();
+
+      // エージェントに画像データが渡される
+      const callArgs = mockReviewExecuteAgentGenerateLegacy.mock.calls[0];
+      const message = callArgs[0];
+      expect(message.content).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            type: "image",
+          }),
+        ])
+      );
+    });
+  });
+
   describe("大量レビュー（reviewType: large）のテスト", () => {
     // 大量レビューのテストは、largeDocumentReviewWorkflowのモックが複雑なため、
     // ここではワークフローの構造（チェックリスト分割が共通で適用されること）のみを検証する

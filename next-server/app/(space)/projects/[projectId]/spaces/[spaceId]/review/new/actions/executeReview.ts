@@ -18,7 +18,7 @@ import {
   UserRepository,
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
-import { ReviewTargetRepository, ReviewResultRepository } from "@/infrastructure/adapter/db";
+import { ReviewTargetRepository, ReviewResultRepository, ReviewDocumentCacheRepository } from "@/infrastructure/adapter/db";
 import { EmployeeId } from "@/domain/user";
 import { fileUploadConfig } from "@/lib/server/fileUploadConfig";
 
@@ -226,6 +226,7 @@ export const executeReviewAction = authenticatedAction
     const checkListItemRepository = new CheckListItemRepository();
     const reviewTargetRepository = new ReviewTargetRepository();
     const reviewResultRepository = new ReviewResultRepository();
+    const reviewDocumentCacheRepository = new ReviewDocumentCacheRepository();
 
     // employeeIdからuserIdを取得
     const user = await userRepository.findByEmployeeId(
@@ -243,6 +244,7 @@ export const executeReviewAction = authenticatedAction
       checkListItemRepository,
       reviewSpaceRepository,
       projectRepository,
+      reviewDocumentCacheRepository,
     );
 
     const result = await service.execute({

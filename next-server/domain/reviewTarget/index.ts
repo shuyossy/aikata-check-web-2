@@ -12,3 +12,17 @@ export {
   type ReviewTargetDto,
   type ReviewTargetListItemDto,
 } from "./ReviewTarget";
+export {
+  ReviewType,
+  REVIEW_TYPE,
+  type ReviewTypeValue,
+} from "./ReviewType";
+export { ReviewDocumentCacheId } from "./ReviewDocumentCacheId";
+export {
+  ReviewDocumentCache,
+  PROCESS_MODE,
+  type ProcessModeValue,
+  type CreateReviewDocumentCacheParams,
+  type ReconstructReviewDocumentCacheParams,
+  type ReviewDocumentCacheDto,
+} from "./ReviewDocumentCache";

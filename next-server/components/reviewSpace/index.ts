@@ -7,3 +7,7 @@ export {
   type ReviewSettingsEditorProps,
   type EvaluationCriterionItem,
 } from "./ReviewSettingsEditor";
+export {
+  ReviewTypeSelector,
+  type ReviewTypeValue,
+} from "./ReviewTypeSelector";

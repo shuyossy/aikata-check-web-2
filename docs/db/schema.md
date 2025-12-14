@@ -196,6 +196,7 @@
 | review_space_id | UUID | NOT NULL | - | 所属レビュースペースID（FK → review_spaces.id） |
 | name | VARCHAR(255) | NOT NULL | - | レビュー対象名（ファイル名等） |
 | status | VARCHAR(20) | NOT NULL | 'pending' | レビューステータス |
+| review_type | VARCHAR(10) | NULL | - | レビュー種別（small/large） |
 | review_settings | JSONB | NULL | - | レビュー実行時に使用した設定 |
 | created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
 | updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
@@ -217,6 +218,10 @@
   - `reviewing`: レビュー実行中
   - `completed`: レビュー完了
   - `error`: レビュー失敗
+- **review_type**: レビュー種別。リトライ時に同じ種別で再実行するために使用。以下の値を取る:
+  - `small`: 少量レビュー（ドキュメントがコンテキストに収まる場合）
+  - `large`: 大量レビュー（ドキュメントを分割して処理する場合）
+  - NULL: 未設定（リトライ不可）
 - **review_settings**: レビュー実行時に使用した設定をJSONB形式で保存。リトライ時に同じ設定で再実行するために使用。構造はreview_spaces.default_review_settingsと同一。
 - **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。
 

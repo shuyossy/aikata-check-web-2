@@ -88,9 +88,14 @@ export class ReviewTargetStatus {
 
   /**
    * レビュー中に遷移可能かどうか
+   * pending, completed, error状態からreviewing状態に遷移可能（リトライのため）
    */
   canTransitionToReviewing(): boolean {
-    return this._value === REVIEW_TARGET_STATUS.PENDING;
+    return (
+      this._value === REVIEW_TARGET_STATUS.PENDING ||
+      this._value === REVIEW_TARGET_STATUS.COMPLETED ||
+      this._value === REVIEW_TARGET_STATUS.ERROR
+    );
   }
 
   /**

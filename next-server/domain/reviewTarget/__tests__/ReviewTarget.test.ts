@@ -1,7 +1,9 @@
 import { describe, it, expect } from "vitest";
 import { ReviewTarget } from "../ReviewTarget";
 import { REVIEW_TARGET_STATUS } from "../ReviewTargetStatus";
+import { REVIEW_TYPE, ReviewType } from "../ReviewType";
 import { DEFAULT_EVALUATION_CRITERIA } from "@/domain/reviewSpace/EvaluationCriteria";
+import { ReviewSettings } from "@/domain/reviewSpace/ReviewSettings";
 
 describe("ReviewTarget", () => {
   // テスト用の有効なUUID
@@ -70,6 +72,7 @@ describe("ReviewTarget", () => {
           name: "復元テスト",
           status: "reviewing",
           reviewSettings: testReviewSettings,
+          reviewType: "small",
           createdAt: now,
           updatedAt: now,
         });
@@ -79,6 +82,7 @@ describe("ReviewTarget", () => {
         expect(reviewTarget.name.value).toBe("復元テスト");
         expect(reviewTarget.status.isReviewing()).toBe(true);
         expect(reviewTarget.reviewSettings).not.toBeNull();
+        expect(reviewTarget.reviewType?.value).toBe(REVIEW_TYPE.SMALL);
         expect(reviewTarget.createdAt).toBe(now);
         expect(reviewTarget.updatedAt).toBe(now);
       });
@@ -91,11 +95,13 @@ describe("ReviewTarget", () => {
           name: "復元テスト",
           status: "pending",
           reviewSettings: null,
+          reviewType: null,
           createdAt: now,
           updatedAt: now,
         });
 
         expect(reviewTarget.reviewSettings).toBeNull();
+        expect(reviewTarget.reviewType).toBeNull();
       });
     });
 
@@ -201,6 +207,149 @@ describe("ReviewTarget", () => {
       });
     });
 
+    describe("canRetry", () => {
+      it("pending状態ではリトライ不可（false）", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+        });
+
+        expect(reviewTarget.canRetry()).toBe(false);
+      });
+
+      it("reviewing状態ではリトライ不可（false）", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+        });
+
+        const reviewingTarget = reviewTarget.startReviewing();
+
+        expect(reviewingTarget.canRetry()).toBe(false);
+      });
+
+      it("completed状態ではリトライ可能（true）", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+        });
+
+        const completedTarget = reviewTarget.startReviewing().completeReview();
+
+        expect(completedTarget.canRetry()).toBe(true);
+      });
+
+      it("error状態ではリトライ可能（true）", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+        });
+
+        const errorTarget = reviewTarget.markAsError();
+
+        expect(errorTarget.canRetry()).toBe(true);
+      });
+    });
+
+    describe("prepareForRetry", () => {
+      it("completed状態からreviewingに遷移できる", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+        });
+
+        const completedTarget = reviewTarget.startReviewing().completeReview();
+        const retryTarget = completedTarget.prepareForRetry();
+
+        expect(retryTarget.status.isReviewing()).toBe(true);
+        // 不変性の確認
+        expect(completedTarget.status.isCompleted()).toBe(true);
+      });
+
+      it("error状態からreviewingに遷移できる", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+        });
+
+        const errorTarget = reviewTarget.markAsError();
+        const retryTarget = errorTarget.prepareForRetry();
+
+        expect(retryTarget.status.isReviewing()).toBe(true);
+        // 不変性の確認
+        expect(errorTarget.status.isError()).toBe(true);
+      });
+    });
+
+    describe("withUpdatedSettings", () => {
+      it("レビュー設定を更新した新しいインスタンスを返す", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+        });
+
+        const newSettings = ReviewSettings.create({
+          additionalInstructions: "新しい指示",
+          concurrentReviewItems: 10,
+          commentFormat: "新しいフォーマット",
+          evaluationCriteria: DEFAULT_EVALUATION_CRITERIA,
+        });
+
+        const updatedTarget = reviewTarget.withUpdatedSettings(newSettings);
+
+        expect(updatedTarget.reviewSettings?.additionalInstructions).toBe(
+          "新しい指示",
+        );
+        // 不変性の確認
+        expect(reviewTarget.reviewSettings).toBeNull();
+      });
+
+      it("設定をnullに更新できる", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+          reviewSettings: testReviewSettings,
+        });
+
+        const updatedTarget = reviewTarget.withUpdatedSettings(null);
+
+        expect(updatedTarget.reviewSettings).toBeNull();
+        // 不変性の確認
+        expect(reviewTarget.reviewSettings).not.toBeNull();
+      });
+    });
+
+    describe("withReviewType", () => {
+      it("レビュー種別を設定した新しいインスタンスを返す", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+        });
+
+        const reviewType = ReviewType.create("small");
+        const updatedTarget = reviewTarget.withReviewType(reviewType);
+
+        expect(updatedTarget.reviewType?.value).toBe(REVIEW_TYPE.SMALL);
+        // 不変性の確認
+        expect(reviewTarget.reviewType).toBeNull();
+      });
+
+      it("レビュー種別を変更できる", () => {
+        const reviewTarget = ReviewTarget.create({
+          reviewSpaceId: testReviewSpaceId,
+          name: "テストレビュー対象",
+          reviewType: "small",
+        });
+
+        const newReviewType = ReviewType.create("large");
+        const updatedTarget = reviewTarget.withReviewType(newReviewType);
+
+        expect(updatedTarget.reviewType?.value).toBe(REVIEW_TYPE.LARGE);
+        // 不変性の確認
+        expect(reviewTarget.reviewType?.value).toBe(REVIEW_TYPE.SMALL);
+      });
+    });
+
     describe("toDto", () => {
       it("DTOに変換できる", () => {
         const reviewTarget = ReviewTarget.create({
@@ -264,6 +413,7 @@ describe("ReviewTarget", () => {
           name: "ゲッターテスト",
           status: "completed",
           reviewSettings: testReviewSettings,
+          reviewType: "large",
           createdAt: now,
           updatedAt: now,
         });
@@ -275,6 +425,7 @@ describe("ReviewTarget", () => {
         expect(reviewTarget.reviewSettings?.additionalInstructions).toBe(
           testReviewSettings.additionalInstructions,
         );
+        expect(reviewTarget.reviewType?.value).toBe(REVIEW_TYPE.LARGE);
         expect(reviewTarget.createdAt).toBe(now);
         expect(reviewTarget.updatedAt).toBe(now);
       });

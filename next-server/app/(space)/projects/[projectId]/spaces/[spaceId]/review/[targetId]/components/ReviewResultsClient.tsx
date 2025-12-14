@@ -64,6 +64,8 @@ interface ReviewResultsClientProps {
   targetId: string;
   /** レビュー対象データ */
   reviewTarget: ReviewTargetData;
+  /** リトライ可能かどうか */
+  canRetry: boolean;
 }
 
 /**
@@ -150,6 +152,7 @@ export function ReviewResultsClient({
   spaceName,
   targetId,
   reviewTarget,
+  canRetry,
 }: ReviewResultsClientProps) {
   const router = useRouter();
 
@@ -233,8 +236,9 @@ export function ReviewResultsClient({
             <Button
               variant="outline"
               onClick={handleRetry}
-              disabled={isActionsDisabled}
+              disabled={isActionsDisabled || !canRetry}
               className="flex items-center gap-2"
+              title={!canRetry ? "リトライに必要な情報がありません" : undefined}
             >
               <RefreshCw className="w-4 h-4" />
               リトライ

@@ -64,6 +64,7 @@ export type {
   SingleReviewResult,
   ReviewExecutionWorkflowRuntimeContext,
   ReviewType,
+  CachedDocument,
 } from "./workflows/reviewExecution";
 
 export {

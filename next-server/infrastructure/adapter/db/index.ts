@@ -5,4 +5,6 @@ export {
   ReviewSpaceRepository,
   ReviewTargetRepository,
   ReviewResultRepository,
+  CheckListItemRepository,
+  ReviewDocumentCacheRepository,
 } from "./drizzle/repository";

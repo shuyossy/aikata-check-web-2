@@ -87,6 +87,7 @@ describe("GetReviewTargetService", () => {
     reviewSpaceId: testReviewSpaceId,
     name: "テストレビュー対象",
     status: "completed",
+    reviewType: "small",
     reviewSettings: {
       additionalInstructions: "テスト指示",
       concurrentReviewItems: 2,
@@ -196,6 +197,7 @@ describe("GetReviewTargetService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "設定なしレビュー",
         status: "completed",
+        reviewType: null,
         reviewSettings: null,
         createdAt: now,
         updatedAt: now,
