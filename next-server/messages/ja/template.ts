@@ -58,6 +58,8 @@ export const template = {
   AI_CHECKLIST_GENERATION_FAILED: `AIチェックリスト生成に失敗しました。{detail}`,
   // PDF変換エラー
   PDF_CONVERSION_FAILED: `PDFの画像変換に失敗しました。{detail}`,
+  // ファイルアップロードエラー
+  FILE_UPLOAD_TOO_MANY_FILES: `ファイル数が上限（{maxFiles}件）を超えています。`,
   // レビュー設定ドメインバリデーションエラー
   EVALUATION_LABEL_EMPTY: `評定ラベルは必須です。`,
   EVALUATION_LABEL_TOO_LONG: `評定ラベルは10文字以内で入力してください。`,
@@ -70,4 +72,20 @@ export const template = {
   REVIEW_SETTINGS_CONCURRENT_ITEMS_INVALID: `同時レビュー項目数は1以上100以下で設定してください。`,
   REVIEW_SETTINGS_COMMENT_FORMAT_REQUIRED: `コメントフォーマットは必須です。`,
   REVIEW_SETTINGS_COMMENT_FORMAT_TOO_LONG: `コメントフォーマットは2000文字以内で入力してください。`,
+  // レビュー対象管理ドメインバリデーションエラー
+  REVIEW_TARGET_ID_INVALID_FORMAT: `レビュー対象IDの形式が不正です。有効なUUID形式である必要があります。`,
+  REVIEW_TARGET_NAME_EMPTY: `レビュー対象名は必須です。`,
+  REVIEW_TARGET_NAME_TOO_LONG: `レビュー対象名は255文字以内で入力してください。`,
+  REVIEW_TARGET_STATUS_INVALID: `レビュー対象のステータスが不正です。`,
+  REVIEW_TARGET_STATUS_INVALID_TRANSITION: `レビュー対象のステータス遷移が不正です。`,
+  REVIEW_TARGET_NOT_FOUND: `指定されたレビュー対象が見つかりません。`,
+  REVIEW_TARGET_ACCESS_DENIED: `このレビュー対象へのアクセス権がありません。`,
+  REVIEW_TARGET_CANNOT_DELETE_REVIEWING: `レビュー実行中のレビュー対象は削除できません。`,
+  // レビュー結果管理ドメインバリデーションエラー
+  REVIEW_RESULT_ID_INVALID_FORMAT: `レビュー結果IDの形式が不正です。有効なUUID形式である必要があります。`,
+  REVIEW_RESULT_EVALUATION_TOO_LONG: `評価ラベルは20文字以内で入力してください。`,
+  // レビュー実行エラー
+  REVIEW_EXECUTION_NO_FILES: `ファイルが選択されていません。`,
+  REVIEW_EXECUTION_NO_CHECKLIST: `チェックリストがありません。レビュー実行前にチェックリストを追加してください。`,
+  REVIEW_EXECUTION_FAILED: `レビュー実行に失敗しました。{detail}`,
 } as const;

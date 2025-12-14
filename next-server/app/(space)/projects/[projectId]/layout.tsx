@@ -6,8 +6,10 @@ import { ListProjectReviewSpacesService } from "@/application/reviewSpace";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
+  ReviewTargetRepository,
   UserRepository,
 } from "@/infrastructure/adapter/db";
+import { ListReviewTargetsService } from "@/application/reviewTarget";
 import { EmployeeId } from "@/domain/user";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { ProjectHeader } from "./components/ProjectHeader";
@@ -37,6 +39,7 @@ export default async function ProjectLayout({
   const userRepository = new UserRepository();
   const projectRepository = new ProjectRepository();
   const reviewSpaceRepository = new ReviewSpaceRepository();
+  const reviewTargetRepository = new ReviewTargetRepository();
 
   // ユーザー情報を取得
   const user = await userRepository.findByEmployeeId(
@@ -82,6 +85,37 @@ export default async function ProjectLayout({
     limit: 100, // サイドバー用に十分な数を取得
   });
 
+  // 各レビュースペースのレビュー対象を取得（サイドバー表示用）
+  const listReviewTargetsService = new ListReviewTargetsService(
+    reviewTargetRepository,
+    reviewSpaceRepository,
+    projectRepository,
+  );
+
+  const reviewSpacesWithTargets = await Promise.all(
+    reviewSpacesResult.spaces.map(async (space) => {
+      const targetsResult = await listReviewTargetsService.execute({
+        reviewSpaceId: space.id,
+        userId: user.id.value,
+        limit: 11, // 10件超過判定のため11件取得
+      });
+
+      const hasMore = targetsResult.reviewTargets.length > 10;
+      const displayTargets = targetsResult.reviewTargets.slice(0, 10);
+
+      return {
+        id: space.id,
+        name: space.name,
+        reviewTargets: displayTargets.map((t) => ({
+          id: t.id,
+          name: t.name,
+          status: t.status as "pending" | "reviewing" | "completed" | "error",
+        })),
+        hasMore,
+      };
+    }),
+  );
+
   return (
     <div className="flex h-screen bg-gray-50">
       {/* サイドバー */}
@@ -98,7 +132,7 @@ export default async function ProjectLayout({
           updatedAt: new Date(currentProject.updatedAt).toISOString(),
         }}
         projects={projectsResult.projects}
-        reviewSpaces={reviewSpacesResult.spaces}
+        reviewSpaces={reviewSpacesWithTargets}
       />
 
       {/* メインコンテンツエリア */}

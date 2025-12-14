@@ -3,4 +3,6 @@ export {
   UserRepository,
   ProjectRepository,
   ReviewSpaceRepository,
+  ReviewTargetRepository,
+  ReviewResultRepository,
 } from "./drizzle/repository";

@@ -3,17 +3,64 @@
 import { useState, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronDown, Folder, Menu, X, ClipboardList } from "lucide-react";
+import {
+  ChevronDown,
+  Folder,
+  Menu,
+  X,
+  ClipboardList,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Clock,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ProjectSwitcher } from "@/components/project/ProjectSwitcher";
 import { ProjectListItemDto } from "@/domain/project";
-import { ReviewSpaceListItemDto } from "@/domain/reviewSpace";
+
+/**
+ * サイドバーで表示するレビュー対象の型
+ */
+interface ReviewTargetSidebarItem {
+  id: string;
+  name: string;
+  status: "pending" | "reviewing" | "completed" | "error";
+}
+
+/**
+ * サイドバーで表示するレビュースペースの型
+ */
+interface ReviewSpaceSidebarItem {
+  id: string;
+  name: string;
+  reviewTargets: ReviewTargetSidebarItem[];
+  hasMore: boolean;
+}
 
 interface SidebarProps {
   currentProject: ProjectListItemDto;
   projects: ProjectListItemDto[];
-  reviewSpaces: ReviewSpaceListItemDto[];
+  reviewSpaces: ReviewSpaceSidebarItem[];
+}
+
+/**
+ * レビュー対象のステータスに応じたアイコンを取得
+ */
+function getStatusIcon(status: ReviewTargetSidebarItem["status"]) {
+  switch (status) {
+    case "reviewing":
+      return <Loader2 className="size-3 animate-spin text-blue-500" />;
+    case "completed":
+      return <CheckCircle className="size-3 text-green-500" />;
+    case "error":
+      return <AlertCircle className="size-3 text-red-500" />;
+    case "pending":
+      return <Clock className="size-3 text-gray-400" />;
+    default:
+      return <FileText className="size-3 text-gray-400" />;
+  }
 }
 
 /**
@@ -175,7 +222,38 @@ export function Sidebar({
                             <ClipboardList className="size-3" />
                             <span className="truncate">チェックリスト</span>
                           </Link>
-                          {/* 今後: レビュー対象のリストがここに追加される */}
+
+                          {/* レビュー対象リスト */}
+                          {space.reviewTargets.map((target) => {
+                            const isTargetActive = pathname.includes(
+                              `/review/${target.id}`,
+                            );
+                            return (
+                              <Link
+                                key={target.id}
+                                href={`/projects/${currentProject.id}/spaces/${space.id}/review/${target.id}`}
+                                className={cn(
+                                  "flex items-center gap-2 px-3 py-1.5 text-sm rounded transition duration-150",
+                                  isTargetActive
+                                    ? "text-blue-600 bg-blue-50"
+                                    : "text-gray-700 hover:bg-gray-100",
+                                )}
+                              >
+                                {getStatusIcon(target.status)}
+                                <span className="truncate">{target.name}</span>
+                              </Link>
+                            );
+                          })}
+
+                          {/* もっと見るリンク */}
+                          {space.hasMore && (
+                            <Link
+                              href={`/projects/${currentProject.id}/spaces/${space.id}`}
+                              className="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-500 hover:text-blue-600 transition"
+                            >
+                              <span>もっと見る...</span>
+                            </Link>
+                          )}
                         </div>
                       )}
                     </div>

@@ -4,10 +4,12 @@ import { authOptions } from "@/auth";
 import { GetProjectService } from "@/application/project";
 import { GetReviewSpaceService } from "@/application/reviewSpace";
 import { ListReviewSpaceCheckListItemsService } from "@/application/checkListItem";
+import { ListReviewTargetsService } from "@/application/reviewTarget";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
   UserRepository,
+  ReviewTargetRepository,
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
 import { EmployeeId } from "@/domain/user";
@@ -37,6 +39,7 @@ export default async function ReviewSpacePage({ params }: ReviewSpacePageProps) 
   const projectRepository = new ProjectRepository();
   const reviewSpaceRepository = new ReviewSpaceRepository();
   const checkListItemRepository = new CheckListItemRepository();
+  const reviewTargetRepository = new ReviewTargetRepository();
 
   // ユーザー情報を取得
   const user = await userRepository.findByEmployeeId(
@@ -89,6 +92,18 @@ export default async function ReviewSpacePage({ params }: ReviewSpacePageProps) 
     limit: 1,
   });
 
+  // レビュー対象一覧を取得
+  const listReviewTargetsService = new ListReviewTargetsService(
+    reviewTargetRepository,
+    reviewSpaceRepository,
+    projectRepository
+  );
+
+  const reviewTargetsData = await listReviewTargetsService.execute({
+    reviewSpaceId: spaceId,
+    userId: user.id.value,
+  });
+
   return (
     <ReviewTargetListClient
       projectId={projectId}
@@ -98,6 +113,7 @@ export default async function ReviewSpacePage({ params }: ReviewSpacePageProps) 
       spaceDescription={reviewSpace.description}
       checkListItemCount={checkListData.total}
       defaultReviewSettings={reviewSpace.defaultReviewSettings}
+      reviewTargets={reviewTargetsData.reviewTargets}
     />
   );
 }

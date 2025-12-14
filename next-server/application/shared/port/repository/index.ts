@@ -7,3 +7,8 @@ export type {
   IReviewSpaceRepository,
   FindReviewSpacesOptions,
 } from "./IReviewSpaceRepository";
+export type {
+  IReviewTargetRepository,
+  FindReviewTargetsOptions,
+} from "./IReviewTargetRepository";
+export type { IReviewResultRepository } from "./IReviewResultRepository";

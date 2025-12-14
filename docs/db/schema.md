@@ -183,3 +183,118 @@
 ### 備考
 - electron版の`reviewChecklists`テーブルとは異なり、レビュー履歴ではなくレビュースペースに紐づける設計。
 - 表示順序はcreatedAt順（作成順）で固定。将来的に並び替えが必要になった場合はorderカラムを追加する。
+
+---
+
+## review_targets テーブル
+
+レビュー対象を管理するテーブル。レビュースペースに対してレビューを実行する際の対象ドキュメントとその実行状態を管理する。
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|------|------|-----------|------|
+| id | UUID | NOT NULL | gen_random_uuid() | レビュー対象ID（PK） |
+| review_space_id | UUID | NOT NULL | - | 所属レビュースペースID（FK → review_spaces.id） |
+| name | VARCHAR(255) | NOT NULL | - | レビュー対象名（ファイル名等） |
+| status | VARCHAR(20) | NOT NULL | 'pending' | レビューステータス |
+| review_settings | JSONB | NULL | - | レビュー実行時に使用した設定 |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
+
+### インデックス
+- PRIMARY KEY (id)
+- INDEX idx_review_targets_review_space_id (review_space_id) - スペース配下のレビュー対象一覧取得を高速化
+- INDEX idx_review_targets_status (status) - ステータス別のフィルタリングを高速化
+
+### 外部キー制約
+- review_space_id → review_spaces.id (ON DELETE CASCADE)
+
+### 設計思想
+- **id**: UUIDを採用し、レビュー対象を一意に識別する。URLパラメータとしても使用される。
+- **review_space_id**: レビュー対象が所属するレビュースペースへの参照。CASCADE削除によりスペース削除時に関連するレビュー対象も自動的に削除される。
+- **name**: レビュー対象を識別するための名称。複数ファイルの場合はスラッシュ区切りで結合（例: "doc1.docx/doc2.xlsx"）。255文字以内に制限。
+- **status**: レビュー処理の進行状態を表す。以下の値を取る:
+  - `pending`: レビュー待ち（初期状態）
+  - `reviewing`: レビュー実行中
+  - `completed`: レビュー完了
+  - `error`: レビュー失敗
+- **review_settings**: レビュー実行時に使用した設定をJSONB形式で保存。リトライ時に同じ設定で再実行するために使用。構造はreview_spaces.default_review_settingsと同一。
+- **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。
+
+### 備考
+- 同一レビュースペースに対して複数のレビュー対象を作成可能。
+- レビュー対象はレビュースペースのチェックリストを使用してレビューされる。
+
+---
+
+## review_results テーブル
+
+レビュー結果を管理するテーブル。レビュー対象に対する各チェック項目ごとのAIレビュー結果を保存する。
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|------|------|-----------|------|
+| id | UUID | NOT NULL | gen_random_uuid() | レビュー結果ID（PK） |
+| review_target_id | UUID | NOT NULL | - | レビュー対象ID（FK → review_targets.id） |
+| check_list_item_id | UUID | NOT NULL | - | チェック項目ID（FK → check_list_items.id） |
+| evaluation | VARCHAR(20) | NULL | - | 評定（A, B, C, -, カスタムラベル等） |
+| comment | TEXT | NULL | - | AIが生成したレビューコメント |
+| error_message | TEXT | NULL | - | エラー発生時のエラーメッセージ |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
+
+### インデックス
+- PRIMARY KEY (id)
+- INDEX idx_review_results_review_target_id (review_target_id) - レビュー対象のレビュー結果一覧取得を高速化
+- UNIQUE INDEX idx_review_results_target_item (review_target_id, check_list_item_id) - 同一レビュー対象・チェック項目の重複防止
+
+### 外部キー制約
+- review_target_id → review_targets.id (ON DELETE CASCADE)
+- check_list_item_id → check_list_items.id (ON DELETE CASCADE)
+
+### 設計思想
+- **id**: UUIDを採用し、レビュー結果を一意に識別する。
+- **review_target_id**: レビュー結果が紐づくレビュー対象への参照。CASCADE削除によりレビュー対象削除時に関連するレビュー結果も自動的に削除される。
+- **check_list_item_id**: レビュー結果が紐づくチェック項目への参照。CASCADE削除によりチェック項目削除時に関連するレビュー結果も自動的に削除される。
+- **evaluation**: AIが判定した評定。review_settingsで指定された評定基準のラベルが設定される。NULL許可（レビュー失敗時）。
+- **comment**: AIが生成したレビューコメント。review_settingsで指定されたコメントフォーマットに従う。NULL許可（レビュー失敗時）。
+- **error_message**: 個別のチェック項目のレビューが失敗した場合のエラーメッセージ。正常完了時はNULL。
+- **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。
+
+### 備考
+- 1つのレビュー対象に対して、レビュースペースのチェック項目数分のレビュー結果が作成される。
+- UNIQUE制約により、同一レビュー対象・チェック項目の組み合わせは1レコードのみ。UPSERT操作でリトライ時に上書き可能。
+- error_messageが設定されている場合、UIではエラーアイコンを表示し、コメント欄にエラーメッセージを表示する。
+
+---
+
+## review_document_caches テーブル
+
+レビュー対象ドキュメントのキャッシュ情報を管理するテーブル。リトライ時にドキュメントの再処理を省略するために使用。
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|------|------|-----------|------|
+| id | UUID | NOT NULL | gen_random_uuid() | キャッシュID（PK） |
+| review_target_id | UUID | NOT NULL | - | レビュー対象ID（FK → review_targets.id） |
+| file_name | VARCHAR(255) | NOT NULL | - | ファイル名 |
+| process_mode | VARCHAR(10) | NOT NULL | - | 処理モード（text/image） |
+| cache_path | TEXT | NULL | - | キャッシュファイルのパス |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
+
+### インデックス
+- PRIMARY KEY (id)
+- INDEX idx_review_document_caches_review_target_id (review_target_id) - レビュー対象のキャッシュ一覧取得を高速化
+
+### 外部キー制約
+- review_target_id → review_targets.id (ON DELETE CASCADE)
+
+### 設計思想
+- **id**: UUIDを採用し、キャッシュを一意に識別する。
+- **review_target_id**: キャッシュが紐づくレビュー対象への参照。CASCADE削除によりレビュー対象削除時に関連するキャッシュも自動的に削除される。
+- **file_name**: 元のファイル名を保存。キャッシュの識別とUI表示に使用。
+- **process_mode**: ドキュメントの処理モード。`text`（テキスト抽出）または`image`（画像変換）。
+- **cache_path**: サーバ上のキャッシュファイルのパス。環境変数で指定されたキャッシュディレクトリ配下に保存。
+- **created_at**: キャッシュ作成日時を記録。
+
+### 備考
+- このテーブルはPBI-4（リトライ機能）で本格的に使用される。PBI-1ではテーブル構造のみ作成し、キャッシュ保存ロジックは未実装。
+- キャッシュファイルの実体はサーバ上のファイルシステムに保存され、cache_pathにそのパスが記録される。
+- レビュー対象削除時はDBレコードとファイルシステム上のキャッシュファイルの両方を削除する必要がある。

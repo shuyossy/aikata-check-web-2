@@ -17,10 +17,11 @@ import { getLogger } from "@/lib/server/logger";
 
 /**
  * ファイル処理ステップの入力スキーマ
+ * checklistRequirementsはチェックリスト生成ワークフロー用（オプション）
  */
 export const fileProcessingInputSchema = z.object({
   files: z.array(rawUploadFileMetaSchema),
-  checklistRequirements: z.string(),
+  checklistRequirements: z.string().optional(),
 });
 
 /**

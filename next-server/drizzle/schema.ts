@@ -6,6 +6,7 @@ import {
   text,
   primaryKey,
   index,
+  uniqueIndex,
   jsonb,
 } from "drizzle-orm/pg-core";
 
@@ -174,3 +175,143 @@ export const checkListItems = pgTable(
  */
 export type CheckListItemDbEntity = typeof checkListItems.$inferSelect;
 export type NewCheckListItemDbEntity = typeof checkListItems.$inferInsert;
+
+/**
+ * review_targetsテーブル
+ * レビュー対象（AIレビューの実行単位）を管理
+ */
+export const reviewTargets = pgTable(
+  "review_targets",
+  {
+    /** レビュー対象ID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 所属レビュースペースID（FK） */
+    reviewSpaceId: uuid("review_space_id")
+      .notNull()
+      .references(() => reviewSpaces.id, { onDelete: "cascade" }),
+    /** レビュー対象名（最大255文字） */
+    name: varchar("name", { length: 255 }).notNull(),
+    /**
+     * レビューステータス
+     * pending: 待機中, reviewing: レビュー中, completed: 完了, error: エラー
+     */
+    status: varchar("status", { length: 20 }).notNull().default("pending"),
+    /**
+     * レビュー実行時の設定（JSON形式）
+     * 構造: {
+     *   additionalInstructions: string | null,
+     *   concurrentReviewItems: number,
+     *   commentFormat: string,
+     *   evaluationCriteria: EvaluationItemProps[]
+     * }
+     */
+    reviewSettings: jsonb("review_settings"),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** レコード更新日時 */
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_review_targets_review_space_id").on(table.reviewSpaceId),
+    index("idx_review_targets_status").on(table.status),
+  ],
+);
+
+/**
+ * レビュー対象テーブルの型定義
+ */
+export type ReviewTargetDbEntity = typeof reviewTargets.$inferSelect;
+export type NewReviewTargetDbEntity = typeof reviewTargets.$inferInsert;
+
+/**
+ * review_resultsテーブル
+ * チェック項目ごとのAIレビュー結果を管理
+ */
+export const reviewResults = pgTable(
+  "review_results",
+  {
+    /** レビュー結果ID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 所属レビュー対象ID（FK） */
+    reviewTargetId: uuid("review_target_id")
+      .notNull()
+      .references(() => reviewTargets.id, { onDelete: "cascade" }),
+    /**
+     * チェック項目内容のスナップショット
+     * レビュー実行時点のチェック項目内容を保存
+     * チェックリスト項目の削除・編集に影響されない
+     */
+    checkListItemContent: text("check_list_item_content").notNull(),
+    /**
+     * 評価ラベル（最大20文字）
+     * nullの場合はまだ評価されていない、またはエラー
+     */
+    evaluation: varchar("evaluation", { length: 20 }),
+    /** AIによるレビューコメント */
+    comment: text("comment"),
+    /** エラーメッセージ（レビュー失敗時） */
+    errorMessage: text("error_message"),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** レコード更新日時 */
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_review_results_review_target_id").on(table.reviewTargetId),
+    uniqueIndex("idx_review_results_target_content").on(
+      table.reviewTargetId,
+      table.checkListItemContent,
+    ),
+  ],
+);
+
+/**
+ * レビュー結果テーブルの型定義
+ */
+export type ReviewResultDbEntity = typeof reviewResults.$inferSelect;
+export type NewReviewResultDbEntity = typeof reviewResults.$inferInsert;
+
+/**
+ * review_document_cachesテーブル
+ * レビュー対象のドキュメントキャッシュを管理（リトライ機能用）
+ */
+export const reviewDocumentCaches = pgTable(
+  "review_document_caches",
+  {
+    /** キャッシュID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 所属レビュー対象ID（FK） */
+    reviewTargetId: uuid("review_target_id")
+      .notNull()
+      .references(() => reviewTargets.id, { onDelete: "cascade" }),
+    /** 元ファイル名 */
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    /** 処理モード（text: テキスト抽出, image: 画像変換） */
+    processMode: varchar("process_mode", { length: 10 }).notNull(),
+    /** キャッシュファイルパス（サーバ内） */
+    cachePath: text("cache_path"),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_review_document_caches_review_target_id").on(table.reviewTargetId),
+  ],
+);
+
+/**
+ * レビュードキュメントキャッシュテーブルの型定義
+ */
+export type ReviewDocumentCacheDbEntity =
+  typeof reviewDocumentCaches.$inferSelect;
+export type NewReviewDocumentCacheDbEntity =
+  typeof reviewDocumentCaches.$inferInsert;

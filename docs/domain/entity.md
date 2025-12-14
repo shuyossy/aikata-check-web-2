@@ -310,3 +310,134 @@
     - updateContent: チェック項目内容を更新する
     - toDto: DTOに変換する
     - toListItemDto: 一覧用DTOに変換する
+
+---
+
+## レビュー対象管理
+
+- レビュー対象ID
+  - 識別子: ReviewTargetId
+  - 種類: 値オブジェクト
+  - 不変条件
+    - UUIDv4形式であること
+  - 属性
+    - value: string - UUID文字列
+  - 振る舞い
+    - create: 新規UUIDを生成して返却する
+    - reconstruct: 既存のUUID文字列から復元する
+
+- レビュー対象名
+  - 識別子: ReviewTargetName
+  - 種類: 値オブジェクト
+  - 不変条件
+    - 空文字でないこと
+    - 255文字以内であること
+  - 属性
+    - value: string - レビュー対象名（ファイル名等）
+  - 振る舞い
+    - create: 文字列からレビュー対象名を生成する
+    - reconstruct: 既存の文字列から復元する
+
+- レビュー対象ステータス
+  - 識別子: ReviewTargetStatus
+  - 種類: 値オブジェクト
+  - 不変条件
+    - pending, reviewing, completed, error のいずれかであること
+  - 属性
+    - value: string - ステータス文字列
+  - 振る舞い
+    - create: ステータス文字列から生成する
+    - reconstruct: 既存の文字列から復元する
+    - isPending: pending状態か確認する
+    - isReviewing: reviewing状態か確認する
+    - isCompleted: completed状態か確認する
+    - isError: error状態か確認する
+
+- レビュー対象
+  - 識別子: ReviewTarget
+  - 種類: 集約ルート
+  - 不変条件
+    - レビュー対象IDは空ではないこと（UUID形式）
+    - レビュースペースIDは空ではないこと（UUID形式）
+    - レビュー対象名は空ではないこと（255文字以内）
+    - ステータスは有効な値であること
+  - 属性
+    - id: ReviewTargetId - レビュー対象ID
+    - reviewSpaceId: ReviewSpaceId - 所属レビュースペースID
+    - name: ReviewTargetName - レビュー対象名
+    - status: ReviewTargetStatus - レビューステータス
+    - reviewSettings: ReviewSettings | null - レビュー実行時に使用した設定
+    - createdAt: Date - 作成日時
+    - updatedAt: Date - 更新日時
+  - 振る舞い
+    - create: 新規レビュー対象を作成する（status=pending）
+    - reconstruct: DBから取得したデータからレビュー対象を復元する
+    - startReview: レビューを開始する（status→reviewing）
+    - completeReview: レビューを完了する（status→completed）
+    - failReview: レビューを失敗状態にする（status→error）
+    - canRetry: リトライ可能か確認する（completed or error）
+    - toDto: DTOに変換する
+    - toListItemDto: 一覧用DTOに変換する
+
+---
+
+## レビュー結果管理
+
+- レビュー結果ID
+  - 識別子: ReviewResultId
+  - 種類: 値オブジェクト
+  - 不変条件
+    - UUIDv4形式であること
+  - 属性
+    - value: string - UUID文字列
+  - 振る舞い
+    - create: 新規UUIDを生成して返却する
+    - reconstruct: 既存のUUID文字列から復元する
+
+- 評定
+  - 識別子: Evaluation
+  - 種類: 値オブジェクト
+  - 不変条件
+    - 20文字以内であること（nullも許可）
+  - 属性
+    - value: string | null - 評定ラベル（A, B, C, -, カスタムラベル等）
+  - 振る舞い
+    - create: 評定文字列から生成する
+    - reconstruct: 既存の文字列から復元する
+    - isEmpty: 評定が設定されていないか確認する
+
+- レビューコメント
+  - 識別子: ReviewComment
+  - 種類: 値オブジェクト
+  - 不変条件
+    - nullも許可
+  - 属性
+    - value: string | null - AIが生成したレビューコメント
+  - 振る舞い
+    - create: コメント文字列から生成する
+    - reconstruct: 既存の文字列から復元する
+    - isEmpty: コメントが設定されていないか確認する
+
+- レビュー結果
+  - 識別子: ReviewResult
+  - 種類: エンティティ
+  - 不変条件
+    - レビュー結果IDは空ではないこと（UUID形式）
+    - レビュー対象IDは空ではないこと（UUID形式）
+    - チェック項目IDは空ではないこと（UUID形式）
+  - 属性
+    - id: ReviewResultId - レビュー結果ID
+    - reviewTargetId: ReviewTargetId - レビュー対象ID
+    - checkListItemId: CheckListItemId - チェック項目ID
+    - evaluation: Evaluation - 評定
+    - comment: ReviewComment - レビューコメント
+    - errorMessage: string | null - エラーメッセージ（レビュー失敗時）
+    - createdAt: Date - 作成日時
+    - updatedAt: Date - 更新日時
+  - 振る舞い
+    - create: 新規レビュー結果を作成する
+    - createWithError: エラー付きのレビュー結果を作成する
+    - reconstruct: DBから取得したデータからレビュー結果を復元する
+    - update: 評定とコメントを更新する
+    - hasError: エラーが発生しているか確認する
+    - toDto: DTOに変換する

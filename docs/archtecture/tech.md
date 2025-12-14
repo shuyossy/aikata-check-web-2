@@ -110,6 +110,7 @@ Mastraを利用する。
   - 例外を検知した場合は出力スキーマのstatusを`failed`としてstep処理を終了する
 - 完全に期待する結果を得られない場合は、workflowやstepは失敗するように制御
 - workflow実行結果を確認する際は`checkWorkflowResult`を利用する
+- テストについては、各step毎、workflow全体それぞれ作成すること
 
 # フロントエンド作成方針
 - Tailwind CSS、shadcn/uiを利用

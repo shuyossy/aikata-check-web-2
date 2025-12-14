@@ -1,7 +1,12 @@
 import { Mastra } from "@mastra/core/mastra";
 import { PinoLogger } from "@mastra/loggers";
-import { topicExtractionAgent, topicChecklistAgent } from "./agents";
+import {
+  topicExtractionAgent,
+  topicChecklistAgent,
+  reviewExecuteAgent,
+} from "./agents";
 import { checklistGenerationWorkflow } from "./workflows/checklistGeneration";
+import { reviewExecutionWorkflow } from "./workflows/reviewExecution";
 import { getLogLevel } from "@/lib/server/logger";
 
 /**
@@ -16,9 +21,11 @@ export const mastra = new Mastra({
   agents: {
     topicExtractionAgent,
     topicChecklistAgent,
+    reviewExecuteAgent,
   },
   workflows: {
     checklistGenerationWorkflow,
+    reviewExecutionWorkflow,
   },
 });
 
@@ -31,7 +38,7 @@ export {
 } from "./workflows/checklistGeneration";
 export type {
   ChecklistGenerationOutput,
-  TriggerInput,
+  TriggerInput as ChecklistGenerationTriggerInput,
   // ファイル関連の型
   RawUploadFileMeta,
   ExtractedFile,
@@ -41,10 +48,27 @@ export type {
   ChecklistGenerationWorkflowRuntimeContext,
 } from "./workflows/checklistGeneration";
 
-export { topicExtractionAgent, topicChecklistAgent } from "./agents";
+export { reviewExecutionWorkflow } from "./workflows/reviewExecution";
+export type {
+  ReviewExecutionOutput,
+  TriggerInput as ReviewExecutionTriggerInput,
+  CheckListItem,
+  EvaluationCriterion,
+  ReviewSettingsInput,
+  SingleReviewResult,
+  ReviewExecutionWorkflowRuntimeContext,
+} from "./workflows/reviewExecution";
+
+export {
+  topicExtractionAgent,
+  topicChecklistAgent,
+  reviewExecuteAgent,
+} from "./agents";
 export type {
   TopicExtractionOutput,
   TopicChecklistOutput,
+  ReviewResultItem,
+  ReviewExecuteOutput,
 } from "./agents";
 
 export { checkWorkflowResult, checkStatuses } from "./lib/workflowUtils";

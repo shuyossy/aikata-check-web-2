@@ -25,3 +25,31 @@ export type TopicChecklistAgentRuntimeContext = BaseRuntimeContext & {
   checklistRequirements?: string;
   [key: string]: unknown;
 };
+
+/**
+ * 評価項目の定義
+ */
+export interface EvaluationCriterionItem {
+  label: string;
+  description: string;
+}
+
+/**
+ * レビュー実行エージェントのRuntimeContext型定義
+ */
+export type ReviewExecuteAgentRuntimeContext = BaseRuntimeContext & {
+  checklistItems: { id: string; content: string }[];
+  additionalInstructions?: string;
+  commentFormat?: string;
+  evaluationCriteria?: EvaluationCriterionItem[];
+  [key: string]: unknown;
+};
+
+/**
+ * チェックリストカテゴリ分類エージェントのRuntimeContext型定義
+ */
+export type ChecklistCategoryAgentRuntimeContext = BaseRuntimeContext & {
+  maxChecklistsPerCategory: number;
+  maxCategories: number;
+  [key: string]: unknown;
+};

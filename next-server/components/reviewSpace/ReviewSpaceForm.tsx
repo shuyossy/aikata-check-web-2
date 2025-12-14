@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useState, useCallback } from "react";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Loader2, ChevronDown, ChevronRight } from "lucide-react";
@@ -14,7 +14,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { EvaluationCriteriaEditor } from "./EvaluationCriteriaEditor";
+import { ReviewSettingsEditor, ReviewSettingsValue } from "./ReviewSettingsEditor";
 import {
   DEFAULT_EVALUATION_CRITERIA,
   DEFAULT_CONCURRENT_REVIEW_ITEMS,
@@ -85,6 +85,8 @@ export function ReviewSpaceForm({
     register,
     handleSubmit,
     control,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ReviewSpaceFormData>({
     resolver: zodResolver(reviewSpaceFormSchema),
@@ -99,6 +101,33 @@ export function ReviewSpaceForm({
         defaultValues?.evaluationCriteria ?? [...DEFAULT_EVALUATION_CRITERIA],
     },
   });
+
+  // レビュー設定の値をwatchで監視
+  const reviewSettingsValue: ReviewSettingsValue = {
+    additionalInstructions: watch("additionalInstructions") ?? "",
+    concurrentReviewItems: watch("concurrentReviewItems"),
+    commentFormat: watch("commentFormat"),
+    evaluationCriteria: watch("evaluationCriteria"),
+  };
+
+  // レビュー設定の変更ハンドラー
+  const handleReviewSettingsChange = useCallback(
+    (value: ReviewSettingsValue) => {
+      setValue("additionalInstructions", value.additionalInstructions);
+      setValue("concurrentReviewItems", value.concurrentReviewItems);
+      setValue("commentFormat", value.commentFormat);
+      setValue("evaluationCriteria", value.evaluationCriteria);
+    },
+    [setValue]
+  );
+
+  // バリデーションエラーメッセージの収集
+  const reviewSettingsErrors = [
+    errors.additionalInstructions?.message,
+    errors.concurrentReviewItems?.message,
+    errors.commentFormat?.message,
+    errors.evaluationCriteria?.message,
+  ].filter(Boolean);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -165,108 +194,22 @@ export function ReviewSpaceForm({
             レビュー対象を作成する際のデフォルト設定を指定できます
           </p>
 
-          <div className="space-y-4">
-            {/* 追加指示 */}
-            <div className="space-y-2">
-              <Label htmlFor="additionalInstructions">追加指示</Label>
-              <Textarea
-                id="additionalInstructions"
-                {...register("additionalInstructions")}
-                placeholder="AIレビュー実行時に追加する指示を入力"
-                rows={4}
-                maxLength={2000}
-                disabled={isSubmitting}
-              />
-              <p className="text-xs text-gray-500">
-                AIのレビュー実行時のシステムプロンプトに追加されます
-              </p>
-              {errors.additionalInstructions && (
-                <p className="text-sm text-red-600">
-                  {errors.additionalInstructions.message}
-                </p>
-              )}
-            </div>
+          <ReviewSettingsEditor
+            value={reviewSettingsValue}
+            onChange={handleReviewSettingsChange}
+            disabled={isSubmitting}
+          />
 
-            {/* 同時レビュー項目数 */}
-            <div className="space-y-2">
-              <Label htmlFor="concurrentReviewItems">
-                同時レビュー項目数 <span className="text-red-500">*</span>
-              </Label>
-              <Controller
-                name="concurrentReviewItems"
-                control={control}
-                render={({ field }) => (
-                  <Input
-                    id="concurrentReviewItems"
-                    type="number"
-                    min={1}
-                    max={100}
-                    {...field}
-                    onChange={(e) =>
-                      field.onChange(
-                        e.target.value ? Number(e.target.value) : 1,
-                      )
-                    }
-                    placeholder="例: 5"
-                    disabled={isSubmitting}
-                  />
-                )}
-              />
-              <p className="text-xs text-gray-500">
-                AIが一度にレビューするチェック項目数（1〜100）
-              </p>
-              {errors.concurrentReviewItems && (
-                <p className="text-sm text-red-600">
-                  {errors.concurrentReviewItems.message}
+          {/* バリデーションエラーの表示 */}
+          {reviewSettingsErrors.length > 0 && (
+            <div className="space-y-1">
+              {reviewSettingsErrors.map((error, index) => (
+                <p key={index} className="text-sm text-red-600">
+                  {error}
                 </p>
-              )}
+              ))}
             </div>
-
-            {/* コメントフォーマット */}
-            <div className="space-y-2">
-              <Label htmlFor="commentFormat">
-                コメントフォーマット <span className="text-red-500">*</span>
-              </Label>
-              <Textarea
-                id="commentFormat"
-                {...register("commentFormat")}
-                placeholder="例: 【評価理由】\n【改善提案】"
-                rows={4}
-                maxLength={2000}
-                disabled={isSubmitting}
-              />
-              <p className="text-xs text-gray-500">
-                レビュー結果のコメントで使用するフォーマット
-              </p>
-              {errors.commentFormat && (
-                <p className="text-sm text-red-600">
-                  {errors.commentFormat.message}
-                </p>
-              )}
-            </div>
-
-            {/* 評定基準 */}
-            <div className="space-y-2">
-              <Label>
-                評定基準 <span className="text-red-500">*</span>
-              </Label>
-              <Controller
-                name="evaluationCriteria"
-                control={control}
-                render={({ field }) => (
-                  <EvaluationCriteriaEditor
-                    value={field.value}
-                    onChange={field.onChange}
-                  />
-                )}
-              />
-              {errors.evaluationCriteria && (
-                <p className="text-sm text-red-600">
-                  {errors.evaluationCriteria.message}
-                </p>
-              )}
-            </div>
-          </div>
+          )}
         </CollapsibleContent>
       </Collapsible>
 

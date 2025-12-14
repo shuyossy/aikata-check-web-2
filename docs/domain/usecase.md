@@ -110,3 +110,132 @@
       - 内部エラー（AI_CHECKLIST_GENERATION_NO_ITEMS_GENERATED）を返す
   - 事後処理
     - なし
+
+---
+
+## レビュー実行管理
+
+- レビュー実行
+  - 識別子: ExecuteReviewService
+  - 前提条件
+    - 認証済みユーザであること
+    - 対象レビュースペースが属するプロジェクトのメンバーであること
+    - レビュースペースにチェック項目が1件以上存在すること
+  - 入力: ExecuteReviewCommand { reviewSpaceId: string, userId: string, files: RawUploadFileMeta[], fileBuffers: FileBuffersMap, reviewSettings: ReviewSettingsInput }
+    - RawUploadFileMeta: { id: string, name: string, type: string, processMode: "text" | "image" }
+    - FileBuffersMap: Map<fileId, { buffer: Buffer, convertedImageBuffers?: Buffer[] }>
+    - ReviewSettingsInput: { additionalInstructions?: string, concurrentReviewItems?: number, commentFormat?: string, evaluationCriteria?: EvaluationItemInput[] }
+  - 出力: ExecuteReviewResult { reviewTargetId: string, status: string }
+  - メインフロー
+    1. 入力されたレビュースペースIDでレビュースペースの存在を確認する
+    2. レビュースペースが属するプロジェクトの存在を確認する
+    3. ユーザがプロジェクトのメンバーであることを確認する
+    4. レビュースペース配下のチェック項目が1件以上存在することを確認する
+    5. チェック項目一覧を取得する
+    6. 新規レビュー対象エンティティを作成する（status=pending, reviewSettings保存）
+    7. レビュー対象をDBに保存する
+    8. レビュー対象のステータスをreviewingに更新する
+    9. Mastraレビュー実行ワークフローを非同期で実行する
+       9.1. ファイル処理ステップ: ドキュメントからテキスト抽出/画像変換
+       9.2. 少量レビュー実行ステップ: チェック項目ごとにAIレビューを実行
+       9.3. 各チェック項目のレビュー結果をDBに保存する
+    10. ワークフロー完了後、レビュー対象のステータスをcompletedまたはerrorに更新する
+    11. レビュー対象IDとステータスを返却する
+  - 例外
+    - パターン1: レビュースペースが存在しない場合
+      - ドメインバリデーションエラー（REVIEW_SPACE_NOT_FOUND）を返す
+    - パターン2: プロジェクトが存在しない場合
+      - ドメインバリデーションエラー（PROJECT_NOT_FOUND）を返す
+    - パターン3: プロジェクトへのアクセス権がない場合
+      - ドメインバリデーションエラー（PROJECT_ACCESS_DENIED）を返す
+    - パターン4: ファイルが指定されていない場合
+      - ドメインバリデーションエラー（REVIEW_EXECUTION_NO_FILES）を返す
+    - パターン5: チェック項目が0件の場合
+      - ドメインバリデーションエラー（REVIEW_EXECUTION_NO_CHECKLIST）を返す
+    - パターン6: AIワークフロー実行中にエラーが発生した場合
+      - レビュー対象のステータスをerrorに更新し、エラーメッセージを含む内部エラーを返す
+  - 事後処理
+    - なし
+
+- レビュー対象取得
+  - 識別子: GetReviewTargetService
+  - 前提条件
+    - 認証済みユーザであること
+    - 対象レビュー対象が属するプロジェクトのメンバーであること
+  - 入力: GetReviewTargetCommand { reviewTargetId: string, userId: string }
+  - 出力: GetReviewTargetResult { reviewTarget: ReviewTargetDto, reviewResults: ReviewResultDto[] }
+    - ReviewTargetDto: { id: string, reviewSpaceId: string, name: string, status: string, reviewSettings: ReviewSettingsDto | null, createdAt: Date, updatedAt: Date }
+    - ReviewResultDto: { id: string, checkListItemId: string, checkListItemContent: string, evaluation: string | null, comment: string | null, errorMessage: string | null }
+  - メインフロー
+    1. 入力されたレビュー対象IDでレビュー対象の存在を確認する
+    2. レビュー対象が属するレビュースペースを取得する
+    3. レビュースペースが属するプロジェクトを取得する
+    4. ユーザがプロジェクトのメンバーであることを確認する
+    5. レビュー対象に紐づくレビュー結果一覧を取得する
+    6. チェック項目情報を結合してDTOを生成する
+    7. レビュー対象DTOとレビュー結果DTO一覧を返却する
+  - 例外
+    - パターン1: レビュー対象が存在しない場合
+      - ドメインバリデーションエラー（REVIEW_TARGET_NOT_FOUND）を返す
+    - パターン2: レビュースペースが存在しない場合
+      - ドメインバリデーションエラー（REVIEW_SPACE_NOT_FOUND）を返す
+    - パターン3: プロジェクトが存在しない場合
+      - ドメインバリデーションエラー（PROJECT_NOT_FOUND）を返す
+    - パターン4: プロジェクトへのアクセス権がない場合
+      - ドメインバリデーションエラー（REVIEW_TARGET_ACCESS_DENIED）を返す
+  - 事後処理
+    - なし
+
+- レビュー対象一覧取得
+  - 識別子: ListReviewTargetsService
+  - 前提条件
+    - 認証済みユーザであること
+    - 対象レビュースペースが属するプロジェクトのメンバーであること
+  - 入力: ListReviewTargetsCommand { reviewSpaceId: string, userId: string }
+  - 出力: ListReviewTargetsResult { reviewTargets: ReviewTargetListItemDto[] }
+    - ReviewTargetListItemDto: { id: string, name: string, status: string, createdAt: Date, updatedAt: Date }
+  - メインフロー
+    1. 入力されたレビュースペースIDでレビュースペースの存在を確認する
+    2. レビュースペースが属するプロジェクトを取得する
+    3. ユーザがプロジェクトのメンバーであることを確認する
+    4. レビュースペースに紐づくレビュー対象一覧を取得する（作成日時降順）
+    5. レビュー対象一覧DTOを返却する
+  - 例外
+    - パターン1: レビュースペースが存在しない場合
+      - ドメインバリデーションエラー（REVIEW_SPACE_NOT_FOUND）を返す
+    - パターン2: プロジェクトが存在しない場合
+      - ドメインバリデーションエラー（PROJECT_NOT_FOUND）を返す
+    - パターン3: プロジェクトへのアクセス権がない場合
+      - ドメインバリデーションエラー（PROJECT_ACCESS_DENIED）を返す
+  - 事後処理
+    - なし
+
+- レビュー対象削除
+  - 識別子: DeleteReviewTargetService
+  - 前提条件
+    - 認証済みユーザであること
+    - 対象レビュー対象が属するプロジェクトのメンバーであること
+    - レビュー対象がレビュー実行中（reviewing）でないこと
+  - 入力: DeleteReviewTargetCommand { reviewTargetId: string, userId: string }
+  - 出力: DeleteReviewTargetResult { success: boolean }
+  - メインフロー
+    1. 入力されたレビュー対象IDでレビュー対象の存在を確認する
+    2. レビュー対象が属するレビュースペースを取得する
+    3. レビュースペースが属するプロジェクトを取得する
+    4. ユーザがプロジェクトのメンバーであることを確認する
+    5. レビュー対象がレビュー実行中でないことを確認する
+    6. レビュー対象を削除する（CASCADE削除でレビュー結果、ドキュメントキャッシュも削除）
+    7. 成功を返却する
+  - 例外
+    - パターン1: レビュー対象が存在しない場合
+      - ドメインバリデーションエラー（REVIEW_TARGET_NOT_FOUND）を返す
+    - パターン2: レビュースペースが存在しない場合
+      - ドメインバリデーションエラー（REVIEW_SPACE_NOT_FOUND）を返す
+    - パターン3: プロジェクトが存在しない場合
+      - ドメインバリデーションエラー（PROJECT_NOT_FOUND）を返す
+    - パターン4: プロジェクトへのアクセス権がない場合
+      - ドメインバリデーションエラー（REVIEW_TARGET_ACCESS_DENIED）を返す
+    - パターン5: レビュー対象がレビュー実行中の場合
+      - ドメインバリデーションエラー（REVIEW_TARGET_CANNOT_DELETE_REVIEWING）を返す
+  - 事後処理
+    - なし

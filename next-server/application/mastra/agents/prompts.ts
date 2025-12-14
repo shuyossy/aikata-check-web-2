@@ -2,6 +2,8 @@ import type { RuntimeContext } from "@mastra/core/di";
 import type {
   TopicExtractionAgentRuntimeContext,
   TopicChecklistAgentRuntimeContext,
+  ReviewExecuteAgentRuntimeContext,
+  ChecklistCategoryAgentRuntimeContext,
 } from "./types";
 
 /**
@@ -110,5 +112,109 @@ ${checklistRequirements ? "- **Requirements-aligned**: Prioritize aspects that a
 - **Reference ALL relevant parts of the topic**: Ensure you consider every portion of the topic's description and implied scope so that **no important aspect is omitted** when creating checklist items.
 
 Now produce the checklist items **only for the topic: ${title}**, following all requirements${checklistRequirements ? " and ensuring alignment with the user-specified requirements" : ""}.
+`;
+}
+
+
+/**
+ * レビュー実行用のシステムプロンプトを取得する関数
+ * ドキュメントをチェック項目に基づいて評価する
+ */
+export function getReviewExecutionPrompt({
+  runtimeContext,
+}: {
+  runtimeContext?: RuntimeContext<ReviewExecuteAgentRuntimeContext>;
+} = {}): string {
+  const checklistItems = runtimeContext?.get("checklistItems") ?? [];
+  const additionalInstructions = runtimeContext?.get("additionalInstructions");
+  const commentFormat = runtimeContext?.get("commentFormat");
+  const evaluationCriteria = runtimeContext?.get("evaluationCriteria");
+
+  // チェック項目一覧をフォーマット
+  const formattedList = checklistItems
+    .map((item) => `ID: ${item.id} - ${item.content}`)
+    .join("\n");
+
+  // デフォルトのコメントフォーマット
+  const defaultFormat = `【評価理由・根拠】
+Provide the reasoning and evidence here (cite specific sections or examples in the document).
+
+【改善提案】
+Provide actionable suggestions here (how to better satisfy the criterion).`;
+
+  const actualFormat =
+    commentFormat && commentFormat.trim() !== "" ? commentFormat : defaultFormat;
+
+  // 評定基準の設定を構築
+  let evaluationInstructions = "";
+  if (evaluationCriteria && evaluationCriteria.length > 0) {
+    // カスタム評定基準を使用
+    const evaluationList = evaluationCriteria
+      .map((item) => `   - ${item.label}: ${item.description}`)
+      .join("\n");
+    evaluationInstructions = `1. For each checklist item, assign one of these ratings:
+${evaluationList}`;
+  } else {
+    // デフォルト評定基準を使用
+    evaluationInstructions = `1. For each checklist item, assign one of these ratings:
+   - A: 基準を完全に満たしている
+   - B: 基準をある程度満たしている
+   - C: 基準を満たしていない
+   - –: 評価の対象外、または評価できない`;
+  }
+
+  return `You are a professional document reviewer. Your job is to evaluate the user-provided document against a set of checklist items.
+
+Checklist items:
+${formattedList}
+
+Instructions:
+${evaluationInstructions}
+2. For each item, write a comment in Japanese following this format:
+
+${actualFormat}
+
+3. For each checklist item, specify the review sections that should be examined for evaluation and commenting:
+   a) Identify the specific file names that need to be reviewed.
+   b) For each file, list the relevant sections within that file.
+4. In your comments, be sure to:
+   a) Cite specific parts of the document as evidence.
+   b) Separate discussions by section if some parts meet the item and others do not.
+   c) Cover every relevant occurrence—do not offer only a general summary.
+5. Do not omit any checklist item; review the entire document against each criterion before finalizing your evaluation.
+${
+  additionalInstructions && additionalInstructions.trim() !== ""
+    ? `
+Special Instructions:
+${additionalInstructions}
+`
+    : ""
+}
+Please ensure clarity, conciseness, and a professional tone.`;
+}
+
+
+/**
+ * チェックリストカテゴリ分類用のシステムプロンプトを取得する関数
+ * チェックリストを意味的にカテゴリ分類する
+ */
+export function getChecklistCategorizePrompt({
+  runtimeContext,
+}: {
+  runtimeContext?: RuntimeContext<ChecklistCategoryAgentRuntimeContext>;
+} = {}): string {
+  const maxCategories = runtimeContext?.get("maxCategories") ?? 10;
+  const maxChecklistsPerCategory =
+    runtimeContext?.get("maxChecklistsPerCategory") ?? 1;
+
+  return `
+You are a categorization assistant.
+When given a list of checklists (each with an ID and content), partition them into up to ${maxCategories} meaningful categories.
+
+Constraints:
+1. Every single checklist item must be assigned to exactly one category. No items should be left unclassified.
+2. You may create at most ${maxCategories} categories.
+3. Each category may contain no more than ${maxChecklistsPerCategory} checklist items.
+4. Distribute items as evenly as possible across categories to achieve a balanced allocation, while preserving thematic coherence.
 `;
 }

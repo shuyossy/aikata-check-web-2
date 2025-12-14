@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAction } from "next-safe-action/hooks";
 import {
   ClipboardList,
   Info,
@@ -10,6 +12,13 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
+  Eye,
+  Trash2,
+  Loader2,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  PlayCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
@@ -19,6 +28,19 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ReviewSettingsDto } from "@/domain/reviewSpace";
+import { deleteReviewTargetAction } from "../review/actions";
+import { showError, showSuccess } from "@/lib/client";
+import { extractServerErrorMessage } from "@/hooks";
+
+/**
+ * レビュー対象の型
+ */
+interface ReviewTargetItem {
+  id: string;
+  name: string;
+  status: string;
+  updatedAt: Date;
+}
 
 interface ReviewTargetListClientProps {
   projectId: string;
@@ -28,11 +50,57 @@ interface ReviewTargetListClientProps {
   spaceDescription: string | null;
   checkListItemCount: number;
   defaultReviewSettings: ReviewSettingsDto | null;
+  /** レビュー対象一覧 */
+  reviewTargets: ReviewTargetItem[];
 }
 
 /**
  * レビュー対象一覧クライアントコンポーネント
  */
+/**
+ * ステータスに応じたバッジ設定を取得
+ */
+function getStatusBadgeConfig(status: string) {
+  switch (status) {
+    case "pending":
+      return {
+        icon: Clock,
+        bgColor: "bg-gray-100",
+        textColor: "text-gray-800",
+        label: "準備中",
+      };
+    case "reviewing":
+      return {
+        icon: Loader2,
+        bgColor: "bg-blue-100",
+        textColor: "text-blue-800",
+        label: "レビュー中",
+        animate: true,
+      };
+    case "completed":
+      return {
+        icon: CheckCircle,
+        bgColor: "bg-green-100",
+        textColor: "text-green-800",
+        label: "完了",
+      };
+    case "error":
+      return {
+        icon: AlertCircle,
+        bgColor: "bg-red-100",
+        textColor: "text-red-800",
+        label: "エラー",
+      };
+    default:
+      return {
+        icon: Clock,
+        bgColor: "bg-gray-100",
+        textColor: "text-gray-800",
+        label: status,
+      };
+  }
+}
+
 export function ReviewTargetListClient({
   projectId,
   projectName,
@@ -41,8 +109,55 @@ export function ReviewTargetListClient({
   spaceDescription,
   checkListItemCount,
   defaultReviewSettings,
+  reviewTargets,
 }: ReviewTargetListClientProps) {
+  const router = useRouter();
   const [isReviewSettingsOpen, setIsReviewSettingsOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // 削除アクション
+  const { execute: executeDelete, isExecuting: isDeleting } = useAction(
+    deleteReviewTargetAction,
+    {
+      onSuccess: () => {
+        showSuccess("レビュー対象を削除しました");
+        setDeletingId(null);
+        router.refresh();
+      },
+      onError: ({ error: actionError }) => {
+        const message = extractServerErrorMessage(
+          actionError,
+          "レビュー対象の削除に失敗しました"
+        );
+        showError(message);
+        setDeletingId(null);
+      },
+    }
+  );
+
+  // 削除ハンドラー
+  const handleDelete = useCallback(
+    (targetId: string, targetName: string) => {
+      if (!confirm(`「${targetName}」を削除しますか？この操作は取り消せません。`)) {
+        return;
+      }
+      setDeletingId(targetId);
+      executeDelete({ reviewTargetId: targetId, projectId, spaceId });
+    },
+    [executeDelete, projectId, spaceId]
+  );
+
+  // 日付フォーマット
+  const formatDate = (date: Date) => {
+    const d = new Date(date);
+    return d.toLocaleString("ja-JP", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
 
   // レビュー設定が設定されているかどうか
   const hasReviewSettings =
@@ -241,9 +356,11 @@ export function ReviewTargetListClient({
                 チェックリストを表示/編集
               </Link>
             </Button>
-            <Button disabled className="flex items-center gap-2">
-              <Plus className="w-5 h-5" />
-              新規レビューを実行
+            <Button asChild className="flex items-center gap-2">
+              <Link href={`/projects/${projectId}/spaces/${spaceId}/review/new`}>
+                <PlayCircle className="w-5 h-5" />
+                新規レビューを実行
+              </Link>
             </Button>
           </div>
         </div>
@@ -302,19 +419,93 @@ export function ReviewTargetListClient({
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                <tr>
-                  <td
-                    colSpan={5}
-                    className="px-6 py-12 text-center text-gray-500"
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <p>レビュー対象がありません</p>
-                      <p className="text-sm">
-                        レビュー実行機能は今後追加予定です
-                      </p>
-                    </div>
-                  </td>
-                </tr>
+                {reviewTargets.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <p>レビュー対象がありません</p>
+                        <p className="text-sm">
+                          「新規レビューを実行」ボタンからレビューを開始してください
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  reviewTargets.map((target, index) => {
+                    const statusConfig = getStatusBadgeConfig(target.status);
+                    const StatusIcon = statusConfig.icon;
+                    const isThisDeleting = deletingId === target.id;
+                    const canDelete = target.status !== "reviewing";
+
+                    return (
+                      <tr
+                        key={target.id}
+                        className="hover:bg-gray-50 transition duration-150"
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {index + 1}
+                        </td>
+                        <td className="px-6 py-4 text-sm text-gray-900">
+                          <Link
+                            href={`/projects/${projectId}/spaces/${spaceId}/review/${target.id}`}
+                            className="hover:text-primary hover:underline"
+                          >
+                            {target.name}
+                          </Link>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor}`}
+                          >
+                            <StatusIcon
+                              className={`w-3 h-3 mr-1 ${
+                                statusConfig.animate ? "animate-spin" : ""
+                              }`}
+                            />
+                            {statusConfig.label}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {formatDate(target.updatedAt)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              className="text-gray-600 hover:text-primary"
+                            >
+                              <Link
+                                href={`/projects/${projectId}/spaces/${spaceId}/review/${target.id}`}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                結果を表示
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDelete(target.id, target.name)}
+                              disabled={!canDelete || isDeleting}
+                              className="text-gray-600 hover:text-red-600"
+                              title={canDelete ? "削除" : "レビュー中は削除できません"}
+                            >
+                              {isThisDeleting ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
               </tbody>
             </table>
           </div>
