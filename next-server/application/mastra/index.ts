@@ -3,7 +3,8 @@ import { PinoLogger } from "@mastra/loggers";
 import {
   topicExtractionAgent,
   topicChecklistAgent,
-  reviewExecuteAgent,
+  checklistCategoryAgent,
+  reviewExecuteAgent
 } from "./agents";
 import { checklistGenerationWorkflow } from "./workflows/checklistGeneration";
 import { reviewExecutionWorkflow } from "./workflows/reviewExecution";
@@ -21,6 +22,7 @@ export const mastra = new Mastra({
   agents: {
     topicExtractionAgent,
     topicChecklistAgent,
+    checklistCategoryAgent,
     reviewExecuteAgent,
   },
   workflows: {
