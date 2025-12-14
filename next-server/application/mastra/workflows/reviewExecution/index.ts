@@ -6,13 +6,21 @@ import {
   singleReviewResultSchema,
   checkListItemSchema,
   evaluationCriterionSchema,
+  reviewTypeSchema,
 } from "./types";
 import {
   smallDocumentReviewStep,
   smallDocumentReviewOutputSchema,
 } from "./steps/smallDocumentReviewStep";
-import { classifyChecklistStep } from "./steps/classifyChecklistStep";
+import {
+  classifyChecklistStep,
+  classifyChecklistOutputSchema,
+} from "./steps/classifyChecklistStep";
 import { fileProcessingStep, extractedFileSchema } from "../shared";
+import {
+  largeDocumentReviewWorkflow,
+  largeDocumentReviewOutputSchema,
+} from "./largeDocumentReview";
 
 /**
  * レビュー実行ワークフローの出力スキーマ
@@ -25,9 +33,10 @@ export type ReviewExecutionOutput = z.infer<typeof reviewExecutionOutputSchema>;
 
 /**
  * チャンクレビュー用の入力スキーマ
- * foreachで各チャンクをレビューするために使用
+ * foreachで各チャンクをレビューするために使用（少量/大量共通）
  */
 const chunkReviewInputSchema = z.object({
+  reviewType: reviewTypeSchema,
   files: z.array(extractedFileSchema),
   checkListItems: z.array(checkListItemSchema),
   additionalInstructions: z.string().nullable().optional(),
@@ -36,15 +45,70 @@ const chunkReviewInputSchema = z.object({
 });
 
 /**
+ * チャンクレビュー結果の統一スキーマ
+ */
+const chunkReviewOutputSchema = baseStepOutputSchema.extend({
+  reviewResults: z.array(singleReviewResultSchema).optional(),
+});
+
+/**
  * チャンクごとのレビューワークフロー
- * foreachで各チャンクを処理するために使用
+ * small/large両方に対応
  */
 const chunkReviewWorkflow = createWorkflow({
   id: "chunk-review-workflow",
   inputSchema: chunkReviewInputSchema,
-  outputSchema: smallDocumentReviewOutputSchema,
+  outputSchema: chunkReviewOutputSchema,
 })
-  .then(smallDocumentReviewStep)
+  .branch([
+    // 少量レビュー: smallDocumentReviewStepを直接使用
+    [
+      async ({ inputData }) => inputData.reviewType === "small",
+      createWorkflow({
+        id: "small-chunk-review-workflow",
+        inputSchema: chunkReviewInputSchema,
+        outputSchema: smallDocumentReviewOutputSchema,
+      })
+        .then(smallDocumentReviewStep)
+        .commit(),
+    ],
+    // 大量レビュー: largeDocumentReviewWorkflowを使用
+    [
+      async ({ inputData }) => inputData.reviewType === "large",
+      createWorkflow({
+        id: "large-chunk-review-workflow",
+        inputSchema: chunkReviewInputSchema,
+        outputSchema: largeDocumentReviewOutputSchema,
+      })
+        .map(async ({ inputData }) => {
+          // largeDocumentReviewWorkflowの入力形式に変換
+          return {
+            files: inputData.files,
+            checkListItems: inputData.checkListItems,
+            additionalInstructions: inputData.additionalInstructions,
+            commentFormat: inputData.commentFormat,
+            evaluationCriteria: inputData.evaluationCriteria,
+          };
+        })
+        .then(largeDocumentReviewWorkflow)
+        .commit(),
+    ],
+  ])
+  .map(async ({ inputData }) => {
+    // branchの結果を統一フォーマットで返す
+    const result =
+      (inputData as Record<string, z.infer<typeof chunkReviewOutputSchema>>)[
+        "small-chunk-review-workflow"
+      ] ||
+      (inputData as Record<string, z.infer<typeof chunkReviewOutputSchema>>)[
+        "large-chunk-review-workflow"
+      ];
+    return {
+      status: result.status,
+      errorMessage: result.errorMessage,
+      reviewResults: result.reviewResults,
+    } as z.infer<typeof chunkReviewOutputSchema>;
+  })
   .commit();
 
 /**
@@ -52,64 +116,87 @@ const chunkReviewWorkflow = createWorkflow({
  * ドキュメントをチェック項目に基づいてAIレビューする
  *
  * フロー:
- * 1. fileProcessingStep: バイナリファイルからテキスト抽出/画像Base64変換
- * 2. classifyChecklistStep: チェックリストを分類・分割
- * 3. foreach(chunkReviewWorkflow): チャンクごとにAIレビューを実行
- * 4. .map(): 結果を統合して最終出力形式に変換
+ * 1. parallel: ファイル処理とチェックリスト分類を並列実行（少量/大量共通）
+ *    - fileProcessingStep: バイナリファイルからテキスト抽出/画像Base64変換
+ *    - classifyChecklistStep: チェックリストを分類・分割
+ * 2. foreach: 各チェックリストチャンクに対して
+ *    - branch: reviewTypeに基づいて分岐
+ *      - small: smallDocumentReviewStep
+ *      - large: largeDocumentReviewWorkflow
+ * 3. 全チャンクの結果を統合
  */
 export const reviewExecutionWorkflow = createWorkflow({
   id: "review-execution-workflow",
   inputSchema: triggerSchema,
   outputSchema: reviewExecutionOutputSchema,
 })
-  .map(async ({ inputData }) => {
-    // fileProcessingStepの入力形式に変換
-    return {
-      files: inputData.files,
-    };
-  })
-  .then(fileProcessingStep)
+  // Step 1: ファイル処理とチェックリスト分類を並列実行
+  .parallel([
+    // ファイル処理
+    createWorkflow({
+      id: "file-processing",
+      inputSchema: triggerSchema,
+      outputSchema: baseStepOutputSchema.extend({
+        extractedFiles: z.array(extractedFileSchema).optional(),
+      }),
+    })
+      .map(async ({ inputData }) => {
+        return { files: inputData.files };
+      })
+      .then(fileProcessingStep)
+      .commit(),
+    // チェックリスト分類
+    createWorkflow({
+      id: "checklist-classification",
+      inputSchema: triggerSchema,
+      outputSchema: classifyChecklistOutputSchema,
+    })
+      .map(async ({ inputData }) => {
+        return {
+          checkListItems: inputData.checkListItems,
+          concurrentReviewItems:
+            inputData.reviewSettings?.concurrentReviewItems ?? undefined,
+        };
+      })
+      .then(classifyChecklistStep)
+      .commit(),
+  ])
+  // Step 2: 並列処理の結果を統合してforeach用の配列を作成
   .map(async ({ inputData, bail, getInitData }) => {
-    // ファイル処理が失敗した場合は、bailで早期終了
-    if (inputData.status === "failed") {
+    const fileProcessingResult = inputData["file-processing"];
+    const classificationResult = inputData["checklist-classification"];
+
+    // ファイル処理が失敗した場合
+    if (fileProcessingResult.status === "failed") {
       return bail({
         status: "failed" as const,
-        errorMessage: inputData.errorMessage || "ファイル処理に失敗しました",
+        errorMessage:
+          fileProcessingResult.errorMessage || "ファイル処理に失敗しました",
       });
     }
 
     // 抽出されたファイルが空の場合
-    if (!inputData.extractedFiles || inputData.extractedFiles.length === 0) {
+    if (
+      !fileProcessingResult.extractedFiles ||
+      fileProcessingResult.extractedFiles.length === 0
+    ) {
       return bail({
         status: "failed" as const,
         errorMessage: "ファイルを処理できませんでした",
       });
     }
 
-    // 元のトリガー入力からチェック項目とレビュー設定を取得
-    const initialInput = getInitData();
-
-    // classifyChecklistStepの入力形式に変換
-    return {
-      checkListItems: initialInput.checkListItems,
-      concurrentReviewItems:
-        initialInput.reviewSettings?.concurrentReviewItems ?? undefined,
-      // 後続のmapで使用するためにfileProcessingStepの結果を保持
-      _extractedFiles: inputData.extractedFiles,
-      _reviewSettings: initialInput.reviewSettings,
-    };
-  })
-  .then(classifyChecklistStep)
-  .map(async ({ inputData, bail, getStepResult, getInitData }) => {
     // チェックリスト分類が失敗した場合
-    if (inputData.status === "failed") {
+    if (classificationResult.status === "failed") {
       return bail({
         status: "failed" as const,
-        errorMessage: inputData.errorMessage || "チェックリスト分類に失敗しました",
+        errorMessage:
+          classificationResult.errorMessage ||
+          "チェックリスト分類に失敗しました",
       });
     }
 
-    const chunks = inputData.chunks ?? [];
+    const chunks = classificationResult.chunks ?? [];
     if (chunks.length === 0) {
       return bail({
         status: "failed" as const,
@@ -117,22 +204,24 @@ export const reviewExecutionWorkflow = createWorkflow({
       });
     }
 
-    // fileProcessingStepの結果を取得
-    const fileProcessingResult = getStepResult(fileProcessingStep);
+    // 元のトリガー入力を取得
     const initialInput = getInitData();
+    const reviewType = initialInput.reviewType ?? "small";
+    const reviewSettings = initialInput.reviewSettings;
 
     // foreach用の配列を作成（各チャンクにファイル情報とレビュー設定を付加）
     return chunks.map((chunk) => ({
-      files: fileProcessingResult?.extractedFiles ?? [],
+      reviewType: reviewType as "small" | "large",
+      files: fileProcessingResult.extractedFiles!,
       checkListItems: chunk,
-      additionalInstructions:
-        initialInput.reviewSettings?.additionalInstructions ?? null,
-      commentFormat: initialInput.reviewSettings?.commentFormat ?? null,
-      evaluationCriteria:
-        initialInput.reviewSettings?.evaluationCriteria ?? undefined,
+      additionalInstructions: reviewSettings?.additionalInstructions ?? null,
+      commentFormat: reviewSettings?.commentFormat ?? null,
+      evaluationCriteria: reviewSettings?.evaluationCriteria ?? undefined,
     }));
   })
-  .foreach(chunkReviewWorkflow)
+  // Step 3: 各チャンクをレビュー
+  .foreach(chunkReviewWorkflow, { concurrency: 2 })
+  // Step 4: 全チャンクの結果を統合
   .map(async ({ inputData }) => {
     // foreachの結果は配列（各チャンクのレビュー結果）
     const allResults: z.infer<typeof singleReviewResultSchema>[] = [];
@@ -150,10 +239,14 @@ export const reviewExecutionWorkflow = createWorkflow({
     }
 
     // 全て失敗した場合
-    if (allResults.length === 0 || allResults.every((r) => r.errorMessage !== null)) {
+    if (
+      allResults.length === 0 ||
+      allResults.every((r) => r.errorMessage !== null)
+    ) {
       return {
         status: "failed" as const,
-        errorMessage: lastErrorMessage || "全てのチェック項目のレビューに失敗しました",
+        errorMessage:
+          lastErrorMessage || "全てのチェック項目のレビューに失敗しました",
         reviewResults: allResults,
       };
     }
@@ -167,7 +260,7 @@ export const reviewExecutionWorkflow = createWorkflow({
   .commit();
 
 // 型とスキーマを再エクスポート
-export { triggerSchema } from "./types";
+export { triggerSchema, reviewTypeSchema } from "./types";
 export type {
   TriggerInput,
   CheckListItem,
@@ -175,6 +268,7 @@ export type {
   ReviewSettingsInput,
   SingleReviewResult,
   ReviewExecutionWorkflowRuntimeContext,
+  ReviewType,
 } from "./types";
 
 // shared typesも再エクスポート（ワークフロー利用者の便宜のため）
@@ -199,3 +293,21 @@ export type {
   SmallDocumentReviewInput,
   SmallDocumentReviewOutput,
 } from "./steps/smallDocumentReviewStep";
+export { individualDocumentReviewStep } from "./steps/individualDocumentReviewStep";
+export type {
+  IndividualDocumentReviewInput,
+  IndividualDocumentReviewOutput,
+  IndividualDocumentReviewResult,
+} from "./steps/individualDocumentReviewStep";
+export { consolidateReviewStep } from "./steps/consolidateReviewStep";
+export type {
+  ConsolidateReviewInput,
+  ConsolidateReviewOutput,
+} from "./steps/consolidateReviewStep";
+
+// largeDocumentReviewWorkflowのエクスポート
+export { largeDocumentReviewWorkflow } from "./largeDocumentReview";
+export type {
+  LargeDocumentReviewInput,
+  LargeDocumentReviewOutput,
+} from "./largeDocumentReview";

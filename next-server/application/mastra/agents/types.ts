@@ -53,3 +53,26 @@ export type ChecklistCategoryAgentRuntimeContext = BaseRuntimeContext & {
   maxCategories: number;
   [key: string]: unknown;
 };
+
+/**
+ * 個別ドキュメントレビューエージェントのRuntimeContext型定義
+ * 大量レビュー時に各ドキュメント（またはドキュメントの一部）をレビューする
+ */
+export type IndividualDocumentReviewAgentRuntimeContext = BaseRuntimeContext & {
+  checklistItems: { id: string; content: string }[];
+  additionalInstructions?: string;
+  commentFormat?: string;
+  [key: string]: unknown;
+};
+
+/**
+ * レビュー結果統合エージェントのRuntimeContext型定義
+ * 個別ドキュメントレビューの結果を統合して最終評価を生成する
+ */
+export type ConsolidateReviewAgentRuntimeContext = BaseRuntimeContext & {
+  checklistItems: { id: string; content: string }[];
+  additionalInstructions?: string;
+  commentFormat?: string;
+  evaluationCriteria?: EvaluationCriterionItem[];
+  [key: string]: unknown;
+};

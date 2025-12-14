@@ -1120,4 +1120,83 @@ describe("reviewExecutionWorkflow", () => {
       expect(checkResult.status).toBe("success");
     });
   });
+
+  describe("大量レビュー（reviewType: large）のテスト", () => {
+    // 大量レビューのテストは、largeDocumentReviewWorkflowのモックが複雑なため、
+    // ここではワークフローの構造（チェックリスト分割が共通で適用されること）のみを検証する
+
+    it("大量レビュー時にチェックリスト分類が呼ばれること（concurrentReviewItems=2）", async () => {
+      // Arrange: AIカテゴリ分類で2チャンクに分割
+      mockChecklistCategoryAgentGenerateLegacy.mockResolvedValue({
+        finishReason: "stop",
+        object: {
+          categories: [
+            { name: "セキュリティ", checklistIds: [1] }, // check-1のショートID
+            { name: "その他", checklistIds: [2, 3] }, // check-2, 3のショートID
+          ],
+        },
+      });
+
+      // Act: 大量レビューを実行
+      // 注: largeDocumentReviewWorkflowの内部処理はモックされていないためエラーになるが、
+      // チェックリスト分類が呼ばれるかどうかを確認するのが目的
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      await run.start({
+        inputData: {
+          files: [
+            {
+              id: "file-1",
+              name: "test-document.txt",
+              type: "text/plain",
+              size: 1000,
+              processMode: "text" as const,
+            },
+          ],
+          checkListItems: [
+            { id: "check-1", content: "セキュリティ要件を満たしているか" },
+            { id: "check-2", content: "エラーハンドリングが適切か" },
+            { id: "check-3", content: "パフォーマンス要件を満たしているか" },
+          ],
+          reviewSettings: {
+            concurrentReviewItems: 2,
+          },
+          reviewType: "large" as const,
+        },
+        runtimeContext: createTestRuntimeContext(),
+      });
+
+      // Assert: AIカテゴリ分類が呼ばれていることを確認
+      // これにより、大量レビューでもチェックリスト分割が適用されていることが証明される
+      expect(mockChecklistCategoryAgentGenerateLegacy).toHaveBeenCalledTimes(1);
+    });
+
+    it("大量レビューでconcurrentReviewItems未指定の場合、チェックリスト分類が呼ばれないこと", async () => {
+      // Act: concurrentReviewItems未指定で大量レビューを実行
+      const run = await reviewExecutionWorkflow.createRunAsync();
+      await run.start({
+        inputData: {
+          files: [
+            {
+              id: "file-1",
+              name: "test-document.txt",
+              type: "text/plain",
+              size: 1000,
+              processMode: "text" as const,
+            },
+          ],
+          checkListItems: [
+            { id: "check-1", content: "セキュリティ要件を満たしているか" },
+            { id: "check-2", content: "エラーハンドリングが適切か" },
+            { id: "check-3", content: "パフォーマンス要件を満たしているか" },
+          ],
+          reviewType: "large" as const,
+          // concurrentReviewItems未指定 → 全項目一括でレビュー
+        },
+        runtimeContext: createTestRuntimeContext(),
+      });
+
+      // Assert: チェックリスト分類は呼ばれない（全項目一括のため分割不要）
+      expect(mockChecklistCategoryAgentGenerateLegacy).not.toHaveBeenCalled();
+    });
+  });
 });

@@ -121,10 +121,11 @@
     - 認証済みユーザであること
     - 対象レビュースペースが属するプロジェクトのメンバーであること
     - レビュースペースにチェック項目が1件以上存在すること
-  - 入力: ExecuteReviewCommand { reviewSpaceId: string, userId: string, files: RawUploadFileMeta[], fileBuffers: FileBuffersMap, reviewSettings: ReviewSettingsInput }
+  - 入力: ExecuteReviewCommand { reviewSpaceId: string, userId: string, files: RawUploadFileMeta[], fileBuffers: FileBuffersMap, reviewSettings: ReviewSettingsInput, reviewType: ReviewType }
     - RawUploadFileMeta: { id: string, name: string, type: string, processMode: "text" | "image" }
     - FileBuffersMap: Map<fileId, { buffer: Buffer, convertedImageBuffers?: Buffer[] }>
     - ReviewSettingsInput: { additionalInstructions?: string, concurrentReviewItems?: number, commentFormat?: string, evaluationCriteria?: EvaluationItemInput[] }
+    - ReviewType: "small" | "large" （少量レビュー / 大量レビュー）
   - 出力: ExecuteReviewResult { reviewTargetId: string, status: string }
   - メインフロー
     1. 入力されたレビュースペースIDでレビュースペースの存在を確認する
@@ -136,9 +137,16 @@
     7. レビュー対象をDBに保存する
     8. レビュー対象のステータスをreviewingに更新する
     9. Mastraレビュー実行ワークフローを非同期で実行する
-       9.1. ファイル処理ステップ: ドキュメントからテキスト抽出/画像変換
-       9.2. 少量レビュー実行ステップ: チェック項目ごとにAIレビューを実行
-       9.3. 各チェック項目のレビュー結果をDBに保存する
+       - reviewTypeに応じて少量レビューまたは大量レビューの処理フローに分岐する
+       - **少量レビュー（small）の場合**
+         9.1. ファイル処理ステップ: ドキュメントからテキスト抽出/画像変換
+         9.2. 少量レビュー実行ステップ: チェック項目ごとにAIレビューを実行
+         9.3. 各チェック項目のレビュー結果をDBに保存する
+       - **大量レビュー（large）の場合**
+         9.1. ファイル処理ステップ: ドキュメントからテキスト抽出/画像変換
+         9.2. 個別ドキュメントレビューステップ: 各ドキュメントを個別にレビュー（コンテキスト長エラー時は分割リトライ）
+         9.3. レビュー結果統合ステップ: 個別レビュー結果を統合し、最終評定とコメントを生成
+         9.4. 各チェック項目のレビュー結果をDBに保存する
     10. ワークフロー完了後、レビュー対象のステータスをcompletedまたはerrorに更新する
     11. レビュー対象IDとステータスを返却する
   - 例外
@@ -154,6 +162,8 @@
       - ドメインバリデーションエラー（REVIEW_EXECUTION_NO_CHECKLIST）を返す
     - パターン6: AIワークフロー実行中にエラーが発生した場合
       - レビュー対象のステータスをerrorに更新し、エラーメッセージを含む内部エラーを返す
+    - パターン7: 大量レビュー時にコンテキスト長エラーが発生し、分割リトライでも解決しない場合
+      - 当該チェック項目にエラーを記録し、他の項目のレビューは続行する
   - 事後処理
     - なし
 

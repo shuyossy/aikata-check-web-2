@@ -4,7 +4,9 @@ import {
   topicExtractionAgent,
   topicChecklistAgent,
   checklistCategoryAgent,
-  reviewExecuteAgent
+  reviewExecuteAgent,
+  individualDocumentReviewAgent,
+  consolidateReviewAgent,
 } from "./agents";
 import { checklistGenerationWorkflow } from "./workflows/checklistGeneration";
 import { reviewExecutionWorkflow } from "./workflows/reviewExecution";
@@ -24,6 +26,8 @@ export const mastra = new Mastra({
     topicChecklistAgent,
     checklistCategoryAgent,
     reviewExecuteAgent,
+    individualDocumentReviewAgent,
+    consolidateReviewAgent,
   },
   workflows: {
     checklistGenerationWorkflow,
@@ -59,6 +63,7 @@ export type {
   ReviewSettingsInput,
   SingleReviewResult,
   ReviewExecutionWorkflowRuntimeContext,
+  ReviewType,
 } from "./workflows/reviewExecution";
 
 export {

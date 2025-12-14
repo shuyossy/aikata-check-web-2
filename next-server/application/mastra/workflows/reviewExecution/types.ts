@@ -38,6 +38,14 @@ export const reviewSettingsInputSchema = z.object({
 export type ReviewSettingsInput = z.infer<typeof reviewSettingsInputSchema>;
 
 /**
+ * レビュー種別のスキーマ
+ * - small: 少量レビュー（AIのコンテキストウィンドウに収まる場合）
+ * - large: 大量レビュー（AIのコンテキストウィンドウに収まらない場合）
+ */
+export const reviewTypeSchema = z.enum(["small", "large"]);
+export type ReviewType = z.infer<typeof reviewTypeSchema>;
+
+/**
  * レビュー実行ワークフローのトリガースキーマ
  */
 export const triggerSchema = z.object({
@@ -47,6 +55,8 @@ export const triggerSchema = z.object({
   checkListItems: z.array(checkListItemSchema),
   /** レビュー設定 */
   reviewSettings: reviewSettingsInputSchema.optional(),
+  /** レビュー種別（デフォルト: small） */
+  reviewType: reviewTypeSchema.optional().default("small"),
 });
 
 export type TriggerInput = z.infer<typeof triggerSchema>;

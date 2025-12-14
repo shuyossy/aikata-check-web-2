@@ -21,6 +21,7 @@ import type {
   ReviewExecutionWorkflowRuntimeContext,
   EvaluationCriterion,
   SingleReviewResult,
+  ReviewType,
 } from "@/application/mastra";
 import { FILE_BUFFERS_CONTEXT_KEY } from "@/application/mastra";
 
@@ -54,6 +55,8 @@ export interface ExecuteReviewCommand {
   fileBuffers: FileBuffersMap;
   /** レビュー設定 */
   reviewSettings?: ReviewSettingsCommand;
+  /** レビュー種別（デフォルト: small） */
+  reviewType?: ReviewType;
 }
 
 /**
@@ -93,8 +96,15 @@ export class ExecuteReviewService {
    * @returns レビュー結果
    */
   async execute(command: ExecuteReviewCommand): Promise<ExecuteReviewResult> {
-    const { reviewSpaceId, name, userId, files, fileBuffers, reviewSettings } =
-      command;
+    const {
+      reviewSpaceId,
+      name,
+      userId,
+      files,
+      fileBuffers,
+      reviewSettings,
+      reviewType = "small",
+    } = command;
 
     // 入力バリデーション
     if (files.length === 0) {
@@ -226,6 +236,7 @@ export class ExecuteReviewService {
                 evaluationCriteria: reviewSettings.evaluationCriteria,
               }
             : undefined,
+          reviewType,
         },
         runtimeContext,
       });

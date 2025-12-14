@@ -492,28 +492,22 @@ export function ReviewExecutionClient({
                     </div>
                   </div>
 
-                  {/* 大量レビュー（無効） */}
-                  <div className="flex items-start space-x-3 p-3 border rounded-lg bg-gray-100 opacity-60">
+                  {/* 大量レビュー */}
+                  <div className="flex items-start space-x-3 p-3 border rounded-lg bg-white hover:bg-gray-50">
                     <RadioGroupItem
                       value="large"
                       id="review-large"
-                      disabled
                       className="mt-1"
                     />
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Label
-                          htmlFor="review-large"
-                          className="font-medium text-gray-400"
-                        >
-                          大量レビュー
-                        </Label>
-                        <span className="px-2 py-0.5 text-xs bg-gray-200 text-gray-500 rounded">
-                          準備中
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-400">
-                        大きなドキュメントを分割して処理し、結果を統合します
+                      <Label
+                        htmlFor="review-large"
+                        className="font-medium cursor-pointer"
+                      >
+                        大量レビュー
+                      </Label>
+                      <p className="text-sm text-gray-500">
+                        大きなドキュメントを分割して処理し、結果を統合します。コンテキストウィンドウに収まらない大きなドキュメントに適しています。
                       </p>
                     </div>
                   </div>

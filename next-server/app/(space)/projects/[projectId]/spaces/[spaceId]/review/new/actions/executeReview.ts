@@ -10,6 +10,7 @@ import {
   type FileBuffersMap,
   type FileBufferData,
   type EvaluationCriterion,
+  type ReviewType,
 } from "@/application/mastra";
 import {
   ProjectRepository,
@@ -68,9 +69,11 @@ async function parseFormData(formData: FormData): Promise<{
     commentFormat?: string | null;
     evaluationCriteria?: EvaluationCriterion[];
   };
+  reviewType: ReviewType;
 }> {
   const reviewSpaceId = formData.get("reviewSpaceId");
   const name = formData.get("name");
+  const reviewTypeValue = formData.get("reviewType");
   const metadataJson = formData.get("metadata");
   const reviewSettingsJson = formData.get("reviewSettings");
 
@@ -81,6 +84,15 @@ async function parseFormData(formData: FormData): Promise<{
 
   if (typeof name !== "string" || !name) {
     throw domainValidationError("VALIDATION_ERROR");
+  }
+
+  // レビュー種別のバリデーション（デフォルト: small）
+  let reviewType: ReviewType = "small";
+  if (typeof reviewTypeValue === "string" && reviewTypeValue) {
+    if (reviewTypeValue !== "small" && reviewTypeValue !== "large") {
+      throw domainValidationError("VALIDATION_ERROR");
+    }
+    reviewType = reviewTypeValue;
   }
 
   if (typeof metadataJson !== "string" || !metadataJson) {
@@ -192,6 +204,7 @@ async function parseFormData(formData: FormData): Promise<{
     files,
     fileBuffers,
     reviewSettings,
+    reviewType,
   };
 }
 
@@ -203,7 +216,7 @@ export const executeReviewAction = authenticatedAction
   .schema(z.instanceof(FormData))
   .action(async ({ parsedInput, ctx }) => {
     // FormDataからパラメータを抽出
-    const { reviewSpaceId, name, files, fileBuffers, reviewSettings } =
+    const { reviewSpaceId, name, files, fileBuffers, reviewSettings, reviewType } =
       await parseFormData(parsedInput);
 
     // リポジトリの初期化
@@ -239,6 +252,7 @@ export const executeReviewAction = authenticatedAction
       files,
       fileBuffers,
       reviewSettings,
+      reviewType,
     });
 
     return {
