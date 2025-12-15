@@ -1,10 +1,11 @@
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository } from "@/application/shared/port/repository";
+import { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
 import { ReviewTargetId } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
 import { domainValidationError } from "@/lib/server/error";
+import { TaskFileHelper } from "@/lib/server/taskFileHelper";
 
 /**
  * レビュー対象削除コマンド（入力DTO）
@@ -24,6 +25,7 @@ export class DeleteReviewTargetService {
     private readonly reviewTargetRepository: IReviewTargetRepository,
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
+    private readonly aiTaskRepository: IAiTaskRepository,
   ) {}
 
   /**
@@ -61,6 +63,15 @@ export class DeleteReviewTargetService {
     // プロジェクトへのアクセス権確認
     if (!project.hasMember(userId)) {
       throw domainValidationError("REVIEW_TARGET_ACCESS_DENIED");
+    }
+
+    // レビュー対象に紐づくAIタスクを検索し、関連ファイルを削除してからタスクを削除
+    const aiTask = await this.aiTaskRepository.findByReviewTargetId(reviewTargetId);
+    if (aiTask) {
+      // タスクに紐づくファイルを削除
+      await TaskFileHelper.deleteTaskFiles(aiTask.id.value);
+      // AIタスクを削除
+      await this.aiTaskRepository.deleteByReviewTargetId(reviewTargetId);
     }
 
     // レビュー対象を削除（CASCADE設定によりレビュー結果も削除される）

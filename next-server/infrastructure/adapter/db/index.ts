@@ -7,4 +7,6 @@ export {
   ReviewResultRepository,
   CheckListItemRepository,
   ReviewDocumentCacheRepository,
+  AiTaskRepository,
+  AiTaskFileMetadataRepository,
 } from "./drizzle/repository";

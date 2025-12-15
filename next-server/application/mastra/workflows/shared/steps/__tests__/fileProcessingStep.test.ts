@@ -104,8 +104,9 @@ describe("fileProcessingStep", () => {
       expect(result.extractedFiles).toHaveLength(1);
       expect(result.extractedFiles![0].processMode).toBe("image");
       expect(result.extractedFiles![0].imageData).toHaveLength(1);
+      // Data URL形式（AI APIが期待する形式）で返される
       expect(result.extractedFiles![0].imageData![0]).toBe(
-        imageBuffer.toString("base64"),
+        `data:image/png;base64,${imageBuffer.toString("base64")}`,
       );
     });
 

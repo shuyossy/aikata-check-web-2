@@ -40,6 +40,7 @@ export class ReviewSpaceRepository implements IReviewSpaceRepository {
       defaultReviewSettings: row.defaultReviewSettings as ReviewSettingsProps,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      checklistGenerationError: row.checklistGenerationError,
     });
   }
 
@@ -74,6 +75,7 @@ export class ReviewSpaceRepository implements IReviewSpaceRepository {
         defaultReviewSettings: row.defaultReviewSettings as ReviewSettingsProps,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
+        checklistGenerationError: row.checklistGenerationError,
       }),
     );
   }
@@ -127,5 +129,18 @@ export class ReviewSpaceRepository implements IReviewSpaceRepository {
    */
   async delete(id: ReviewSpaceId): Promise<void> {
     await db.delete(reviewSpaces).where(eq(reviewSpaces.id, id.value));
+  }
+
+  /**
+   * チェックリスト生成エラーを更新
+   */
+  async updateChecklistGenerationError(
+    id: ReviewSpaceId,
+    errorMessage: string | null,
+  ): Promise<void> {
+    await db
+      .update(reviewSpaces)
+      .set({ checklistGenerationError: errorMessage })
+      .where(eq(reviewSpaces.id, id.value));
   }
 }

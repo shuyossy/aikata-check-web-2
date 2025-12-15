@@ -4,43 +4,27 @@ import {
   type ExecuteReviewCommand,
 } from "../ExecuteReviewService";
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
-import type { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository, IReviewDocumentCacheRepository } from "@/application/shared/port/repository";
+import type { IProjectRepository } from "@/application/shared/port/repository";
+import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { ReviewSpace } from "@/domain/reviewSpace";
-import { ReviewDocumentCache } from "@/domain/reviewTarget";
 import { Project } from "@/domain/project";
 import { CheckListItem } from "@/domain/checkListItem";
+import { AI_TASK_TYPE } from "@/domain/aiTask";
 import type { RawUploadFileMeta, FileBuffersMap } from "@/application/mastra";
 
-// ReviewCacheHelperのモック
-vi.mock("@/lib/server/reviewCacheHelper", () => ({
-  ReviewCacheHelper: {
-    saveTextCache: vi.fn().mockResolvedValue("/cache/path/text.txt"),
-    saveImageCache: vi.fn().mockResolvedValue("/cache/path/images"),
-  },
+// AiTaskQueueServiceのモック
+vi.mock("@/application/aiTask/AiTaskQueueService", () => ({
+  AiTaskQueueService: vi.fn(),
 }));
 
-// Mastraワークフローのモック
-const mockStart = vi.fn();
-const mockCreateRunAsync = vi.fn(() => ({
-  start: mockStart,
+// AiTaskBootstrapのモック
+vi.mock("@/application/aiTask", () => ({
+  getAiTaskBootstrap: vi.fn(() => ({
+    startWorkersForApiKeyHash: vi.fn(),
+  })),
 }));
-const mockGetWorkflow = vi.fn(() => ({
-  createRunAsync: mockCreateRunAsync,
-}));
-
-vi.mock("@/application/mastra", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("@/application/mastra")>();
-  return {
-    ...original,
-    mastra: {
-      getWorkflow: () => mockGetWorkflow(),
-    },
-  };
-});
 
 describe("ExecuteReviewService", () => {
   // モックリポジトリ
@@ -50,16 +34,6 @@ describe("ExecuteReviewService", () => {
     countByReviewSpaceId: vi.fn(),
     save: vi.fn(),
     delete: vi.fn(),
-  };
-
-  const mockReviewResultRepository: IReviewResultRepository = {
-    findById: vi.fn(),
-    findByReviewTargetId: vi.fn(),
-    countByReviewTargetId: vi.fn(),
-    save: vi.fn(),
-    saveMany: vi.fn(),
-    delete: vi.fn(),
-    deleteByReviewTargetId: vi.fn(),
   };
 
   const mockCheckListItemRepository: ICheckListItemRepository = {
@@ -91,11 +65,18 @@ describe("ExecuteReviewService", () => {
     delete: vi.fn(),
   };
 
-  const mockReviewDocumentCacheRepository: IReviewDocumentCacheRepository = {
-    findByReviewTargetId: vi.fn(),
-    save: vi.fn(),
-    saveMany: vi.fn(),
-    deleteByReviewTargetId: vi.fn(),
+  // モックAiTaskQueueService
+  const mockEnqueueTask = vi.fn();
+  const mockFindById = vi.fn();
+  const mockAiTaskQueueService = {
+    enqueueTask: mockEnqueueTask,
+    findById: mockFindById,
+    dequeueTask: vi.fn(),
+    completeTask: vi.fn(),
+    failTask: vi.fn(),
+    getQueueLength: vi.fn(),
+    findDistinctApiKeyHashesInQueue: vi.fn(),
+    findProcessingTasks: vi.fn(),
   };
 
   let service: ExecuteReviewService;
@@ -106,6 +87,8 @@ describe("ExecuteReviewService", () => {
   const testUserId = "550e8400-e29b-41d4-a716-446655440003";
   const testCheckListItemId1 = "550e8400-e29b-41d4-a716-446655440004";
   const testCheckListItemId2 = "550e8400-e29b-41d4-a716-446655440005";
+  const testTaskId = "550e8400-e29b-41d4-a716-446655440006";
+  const testApiKeyHash = "test-api-key-hash";
 
   const testProject = Project.reconstruct({
     id: testProjectId,
@@ -163,42 +146,33 @@ describe("ExecuteReviewService", () => {
     return map;
   };
 
-  // ワークフロー成功時のモックレスポンス
-  const createSuccessWorkflowResponse = () => ({
-    status: "success",
-    result: {
-      status: "success",
-      reviewResults: [
-        {
-          checkListItemContent: "チェック項目1",
-          evaluation: "A",
-          comment: "問題ありません",
-          errorMessage: null,
-        },
-        {
-          checkListItemContent: "チェック項目2",
-          evaluation: "B",
-          comment: "一部改善が必要",
-          errorMessage: null,
-        },
-      ],
-    },
-  });
-
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // 環境変数を設定
+    process.env.AI_API_KEY = "test-api-key";
+
+    // モックの設定
+    mockEnqueueTask.mockResolvedValue({
+      taskId: testTaskId,
+      queueLength: 1,
+    });
+    mockFindById.mockResolvedValue({
+      id: testTaskId,
+      apiKeyHash: testApiKeyHash,
+    });
+
     service = new ExecuteReviewService(
       mockReviewTargetRepository,
-      mockReviewResultRepository,
       mockCheckListItemRepository,
       mockReviewSpaceRepository,
       mockProjectRepository,
-      mockReviewDocumentCacheRepository,
+      mockAiTaskQueueService as unknown as AiTaskQueueService,
     );
   });
 
   describe("正常系", () => {
-    it("レビュー実行が成功し、ステータスがcompletedになる", async () => {
+    it("タスクがキューに登録され、ステータスがqueuedになる", async () => {
       // モックの設定
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
         testReviewSpace,
@@ -207,7 +181,6 @@ describe("ExecuteReviewService", () => {
       vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
         testCheckListItems,
       );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -219,17 +192,24 @@ describe("ExecuteReviewService", () => {
 
       const result = await service.execute(command);
 
-      expect(result.status).toBe("completed");
+      expect(result.status).toBe("queued");
       expect(result.reviewTargetId).toBeTruthy();
-      expect(result.reviewResults).toHaveLength(2);
-      expect(result.reviewResults[0].evaluation).toBe("A");
-      expect(result.reviewResults[1].evaluation).toBe("B");
+      expect(result.queueLength).toBe(1);
 
-      // レビュー対象が保存される（pending → reviewing → completed で3回）
-      expect(mockReviewTargetRepository.save).toHaveBeenCalledTimes(3);
+      // レビュー対象が保存される（queued状態で1回）
+      expect(mockReviewTargetRepository.save).toHaveBeenCalledTimes(1);
+
+      // キューにタスクが登録される
+      expect(mockEnqueueTask).toHaveBeenCalledTimes(1);
+      expect(mockEnqueueTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskType: AI_TASK_TYPE.SMALL_REVIEW,
+          apiKey: "test-api-key",
+        }),
+      );
     });
 
-    it("レビュー設定付きでレビュー実行が成功する", async () => {
+    it("大量レビュータイプでタスクが登録される", async () => {
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
         testReviewSpace,
       );
@@ -237,7 +217,34 @@ describe("ExecuteReviewService", () => {
       vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
         testCheckListItems,
       );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
+
+      const command: ExecuteReviewCommand = {
+        reviewSpaceId: testReviewSpaceId,
+        name: "テストレビュー",
+        userId: testUserId,
+        files: testFiles,
+        fileBuffers: createTestFileBuffers(),
+        reviewType: "large",
+      };
+
+      const result = await service.execute(command);
+
+      expect(result.status).toBe("queued");
+      expect(mockEnqueueTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskType: AI_TASK_TYPE.LARGE_REVIEW,
+        }),
+      );
+    });
+
+    it("レビュー設定付きでタスクが登録される", async () => {
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
+        testCheckListItems,
+      );
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -258,7 +265,19 @@ describe("ExecuteReviewService", () => {
 
       const result = await service.execute(command);
 
-      expect(result.status).toBe("completed");
+      expect(result.status).toBe("queued");
+
+      // ペイロードにレビュー設定が含まれる
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.payload.reviewSettings).toEqual({
+        additionalInstructions: "セキュリティに注意",
+        concurrentReviewItems: 2,
+        commentFormat: "【理由】",
+        evaluationCriteria: [
+          { label: "A", description: "優良" },
+          { label: "B", description: "良好" },
+        ],
+      });
     });
   });
 
@@ -358,8 +377,8 @@ describe("ExecuteReviewService", () => {
     });
   });
 
-  describe("異常系 - ワークフロー失敗", () => {
-    it("ワークフローが失敗した場合、ステータスがerrorに更新される", async () => {
+  describe("キュー登録", () => {
+    it("ファイルバッファがFileInfoCommand配列に変換される", async () => {
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
         testReviewSpace,
       );
@@ -367,129 +386,6 @@ describe("ExecuteReviewService", () => {
       vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
         testCheckListItems,
       );
-      mockStart.mockResolvedValue({
-        status: "failed",
-        result: {
-          status: "failed",
-          errorMessage: "AI処理に失敗しました",
-        },
-      });
-
-      const command: ExecuteReviewCommand = {
-        reviewSpaceId: testReviewSpaceId,
-        name: "テストレビュー",
-        userId: testUserId,
-        files: testFiles,
-        fileBuffers: createTestFileBuffers(),
-      };
-
-      await expect(service.execute(command)).rejects.toMatchObject({
-        messageCode: "REVIEW_EXECUTION_FAILED",
-      });
-
-      // pending → reviewing → error で3回保存
-      expect(mockReviewTargetRepository.save).toHaveBeenCalledTimes(3);
-    });
-
-    it("ワークフロー結果が空の場合エラーになる", async () => {
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
-        testReviewSpace,
-      );
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
-      mockStart.mockResolvedValue({
-        status: "success",
-        result: {
-          status: "success",
-          reviewResults: [],
-        },
-      });
-
-      const command: ExecuteReviewCommand = {
-        reviewSpaceId: testReviewSpaceId,
-        name: "テストレビュー",
-        userId: testUserId,
-        files: testFiles,
-        fileBuffers: createTestFileBuffers(),
-      };
-
-      await expect(service.execute(command)).rejects.toMatchObject({
-        messageCode: "REVIEW_EXECUTION_FAILED",
-      });
-    });
-
-    it("ワークフロー結果がundefinedの場合エラーになる", async () => {
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
-        testReviewSpace,
-      );
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
-      mockStart.mockResolvedValue({
-        status: "success",
-        result: undefined,
-      });
-
-      const command: ExecuteReviewCommand = {
-        reviewSpaceId: testReviewSpaceId,
-        name: "テストレビュー",
-        userId: testUserId,
-        files: testFiles,
-        fileBuffers: createTestFileBuffers(),
-      };
-
-      await expect(service.execute(command)).rejects.toMatchObject({
-        messageCode: "REVIEW_EXECUTION_FAILED",
-      });
-    });
-  });
-
-  describe("キャッシュ保存機能", () => {
-    it("レビュー成功時にonExtractedFilesCachedコールバックがRuntimeContextに設定される", async () => {
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
-        testReviewSpace,
-      );
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
-
-      const command: ExecuteReviewCommand = {
-        reviewSpaceId: testReviewSpaceId,
-        name: "テストレビュー",
-        userId: testUserId,
-        files: testFiles,
-        fileBuffers: createTestFileBuffers(),
-      };
-
-      const result = await service.execute(command);
-
-      expect(result.status).toBe("completed");
-
-      // ワークフロー実行時のRuntimeContextにonExtractedFilesCachedが設定されていることを確認
-      expect(mockStart).toHaveBeenCalled();
-      const startCall = mockStart.mock.calls[0][0];
-      const runtimeContext = startCall.runtimeContext;
-      const callback = runtimeContext.get("onExtractedFilesCached");
-      expect(callback).toBeDefined();
-      expect(typeof callback).toBe("function");
-    });
-
-    it("onExtractedFilesCachedコールバックがテキストモードのキャッシュを正しく保存する", async () => {
-      const { ReviewCacheHelper } = await import("@/lib/server/reviewCacheHelper");
-
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
-        testReviewSpace,
-      );
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -501,45 +397,19 @@ describe("ExecuteReviewService", () => {
 
       await service.execute(command);
 
-      // RuntimeContextからコールバックを取得して実行
-      const startCall = mockStart.mock.calls[0][0];
-      const runtimeContext = startCall.runtimeContext;
-      const callback = runtimeContext.get("onExtractedFilesCached");
-      const reviewTargetId = runtimeContext.get("reviewTargetId");
-
-      // テキストモードのExtractedFileでコールバックを実行
-      await callback(
-        [
-          {
-            id: "doc-1",
-            name: "test.txt",
-            type: "text/plain",
-            processMode: "text",
-            textContent: "テストドキュメントの内容",
-          },
-        ],
-        reviewTargetId,
-      );
-
-      // ReviewCacheHelper.saveTextCacheが呼ばれることを確認
-      expect(ReviewCacheHelper.saveTextCache).toHaveBeenCalledWith(
-        reviewTargetId,
-        "doc-1",
-        "テストドキュメントの内容",
-      );
-
-      // ReviewDocumentCacheが保存されることを確認
-      expect(mockReviewDocumentCacheRepository.save).toHaveBeenCalled();
-      const savedCache = vi.mocked(mockReviewDocumentCacheRepository.save).mock.calls[0][0];
-      expect(savedCache).toBeInstanceOf(ReviewDocumentCache);
-      expect(savedCache.fileName).toBe("test.txt");
-      expect(savedCache.processMode).toBe("text");
-      expect(savedCache.cachePath).toBe("/cache/path/text.txt");
+      // enqueueTaskに渡されるfilesを確認
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.files).toHaveLength(1);
+      expect(enqueueCall.files[0]).toMatchObject({
+        fileId: "file-1",
+        fileName: "test.txt",
+        fileSize: 1000,
+        mimeType: "text/plain",
+      });
+      expect(enqueueCall.files[0].buffer).toBeInstanceOf(Buffer);
     });
 
-    it("onExtractedFilesCachedコールバックが画像モードのキャッシュを正しく保存する", async () => {
-      const { ReviewCacheHelper } = await import("@/lib/server/reviewCacheHelper");
-
+    it("ペイロードにチェックリスト項目が含まれる", async () => {
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
         testReviewSpace,
       );
@@ -547,7 +417,6 @@ describe("ExecuteReviewService", () => {
       vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
         testCheckListItems,
       );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -559,40 +428,17 @@ describe("ExecuteReviewService", () => {
 
       await service.execute(command);
 
-      // RuntimeContextからコールバックを取得して実行
-      const startCall = mockStart.mock.calls[0][0];
-      const runtimeContext = startCall.runtimeContext;
-      const callback = runtimeContext.get("onExtractedFilesCached");
-      const reviewTargetId = runtimeContext.get("reviewTargetId");
-
-      // 画像モードのExtractedFileでコールバックを実行
-      await callback(
-        [
-          {
-            id: "doc-2",
-            name: "test.pdf",
-            type: "application/pdf",
-            processMode: "image",
-            imageData: ["base64image1", "base64image2"],
-          },
-        ],
-        reviewTargetId,
-      );
-
-      // ReviewCacheHelper.saveImageCacheが呼ばれることを確認
-      expect(ReviewCacheHelper.saveImageCache).toHaveBeenCalledWith(
-        reviewTargetId,
-        "doc-2",
-        ["base64image1", "base64image2"],
-      );
-
-      // ReviewDocumentCacheが保存されることを確認
-      expect(mockReviewDocumentCacheRepository.save).toHaveBeenCalled();
-      const savedCache = vi.mocked(mockReviewDocumentCacheRepository.save).mock.calls[0][0];
-      expect(savedCache).toBeInstanceOf(ReviewDocumentCache);
-      expect(savedCache.fileName).toBe("test.pdf");
-      expect(savedCache.processMode).toBe("image");
-      expect(savedCache.cachePath).toBe("/cache/path/images");
+      // ペイロードのチェックリスト項目を確認
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.payload.checkListItems).toHaveLength(2);
+      expect(enqueueCall.payload.checkListItems[0]).toMatchObject({
+        id: testCheckListItemId1,
+        content: "チェック項目1",
+      });
+      expect(enqueueCall.payload.checkListItems[1]).toMatchObject({
+        id: testCheckListItemId2,
+        content: "チェック項目2",
+      });
     });
   });
 });

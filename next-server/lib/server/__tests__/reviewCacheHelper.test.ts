@@ -94,7 +94,52 @@ describe("ReviewCacheHelper", () => {
   });
 
   describe("saveImageCache", () => {
-    it("画像キャッシュを保存してディレクトリパスを返す", async () => {
+    it("Data URL形式の画像データからプレフィックスを削除してBase64デコードして保存する", async () => {
+      // 実際のBase64エンコードされた画像データ（Data URL形式）
+      const imageData1 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      const imageData2 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRof";
+      const imageDataArray = [imageData1, imageData2];
+      vi.mocked(fs.mkdir).mockResolvedValue(undefined);
+      vi.mocked(fs.writeFile).mockResolvedValue(undefined);
+
+      const result = await ReviewCacheHelper.saveImageCache(
+        testReviewTargetId,
+        testCacheId,
+        imageDataArray,
+      );
+
+      const expectedDir = path.join(
+        "./review_cache",
+        testReviewTargetId,
+        testCacheId,
+      );
+      expect(fs.mkdir).toHaveBeenCalledWith(expectedDir, { recursive: true });
+      expect(fs.writeFile).toHaveBeenCalledTimes(2);
+
+      // Data URLプレフィックスが削除されてBase64デコードされていることを確認
+      const expectedBuffer1 = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "base64",
+      );
+      const expectedBuffer2 = Buffer.from(
+        "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRof",
+        "base64",
+      );
+      expect(fs.writeFile).toHaveBeenNthCalledWith(
+        1,
+        path.join(expectedDir, "page_1.png"),
+        expectedBuffer1,
+      );
+      expect(fs.writeFile).toHaveBeenNthCalledWith(
+        2,
+        path.join(expectedDir, "page_2.png"),
+        expectedBuffer2,
+      );
+      expect(result).toBe(expectedDir);
+    });
+
+    it("プレフィックスがない純粋なBase64データもそのまま処理される", async () => {
+      // プレフィックスなしのBase64データ（フォールバック対応）
       const imageDataArray = ["base64data1", "base64data2"];
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
@@ -150,7 +195,7 @@ describe("ReviewCacheHelper", () => {
   });
 
   describe("loadImageCache", () => {
-    it("画像キャッシュを読み込んでBase64データの配列を返す", async () => {
+    it("画像キャッシュを読み込んでData URL形式のBase64データの配列を返す", async () => {
       const cacheDir = "/cache/images";
       const files = ["page_1.png", "page_2.png", "page_3.png"];
       const buffer1 = Buffer.from("image1");
@@ -168,9 +213,10 @@ describe("ReviewCacheHelper", () => {
       expect(fs.readdir).toHaveBeenCalledWith(cacheDir);
       expect(fs.readFile).toHaveBeenCalledTimes(3);
       expect(result).toHaveLength(3);
-      expect(result[0]).toBe(buffer1.toString("base64"));
-      expect(result[1]).toBe(buffer2.toString("base64"));
-      expect(result[2]).toBe(buffer3.toString("base64"));
+      // Data URLプレフィックスが付加されていることを確認
+      expect(result[0]).toBe(`data:image/png;base64,${buffer1.toString("base64")}`);
+      expect(result[1]).toBe(`data:image/png;base64,${buffer2.toString("base64")}`);
+      expect(result[2]).toBe(`data:image/png;base64,${buffer3.toString("base64")}`);
     });
 
     it("ファイルが番号順にソートされる", async () => {

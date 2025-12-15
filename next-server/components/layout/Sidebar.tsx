@@ -26,7 +26,7 @@ import { ProjectListItemDto } from "@/domain/project";
 interface ReviewTargetSidebarItem {
   id: string;
   name: string;
-  status: "pending" | "reviewing" | "completed" | "error";
+  status: "pending" | "queued" | "reviewing" | "completed" | "error";
 }
 
 /**
@@ -58,6 +58,8 @@ function getStatusIcon(status: ReviewTargetSidebarItem["status"]) {
       return <AlertCircle className="size-3 text-red-500" />;
     case "pending":
       return <Clock className="size-3 text-gray-400" />;
+    case "queued":
+      return <Clock className="size-3 text-yellow-500" />;
     default:
       return <FileText className="size-3 text-gray-400" />;
   }

@@ -8,6 +8,7 @@ import {
   index,
   uniqueIndex,
   jsonb,
+  integer,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -133,6 +134,11 @@ export const reviewSpaces = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    /**
+     * チェックリスト生成エラーメッセージ
+     * 最新のエラーのみ保持（生成成功時にクリアされる）
+     */
+    checklistGenerationError: text("checklist_generation_error"),
   },
   (table) => [index("idx_review_spaces_project_id").on(table.projectId)],
 );
@@ -320,3 +326,126 @@ export type ReviewDocumentCacheDbEntity =
   typeof reviewDocumentCaches.$inferSelect;
 export type NewReviewDocumentCacheDbEntity =
   typeof reviewDocumentCaches.$inferInsert;
+
+/**
+ * ai_tasksテーブル
+ * AI処理タスクのキューを管理
+ * APIキー毎にキューを分離し、並列実行数を制御
+ */
+export const aiTasks = pgTable(
+  "ai_tasks",
+  {
+    /** タスクID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /**
+     * タスクタイプ
+     * small_review: 少量レビュー
+     * large_review: 大量レビュー
+     * checklist_generation: チェックリスト生成
+     */
+    taskType: varchar("task_type", { length: 50 }).notNull(),
+    /**
+     * タスクステータス
+     * queued: キュー待機中
+     * processing: 処理中
+     * completed: 完了
+     * failed: 失敗
+     */
+    status: varchar("status", { length: 20 }).notNull(),
+    /**
+     * APIキーのSHA-256ハッシュ
+     * キュー分離のキーとして使用（セキュリティのためハッシュ化）
+     */
+    apiKeyHash: text("api_key_hash").notNull(),
+    /**
+     * 優先度（1-10、値が大きいほど優先）
+     * デフォルト: 5（通常優先度）
+     */
+    priority: integer("priority").notNull().default(5),
+    /**
+     * タスク実行に必要なペイロード（JSON形式）
+     * タスクタイプに応じた必要情報を格納
+     */
+    payload: jsonb("payload").notNull(),
+    /** エラーメッセージ（失敗時） */
+    errorMessage: text("error_message"),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** レコード更新日時 */
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** 処理開始日時 */
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    /** 処理完了日時（成功/失敗どちらでも設定） */
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (table) => [
+    // キュー取得時のインデックス（status + api_key_hash + priority）
+    index("idx_ai_tasks_queue").on(
+      table.status,
+      table.apiKeyHash,
+      table.priority,
+    ),
+    // ステータス別のインデックス
+    index("idx_ai_tasks_status").on(table.status),
+  ],
+);
+
+/**
+ * AIタスクテーブルの型定義
+ */
+export type AiTaskDbEntity = typeof aiTasks.$inferSelect;
+export type NewAiTaskDbEntity = typeof aiTasks.$inferInsert;
+
+/**
+ * ai_task_file_metadataテーブル
+ * AIタスクに関連するファイルのメタデータを管理
+ * ファイル実体はサーバ内ディレクトリに保存
+ */
+export const aiTaskFileMetadata = pgTable(
+  "ai_task_file_metadata",
+  {
+    /** ファイルメタデータID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 所属タスクID（FK） */
+    taskId: uuid("task_id")
+      .notNull()
+      .references(() => aiTasks.id, { onDelete: "cascade" }),
+    /** 元ファイル名 */
+    fileName: varchar("file_name", { length: 255 }).notNull(),
+    /** ファイル保存パス（サーバ内） */
+    filePath: text("file_path"),
+    /** ファイルサイズ（バイト） */
+    fileSize: integer("file_size").notNull(),
+    /** MIMEタイプ */
+    mimeType: varchar("mime_type", { length: 100 }).notNull(),
+    /**
+     * 処理モード（text: テキスト抽出, image: 画像変換）
+     * 画像モードの場合、元ファイルではなく変換済み画像が保存される
+     */
+    processMode: varchar("process_mode", { length: 10 }).notNull().default("text"),
+    /**
+     * 変換済み画像数（画像モードの場合のみ）
+     * テキストモードの場合は0
+     */
+    convertedImageCount: integer("converted_image_count").notNull().default(0),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_ai_task_file_metadata_task_id").on(table.taskId),
+  ],
+);
+
+/**
+ * AIタスクファイルメタデータテーブルの型定義
+ */
+export type AiTaskFileMetadataDbEntity =
+  typeof aiTaskFileMetadata.$inferSelect;
+export type NewAiTaskFileMetadataDbEntity =
+  typeof aiTaskFileMetadata.$inferInsert;

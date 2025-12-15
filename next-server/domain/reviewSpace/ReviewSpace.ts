@@ -16,6 +16,8 @@ export interface ReviewSpaceDto {
   defaultReviewSettings: ReviewSettingsDto;
   createdAt: Date;
   updatedAt: Date;
+  /** チェックリスト生成エラーメッセージ（最新のエラーのみ保持） */
+  checklistGenerationError: string | null;
 }
 
 /**
@@ -49,6 +51,8 @@ export interface ReconstructReviewSpaceParams {
   defaultReviewSettings?: ReviewSettingsProps | null;
   createdAt: Date;
   updatedAt: Date;
+  /** チェックリスト生成エラーメッセージ */
+  checklistGenerationError?: string | null;
 }
 
 /**
@@ -63,6 +67,7 @@ export class ReviewSpace {
   private readonly _defaultReviewSettings: ReviewSettings;
   private readonly _createdAt: Date;
   private readonly _updatedAt: Date;
+  private readonly _checklistGenerationError: string | null;
 
   private constructor(
     id: ReviewSpaceId,
@@ -72,6 +77,7 @@ export class ReviewSpace {
     defaultReviewSettings: ReviewSettings,
     createdAt: Date,
     updatedAt: Date,
+    checklistGenerationError: string | null = null,
   ) {
     this._id = id;
     this._projectId = projectId;
@@ -80,6 +86,7 @@ export class ReviewSpace {
     this._defaultReviewSettings = defaultReviewSettings;
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
+    this._checklistGenerationError = checklistGenerationError;
   }
 
   /**
@@ -123,6 +130,7 @@ export class ReviewSpace {
       settings,
       params.createdAt,
       params.updatedAt,
+      params.checklistGenerationError ?? null,
     );
   }
 
@@ -139,6 +147,7 @@ export class ReviewSpace {
       this._defaultReviewSettings,
       this._createdAt,
       new Date(),
+      this._checklistGenerationError,
     );
   }
 
@@ -155,6 +164,7 @@ export class ReviewSpace {
       this._defaultReviewSettings,
       this._createdAt,
       new Date(),
+      this._checklistGenerationError,
     );
   }
 
@@ -173,6 +183,41 @@ export class ReviewSpace {
       newSettings,
       this._createdAt,
       new Date(),
+      this._checklistGenerationError,
+    );
+  }
+
+  /**
+   * チェックリスト生成エラーを設定する
+   * 新しいReviewSpaceインスタンスを返す（不変性を保持）
+   */
+  setChecklistGenerationError(errorMessage: string): ReviewSpace {
+    return new ReviewSpace(
+      this._id,
+      this._projectId,
+      this._name,
+      this._description,
+      this._defaultReviewSettings,
+      this._createdAt,
+      this._updatedAt,
+      errorMessage,
+    );
+  }
+
+  /**
+   * チェックリスト生成エラーをクリアする
+   * 新しいReviewSpaceインスタンスを返す（不変性を保持）
+   */
+  clearChecklistGenerationError(): ReviewSpace {
+    return new ReviewSpace(
+      this._id,
+      this._projectId,
+      this._name,
+      this._description,
+      this._defaultReviewSettings,
+      this._createdAt,
+      this._updatedAt,
+      null,
     );
   }
 
@@ -188,6 +233,7 @@ export class ReviewSpace {
       defaultReviewSettings: this._defaultReviewSettings.toDto(),
       createdAt: this._createdAt,
       updatedAt: this._updatedAt,
+      checklistGenerationError: this._checklistGenerationError,
     };
   }
 
@@ -230,5 +276,9 @@ export class ReviewSpace {
 
   get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  get checklistGenerationError(): string | null {
+    return this._checklistGenerationError;
   }
 }

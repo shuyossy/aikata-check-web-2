@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
 import { internalError } from "@/lib/server/error";
 import { RetryReviewService } from "@/application/reviewTarget";
+import { AiTaskQueueService } from "@/application/aiTask";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
@@ -12,6 +13,8 @@ import {
   ReviewResultRepository,
   CheckListItemRepository,
   ReviewDocumentCacheRepository,
+  AiTaskRepository,
+  AiTaskFileMetadataRepository,
 } from "@/infrastructure/adapter/db";
 import { EmployeeId } from "@/domain/user";
 
@@ -42,6 +45,7 @@ const retryReviewInputSchema = z.object({
 
 /**
  * リトライレビューを実行するサーバーアクション
+ * キューに登録して即座にレスポンスを返す
  */
 export const retryReviewAction = authenticatedAction
   .schema(retryReviewInputSchema)
@@ -62,6 +66,8 @@ export const retryReviewAction = authenticatedAction
     const reviewResultRepository = new ReviewResultRepository();
     const checkListItemRepository = new CheckListItemRepository();
     const reviewDocumentCacheRepository = new ReviewDocumentCacheRepository();
+    const aiTaskRepository = new AiTaskRepository();
+    const aiTaskFileMetadataRepository = new AiTaskFileMetadataRepository();
 
     // employeeIdからuserIdを取得
     const user = await userRepository.findByEmployeeId(
@@ -72,14 +78,21 @@ export const retryReviewAction = authenticatedAction
       throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
     }
 
-    // サービスを実行
+    // キューサービスを作成
+    const aiTaskQueueService = new AiTaskQueueService(
+      aiTaskRepository,
+      aiTaskFileMetadataRepository,
+    );
+
+    // サービスを実行（キューに登録）
     const service = new RetryReviewService(
       reviewTargetRepository,
       reviewResultRepository,
       checkListItemRepository,
       reviewSpaceRepository,
       projectRepository,
-      reviewDocumentCacheRepository
+      reviewDocumentCacheRepository,
+      aiTaskQueueService,
     );
 
     const result = await service.execute({
@@ -91,10 +104,11 @@ export const retryReviewAction = authenticatedAction
       reviewSettings,
     });
 
+    // キュー登録完了を返す（非同期処理なのでレビュー結果は含まない）
     return {
       reviewTargetId: result.reviewTargetId,
       status: result.status,
-      totalItems: result.totalItems,
+      queueLength: result.queueLength,
       retryItems: result.retryItems,
     };
   });

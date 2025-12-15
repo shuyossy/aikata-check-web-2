@@ -5,10 +5,19 @@ import {
 } from "../DeleteReviewTargetService";
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository } from "@/application/shared/port/repository";
+import type { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
 import { ReviewTarget } from "@/domain/reviewTarget";
+import { AiTask } from "@/domain/aiTask";
+import { TaskFileHelper } from "@/lib/server/taskFileHelper";
+
+// TaskFileHelperのモック
+vi.mock("@/lib/server/taskFileHelper", () => ({
+  TaskFileHelper: {
+    deleteTaskFiles: vi.fn().mockResolvedValue(undefined),
+  },
+}));
 
 describe("DeleteReviewTargetService", () => {
   // モックリポジトリ
@@ -34,6 +43,22 @@ describe("DeleteReviewTargetService", () => {
     countByMemberId: vi.fn(),
     save: vi.fn(),
     delete: vi.fn(),
+  };
+
+  const mockAiTaskRepository: IAiTaskRepository = {
+    findById: vi.fn(),
+    findByStatus: vi.fn(),
+    findByApiKeyHashAndStatus: vi.fn(),
+    findDistinctApiKeyHashesInQueue: vi.fn(),
+    countQueuedByApiKeyHash: vi.fn(),
+    dequeueNextTask: vi.fn(),
+    save: vi.fn(),
+    delete: vi.fn(),
+    deleteByStatus: vi.fn(),
+    findByReviewTargetId: vi.fn(),
+    deleteByReviewTargetId: vi.fn(),
+    findChecklistGenerationTaskByReviewSpaceId: vi.fn(),
+    deleteChecklistGenerationTaskByReviewSpaceId: vi.fn(),
   };
 
   let service: DeleteReviewTargetService;
@@ -77,17 +102,36 @@ describe("DeleteReviewTargetService", () => {
       updatedAt: now,
     });
 
+  const testAiTaskId = "550e8400-e29b-41d4-a716-446655440005";
+
+  const createTestAiTask = () =>
+    AiTask.reconstruct({
+      id: testAiTaskId,
+      taskType: "small_review",
+      status: "queued",
+      apiKeyHash: "test-api-key-hash",
+      priority: 1,
+      payload: { reviewTargetId: testReviewTargetId },
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: null,
+      completedAt: null,
+      fileMetadata: [],
+    });
+
   beforeEach(() => {
     vi.clearAllMocks();
     service = new DeleteReviewTargetService(
       mockReviewTargetRepository,
       mockReviewSpaceRepository,
       mockProjectRepository,
+      mockAiTaskRepository,
     );
   });
 
   describe("正常系", () => {
-    it("completed状態のレビュー対象を削除できる", async () => {
+    it("completed状態のレビュー対象を削除できる（AIタスクなし）", async () => {
       // モックの設定
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
         createTestReviewTarget("completed"),
@@ -96,6 +140,9 @@ describe("DeleteReviewTargetService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        null,
+      );
 
       const command: DeleteReviewTargetCommand = {
         reviewTargetId: testReviewTargetId,
@@ -104,6 +151,37 @@ describe("DeleteReviewTargetService", () => {
 
       // エラーなく完了する
       await expect(service.execute(command)).resolves.toBeUndefined();
+      // AIタスクが見つからない場合、ファイル削除とタスク削除は呼ばれない
+      expect(TaskFileHelper.deleteTaskFiles).not.toHaveBeenCalled();
+      expect(mockAiTaskRepository.deleteByReviewTargetId).not.toHaveBeenCalled();
+      expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it("AIタスクが存在する場合、関連ファイルとタスクが削除される", async () => {
+      // モックの設定
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createTestReviewTarget("queued"),
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        createTestAiTask(),
+      );
+
+      const command: DeleteReviewTargetCommand = {
+        reviewTargetId: testReviewTargetId,
+        userId: testUserId,
+      };
+
+      // エラーなく完了する
+      await expect(service.execute(command)).resolves.toBeUndefined();
+      // AIタスクが存在する場合、ファイル削除とタスク削除が呼ばれる
+      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(testAiTaskId);
+      expect(mockAiTaskRepository.deleteByReviewTargetId).toHaveBeenCalledWith(
+        testReviewTargetId,
+      );
       expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
     });
 
@@ -115,6 +193,9 @@ describe("DeleteReviewTargetService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        null,
+      );
 
       const command: DeleteReviewTargetCommand = {
         reviewTargetId: testReviewTargetId,
@@ -133,6 +214,9 @@ describe("DeleteReviewTargetService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        null,
+      );
 
       const command: DeleteReviewTargetCommand = {
         reviewTargetId: testReviewTargetId,
@@ -153,6 +237,9 @@ describe("DeleteReviewTargetService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        null,
+      );
 
       const command: DeleteReviewTargetCommand = {
         reviewTargetId: testReviewTargetId,
@@ -160,6 +247,33 @@ describe("DeleteReviewTargetService", () => {
       };
 
       await expect(service.execute(command)).resolves.toBeUndefined();
+      expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it("queued状態のレビュー対象を削除するとAIタスクとファイルも削除される", async () => {
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createTestReviewTarget("queued"),
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        createTestAiTask(),
+      );
+
+      const command: DeleteReviewTargetCommand = {
+        reviewTargetId: testReviewTargetId,
+        userId: testUserId,
+      };
+
+      await expect(service.execute(command)).resolves.toBeUndefined();
+      // キュー待機中のAIタスクに紐づくファイルが削除される
+      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(testAiTaskId);
+      // AIタスクが削除される
+      expect(mockAiTaskRepository.deleteByReviewTargetId).toHaveBeenCalledWith(
+        testReviewTargetId,
+      );
       expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
     });
   });

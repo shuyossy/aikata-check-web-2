@@ -159,7 +159,8 @@ export const fileProcessingStep = createStep({
 
 /**
  * 画像モードの処理
- * convertedImageBuffersをBase64文字列に変換
+ * convertedImageBuffersをData URL形式のBase64文字列に変換
+ * Electron版と同様にdata:image/png;base64,プレフィックス付きで返す
  */
 function processImageMode(
   bufferData: FileBufferData,
@@ -170,11 +171,15 @@ function processImageMode(
   if (bufferData.convertedImageBuffers && bufferData.convertedImageBuffers.length > 0) {
     // PDF画像変換済みの場合はconvertedImageBuffersを使用
     for (const imageBuffer of bufferData.convertedImageBuffers) {
-      imageData.push(imageBuffer.toString("base64"));
+      // Data URL形式に変換（AI APIが期待する形式）
+      const base64 = imageBuffer.toString("base64");
+      imageData.push(`data:image/png;base64,${base64}`);
     }
   } else {
     // convertedImageBuffersがない場合は元のバッファを使用（単一画像ファイルの場合など）
-    imageData.push(bufferData.buffer.toString("base64"));
+    // Data URL形式に変換
+    const base64 = bufferData.buffer.toString("base64");
+    imageData.push(`data:image/png;base64,${base64}`);
   }
 
   return imageData;

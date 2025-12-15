@@ -96,6 +96,7 @@
 | default_review_settings | JSONB | NULL | - | 既定のレビュー設定（JSON形式） |
 | created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
 | updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
+| checklist_generation_error | TEXT | NULL | - | チェックリスト生成エラーメッセージ |
 
 ### インデックス
 - PRIMARY KEY (id)
@@ -111,6 +112,7 @@
 - **description**: スペースの詳細説明。任意項目のためNULL許可。
 - **default_review_settings**: レビュースペースの既定のレビュー設定をJSONB形式で保存。任意項目のためNULL許可。新規レビュー実行時にデフォルト値として使用される。
 - **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。タイムゾーン付きで国際化に対応。
+- **checklist_generation_error**: チェックリストAI生成処理のエラーメッセージを保存。レビュースペースあたり最新のエラーのみ保持する。生成成功時にはNULLにクリアされ、失敗時にはエラーメッセージで上書きされる。
 
 ### default_review_settings JSON構造
 
@@ -215,6 +217,7 @@
 - **name**: レビュー対象を識別するための名称。複数ファイルの場合はスラッシュ区切りで結合（例: "doc1.docx/doc2.xlsx"）。255文字以内に制限。
 - **status**: レビュー処理の進行状態を表す。以下の値を取る:
   - `pending`: レビュー待ち（初期状態）
+  - `queued`: キュー待機中（AIタスクキューに登録済み）
   - `reviewing`: レビュー実行中
   - `completed`: レビュー完了
   - `error`: レビュー失敗
@@ -303,3 +306,113 @@
 - このテーブルはPBI-4（リトライ機能）で本格的に使用される。PBI-1ではテーブル構造のみ作成し、キャッシュ保存ロジックは未実装。
 - キャッシュファイルの実体はサーバ上のファイルシステムに保存され、cache_pathにそのパスが記録される。
 - レビュー対象削除時はDBレコードとファイルシステム上のキャッシュファイルの両方を削除する必要がある。
+
+---
+
+## ai_tasks テーブル
+
+AIタスクキューを管理するテーブル。AI処理（レビュー、チェックリスト生成）をAPIキー毎にキューイングし、並列実行数を制御する。
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|------|------|-----------|------|
+| id | UUID | NOT NULL | gen_random_uuid() | タスクID（PK） |
+| task_type | VARCHAR(50) | NOT NULL | - | タスク種別（small_review/large_review/checklist_generation） |
+| status | VARCHAR(20) | NOT NULL | 'queued' | タスクステータス（queued/processing/completed/failed） |
+| api_key_hash | TEXT | NOT NULL | - | APIキーのSHA-256ハッシュ（キュー分離キー） |
+| priority | INTEGER | NOT NULL | 5 | 優先度（1-10、高いほど優先） |
+| payload | JSONB | NOT NULL | - | タスク実行に必要なペイロード |
+| error_message | TEXT | NULL | - | エラー発生時のメッセージ |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
+| started_at | TIMESTAMP WITH TIME ZONE | NULL | - | タスク開始日時 |
+| completed_at | TIMESTAMP WITH TIME ZONE | NULL | - | タスク完了日時 |
+
+### インデックス
+- PRIMARY KEY (id)
+- INDEX idx_ai_tasks_status_api_key_priority (status, api_key_hash, priority DESC, created_at) - キューからの取得を高速化
+
+### 設計思想
+- **id**: UUIDを採用し、タスクを一意に識別する。
+- **task_type**: タスクの種別。ワーカーがタスクを実行する際にどの処理を行うかを決定する。
+  - `small_review`: 少量レビュー
+  - `large_review`: 大量レビュー
+  - `checklist_generation`: AIチェックリスト生成
+- **status**: タスクの進行状態。以下の値を取る:
+  - `queued`: キュー待機中
+  - `processing`: 処理中
+  - `completed`: 完了（タスク削除前の一時状態）
+  - `failed`: 失敗（タスク削除前の一時状態）
+- **api_key_hash**: APIキーのSHA-256ハッシュ。流量制限がAPIキー毎に設定されているため、キュー分離のキーとして使用。元のAPIキーは保存しない（セキュリティ）。
+- **priority**: タスクの優先度。デフォルトは5。将来的に優先度に基づくスケジューリングに使用。
+- **payload**: タスク実行に必要な全情報をJSONB形式で保存。タスク種別によって内容が異なる。
+- **error_message**: タスク失敗時のエラーメッセージ。成功時はNULL。
+- **started_at/completed_at**: タスクの実行開始・完了時刻。パフォーマンス分析に使用。
+
+### payload JSON構造（レビュータスク）
+```json
+{
+  "reviewTargetId": "UUID",
+  "reviewSpaceId": "UUID",
+  "userId": "UUID",
+  "files": [...],
+  "checkListItems": [...],
+  "reviewSettings": {...},
+  "reviewType": "small | large",
+  "decryptedApiKey": "string | undefined",
+  "isRetry": "boolean | undefined",
+  "retryScope": "failed | all | undefined",
+  "resultsToDeleteIds": ["UUID", ...] | undefined
+}
+```
+
+### payload JSON構造（チェックリスト生成タスク）
+```json
+{
+  "reviewSpaceId": "UUID",
+  "userId": "UUID",
+  "files": [...],
+  "checklistRequirements": "string",
+  "decryptedApiKey": "string | undefined"
+}
+```
+
+### 備考
+- 完了/失敗タスクは即座にDBから削除される（シンプルな運用）。
+- ワーカーはSELECT FOR UPDATE SKIP LOCKEDを使用して原子的にタスクを取得する。
+- システム再起動時、処理中のタスクは失敗扱いとなり、対応するエンティティのステータスも更新される。
+
+---
+
+## ai_task_file_metadata テーブル
+
+AIタスクに紐づくファイルのメタデータを管理するテーブル。ファイルの実体はサーバ上のファイルシステムに保存される。
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|------|------|-----------|------|
+| id | UUID | NOT NULL | gen_random_uuid() | メタデータID（PK） |
+| task_id | UUID | NOT NULL | - | タスクID（FK → ai_tasks.id） |
+| file_name | VARCHAR(255) | NOT NULL | - | ファイル名 |
+| file_path | TEXT | NULL | - | サーバ内ファイルパス |
+| file_size | INTEGER | NOT NULL | - | ファイルサイズ（バイト） |
+| mime_type | VARCHAR(100) | NOT NULL | - | MIMEタイプ |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
+
+### インデックス
+- PRIMARY KEY (id)
+- INDEX idx_ai_task_file_metadata_task_id (task_id) - タスクのファイル一覧取得を高速化
+
+### 外部キー制約
+- task_id → ai_tasks.id (ON DELETE CASCADE)
+
+### 設計思想
+- **id**: UUIDを採用し、メタデータを一意に識別する。
+- **task_id**: メタデータが紐づくタスクへの参照。CASCADE削除によりタスク削除時に関連するメタデータも自動的に削除される。
+- **file_name**: 元のファイル名を保存。ファイル識別とUI表示に使用。
+- **file_path**: サーバ上のファイルパス。環境変数で指定されたキューファイルディレクトリ配下に保存。
+- **file_size**: ファイルサイズ（バイト）。バリデーションとUI表示に使用。
+- **mime_type**: ファイルのMIMEタイプ。処理方法の決定に使用。
+
+### 備考
+- ファイルの実体はQUEUE_FILE_DIR環境変数で指定されたディレクトリに保存される。
+- タスク削除時はDBレコードとファイルシステム上のファイルの両方を削除する。
+- リトライ時はファイルを再アップロードせず、キャッシュ（review_document_cachesテーブル）を使用する。

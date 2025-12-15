@@ -109,7 +109,7 @@ export default async function ProjectLayout({
         reviewTargets: displayTargets.map((t) => ({
           id: t.id,
           name: t.name,
-          status: t.status as "pending" | "reviewing" | "completed" | "error",
+          status: t.status as "pending" | "queued" | "reviewing" | "completed" | "error",
         })),
         hasMore,
       };

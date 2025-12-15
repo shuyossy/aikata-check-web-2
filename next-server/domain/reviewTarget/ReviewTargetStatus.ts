@@ -5,6 +5,7 @@ import { domainValidationError } from "@/lib/server/error";
  */
 export const REVIEW_TARGET_STATUS = {
   PENDING: "pending",
+  QUEUED: "queued",
   REVIEWING: "reviewing",
   COMPLETED: "completed",
   ERROR: "error",
@@ -15,7 +16,11 @@ export type ReviewTargetStatusType =
 
 /**
  * レビュー対象ステータス値オブジェクト
- * pending → reviewing → completed/error の状態遷移を管理
+ * 状態遷移:
+ *   キュー経由（少量/大量レビュー）: pending → queued → reviewing → completed/error
+ *   API呼び出しレビュー: pending → reviewing → completed/error
+ * リトライ時:
+ *   completed/error → queued → reviewing → completed/error
  */
 export class ReviewTargetStatus {
   private readonly _value: ReviewTargetStatusType;
@@ -87,14 +92,32 @@ export class ReviewTargetStatus {
   }
 
   /**
-   * レビュー中に遷移可能かどうか
-   * pending, completed, error状態からreviewing状態に遷移可能（リトライのため）
+   * queued状態かどうか
    */
-  canTransitionToReviewing(): boolean {
+  isQueued(): boolean {
+    return this._value === REVIEW_TARGET_STATUS.QUEUED;
+  }
+
+  /**
+   * キュー待機中に遷移可能かどうか
+   * pending, completed, error状態からqueued状態に遷移可能
+   */
+  canTransitionToQueued(): boolean {
     return (
       this._value === REVIEW_TARGET_STATUS.PENDING ||
       this._value === REVIEW_TARGET_STATUS.COMPLETED ||
       this._value === REVIEW_TARGET_STATUS.ERROR
+    );
+  }
+
+  /**
+   * レビュー中に遷移可能かどうか
+   * pending（API呼び出しレビュー用）またはqueued状態からreviewing状態に遷移可能
+   */
+  canTransitionToReviewing(): boolean {
+    return (
+      this._value === REVIEW_TARGET_STATUS.PENDING ||
+      this._value === REVIEW_TARGET_STATUS.QUEUED
     );
   }
 
@@ -107,12 +130,25 @@ export class ReviewTargetStatus {
 
   /**
    * エラー状態に遷移可能かどうか
+   * pending, queued, reviewing状態からerror状態に遷移可能
    */
   canTransitionToError(): boolean {
     return (
       this._value === REVIEW_TARGET_STATUS.PENDING ||
+      this._value === REVIEW_TARGET_STATUS.QUEUED ||
       this._value === REVIEW_TARGET_STATUS.REVIEWING
     );
+  }
+
+  /**
+   * キュー待機中状態に遷移する
+   * @throws ドメインバリデーションエラー - 遷移が不正な場合
+   */
+  toQueued(): ReviewTargetStatus {
+    if (!this.canTransitionToQueued()) {
+      throw domainValidationError("REVIEW_TARGET_STATUS_INVALID_TRANSITION");
+    }
+    return new ReviewTargetStatus(REVIEW_TARGET_STATUS.QUEUED);
   }
 
   /**

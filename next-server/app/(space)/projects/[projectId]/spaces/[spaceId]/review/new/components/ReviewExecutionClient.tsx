@@ -293,12 +293,14 @@ export function ReviewExecutionClient({
 
       metadata.push(fileMeta);
 
-      formData.append(`file_${index}`, file.file);
-
-      if (file.convertedImages && file.convertedImages.length > 0) {
+      // 画像モードの場合は変換済み画像のみを送信（元ファイルは不要）
+      // テキストモードの場合は元ファイルのみを送信
+      if (file.processMode === "image" && file.convertedImages && file.convertedImages.length > 0) {
         file.convertedImages.forEach((img, imgIndex) => {
           formData.append(`file_${index}_image_${imgIndex}`, img);
         });
+      } else {
+        formData.append(`file_${index}`, file.file);
       }
     });
 

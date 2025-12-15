@@ -13,6 +13,10 @@ import {
   Sparkles,
   Info,
   HelpCircle,
+  Clock,
+  Loader2,
+  X,
+  AlertCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -22,11 +26,14 @@ import {
   bulkSaveCheckListItemsAction,
   bulkDeleteCheckListItemsAction,
   exportCheckListToCsvAction,
+  cancelChecklistGenerationTaskAction,
 } from "../actions";
 import { CheckListItemListItemDto } from "@/domain/checkListItem";
+import type { ChecklistGenerationTaskStatusDto } from "@/application/checkListItem";
 import { extractServerErrorMessage } from "@/hooks";
 import { showError, showSuccess } from "@/lib/client";
 import { CheckListImportModal } from "./CheckListImportModal";
+import { useChecklistTaskPolling } from "../hooks/useChecklistTaskPolling";
 
 interface CheckListEditClientProps {
   projectId: string;
@@ -35,12 +42,50 @@ interface CheckListEditClientProps {
   spaceName: string;
   initialItems: CheckListItemListItemDto[];
   initialTotal: number;
+  /** チェックリスト生成タスクのステータス */
+  taskStatus: ChecklistGenerationTaskStatusDto;
 }
 
 interface EditableItem {
   id: string;
   content: string;
   isNew?: boolean;
+}
+
+/**
+ * タスクステータスに応じたバナー設定を取得
+ */
+function getTaskStatusBannerConfig(status: string | null) {
+  switch (status) {
+    case "queued":
+      return {
+        icon: Clock,
+        bgColor: "bg-yellow-50",
+        borderColor: "border-yellow-500",
+        textColor: "text-yellow-800",
+        iconColor: "text-yellow-500",
+        title: "待機中",
+        message:
+          "AIチェックリスト生成タスクが実行待ちリストに登録されています。順番が来るまでお待ちください。",
+        showCancelButton: true,
+        animate: false,
+      };
+    case "processing":
+      return {
+        icon: Loader2,
+        bgColor: "bg-blue-50",
+        borderColor: "border-blue-500",
+        textColor: "text-blue-800",
+        iconColor: "text-blue-500",
+        title: "生成中",
+        message:
+          "AIがチェックリストを生成しています。しばらくお待ちください。",
+        showCancelButton: false,
+        animate: true,
+      };
+    default:
+      return null;
+  }
 }
 
 /**
@@ -52,8 +97,19 @@ export function CheckListEditClient({
   spaceId,
   spaceName,
   initialItems,
+  taskStatus,
 }: CheckListEditClientProps) {
   const router = useRouter();
+
+  // ポーリング設定
+  const { isPolling } = useChecklistTaskPolling({
+    taskStatus: taskStatus.status,
+  });
+
+  // タスク状態に基づくボタン無効化フラグ
+  const isTaskQueued = taskStatus.status === "queued";
+  const isTaskProcessing = taskStatus.status === "processing";
+  const hasActiveTask = taskStatus.hasTask;
 
   // 編集中のアイテムリスト
   const [items, setItems] = useState<EditableItem[]>(
@@ -173,6 +229,24 @@ export function CheckListEditClient({
         const message = extractServerErrorMessage(
           actionError,
           "エクスポートに失敗しました",
+        );
+        showError(message);
+      },
+    },
+  );
+
+  // タスクキャンセルアクション
+  const { execute: executeCancelTask, isExecuting: isCancelling } = useAction(
+    cancelChecklistGenerationTaskAction,
+    {
+      onSuccess: () => {
+        showSuccess("チェックリスト生成タスクをキャンセルしました");
+        router.refresh();
+      },
+      onError: ({ error: actionError }) => {
+        const message = extractServerErrorMessage(
+          actionError,
+          "タスクのキャンセルに失敗しました",
         );
         showError(message);
       },
@@ -312,6 +386,15 @@ export function CheckListEditClient({
     executeExportCsv({ reviewSpaceId: spaceId });
   }, [spaceId, executeExportCsv]);
 
+  // タスクキャンセルハンドラ
+  const handleCancelTask = useCallback(() => {
+    executeCancelTask({ reviewSpaceId: spaceId, projectId });
+  }, [spaceId, projectId, executeCancelTask]);
+
+  // タスクバナー設定
+  const taskBannerConfig = getTaskStatusBannerConfig(taskStatus.status);
+  const TaskStatusIcon = taskBannerConfig?.icon;
+
   return (
     <div className="flex-1 flex flex-col">
       {/* Page Content */}
@@ -327,12 +410,17 @@ export function CheckListEditClient({
 
         {/* Page Header with Actions */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <h1 className="text-xl font-bold text-gray-900">チェックリスト編集</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold text-gray-900">チェックリスト編集</h1>
+            {isPolling && (
+              <span className="text-sm text-gray-500">(自動更新中)</span>
+            )}
+          </div>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="outline"
               className="flex items-center gap-2"
-              disabled={isExporting || items.length === 0}
+              disabled={isExporting || items.length === 0 || isTaskProcessing}
               onClick={handleExportCsv}
             >
               <Download className="w-4 h-4" />
@@ -341,6 +429,7 @@ export function CheckListEditClient({
             <Button
               variant="outline"
               className="flex items-center gap-2"
+              disabled={isTaskProcessing}
               onClick={() => setIsImportModalOpen(true)}
             >
               <Upload className="w-4 h-4" />
@@ -349,22 +438,87 @@ export function CheckListEditClient({
             <Button
               variant="outline"
               className="flex items-center gap-2 bg-purple-50 text-purple-700 border-purple-200 hover:bg-purple-100"
-              asChild
+              disabled={isTaskQueued || isTaskProcessing}
+              asChild={!isTaskQueued && !isTaskProcessing}
             >
-              <Link href={`/projects/${projectId}/spaces/${spaceId}/checklist/ai-generate`}>
-                <Sparkles className="w-4 h-4" />
-                AI生成
-              </Link>
+              {isTaskQueued || isTaskProcessing ? (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  AI生成
+                </>
+              ) : (
+                <Link href={`/projects/${projectId}/spaces/${spaceId}/checklist/ai-generate`}>
+                  <Sparkles className="w-4 h-4" />
+                  AI生成
+                </Link>
+              )}
             </Button>
             <Button
               onClick={handleAddItem}
               className="flex items-center gap-2"
+              disabled={isTaskProcessing}
             >
               <Plus className="w-4 h-4" />
               項目を追加
             </Button>
           </div>
         </div>
+
+        {/* Task Status Banner */}
+        {taskBannerConfig && TaskStatusIcon && (
+          <div
+            className={`${taskBannerConfig.bgColor} border-l-4 ${taskBannerConfig.borderColor} p-4 mb-6 rounded`}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-start">
+                <TaskStatusIcon
+                  className={`h-5 w-5 ${taskBannerConfig.iconColor} mt-0.5 ${
+                    taskBannerConfig.animate ? "animate-spin" : ""
+                  }`}
+                />
+                <div className="ml-3">
+                  <p
+                    className={`text-sm ${taskBannerConfig.textColor} font-medium`}
+                  >
+                    {taskBannerConfig.title}
+                  </p>
+                  <p className={`mt-1 text-sm ${taskBannerConfig.textColor}`}>
+                    {taskBannerConfig.message}
+                  </p>
+                </div>
+              </div>
+              {taskBannerConfig.showCancelButton && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleCancelTask}
+                  disabled={isCancelling}
+                  className="text-yellow-700 hover:text-yellow-900 hover:bg-yellow-100"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  {isCancelling ? "キャンセル中..." : "実行待ちリストから削除"}
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Error Banner */}
+        {taskStatus.errorMessage && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 mb-6 rounded">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-red-500 mt-0.5" />
+              <div className="ml-3">
+                <p className="text-sm text-red-800 font-medium">
+                  チェックリスト生成エラー
+                </p>
+                <p className="mt-1 text-sm text-red-700">
+                  {taskStatus.errorMessage}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Info Alert */}
         <div className="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded">

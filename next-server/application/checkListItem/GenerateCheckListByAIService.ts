@@ -1,23 +1,13 @@
-import { RuntimeContext } from "@mastra/core/di";
-import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import { IProjectRepository } from "@/application/shared/port/repository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { CheckListItem } from "@/domain/checkListItem";
+import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
+import { getAiTaskBootstrap } from "@/application/aiTask";
 import { ProjectId } from "@/domain/project";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
-import {
-  AppError,
-  domainValidationError,
-  internalError,
-  normalizeUnknownError,
-} from "@/lib/server/error";
-import { mastra, checkWorkflowResult } from "@/application/mastra";
-import type {
-  RawUploadFileMeta,
-  FileBuffersMap,
-  ChecklistGenerationWorkflowRuntimeContext,
-} from "@/application/mastra";
-import { FILE_BUFFERS_CONTEXT_KEY } from "@/application/mastra";
+import { AI_TASK_TYPE } from "@/domain/aiTask";
+import { domainValidationError, internalError } from "@/lib/server/error";
+import type { RawUploadFileMeta, FileBuffersMap } from "@/application/mastra";
+import type { ChecklistGenerationTaskPayload } from "@/application/aiTask/AiTaskExecutor";
 
 /**
  * AIチェックリスト生成コマンド（入力DTO）
@@ -36,30 +26,32 @@ export interface GenerateCheckListByAICommand {
 }
 
 /**
- * AIチェックリスト生成結果DTO
+ * AIチェックリスト生成結果DTO（キュー登録版）
  */
 export interface GenerateCheckListByAIResult {
-  /** 生成された件数 */
-  generatedCount: number;
-  /** 生成されたチェック項目 */
-  items: string[];
+  /** レビュースペースID */
+  reviewSpaceId: string;
+  /** ステータス（queued） */
+  status: string;
+  /** キュー長 */
+  queueLength: number;
 }
 
 /**
  * AIチェックリスト生成サービス
- * ドキュメントとチェックリスト生成要件からAIがチェックリストを自動生成する
+ * ドキュメントとチェックリスト生成要件からAIがチェックリストを自動生成する（キュー登録版）
  */
 export class GenerateCheckListByAIService {
   constructor(
-    private readonly checkListItemRepository: ICheckListItemRepository,
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
+    private readonly aiTaskQueueService: AiTaskQueueService,
   ) {}
 
   /**
-   * AIチェックリスト生成を実行
+   * AIチェックリスト生成を実行（キューに登録）
    * @param command 生成コマンド
-   * @returns 生成結果
+   * @returns キュー登録結果
    */
   async execute(
     command: GenerateCheckListByAICommand,
@@ -102,96 +94,67 @@ export class GenerateCheckListByAIService {
       throw domainValidationError("PROJECT_ACCESS_DENIED");
     }
 
-    // Mastraワークフローを実行
-    let generatedItems: string[];
-    try {
-      const workflow = mastra.getWorkflow("checklistGenerationWorkflow");
-      const run = await workflow.createRunAsync();
-
-      // RuntimeContextを作成し、ユーザーID、プロジェクトのAPIキー、ファイルバッファを設定
-      const runtimeContext =
-        new RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>();
-      runtimeContext.set("employeeId", userId);
-      const decryptedApiKey = project.encryptedApiKey?.decrypt();
-      if (decryptedApiKey) {
-        runtimeContext.set("projectApiKey", decryptedApiKey);
-      }
-      // ファイルバッファをRuntimeContextに設定（workflowのfileProcessingStepで使用）
-      runtimeContext.set(FILE_BUFFERS_CONTEXT_KEY, fileBuffers);
-
-      const result = await run.start({
-        inputData: {
-          files,
-          checklistRequirements,
-        },
-        runtimeContext,
+    // APIキーを取得
+    const decryptedApiKey = project.encryptedApiKey?.decrypt();
+    const apiKey = decryptedApiKey ?? process.env.AI_API_KEY;
+    if (!apiKey) {
+      throw internalError({
+        expose: true,
+        messageCode: "AI_TASK_NO_API_KEY",
       });
-
-      // ワークフローの結果を検証（checkWorkflowResult関数を使用）
-      const checkResult = checkWorkflowResult(result);
-      if (checkResult.status !== "success") {
-        throw internalError({
-          expose: true,
-          messageCode: "AI_CHECKLIST_GENERATION_FAILED",
-          messageParams: {
-            detail: checkResult.errorMessage || "ワークフロー実行に失敗しました",
-          },
-        });
-      }
-
-      // ワークフローの結果からgeneratedItemsを取得
-      // checkWorkflowResultが成功を返した場合、result.status === "success"が保証される
-      if (result.status !== "success") {
-        // この分岐には到達しないはずだが、型ガードとして必要
-        throw internalError({
-          expose: true,
-          messageCode: "AI_CHECKLIST_GENERATION_FAILED",
-          messageParams: { detail: "ワークフロー結果の取得に失敗しました" },
-        });
-      }
-
-      const workflowResult = result.result as
-        | {
-            status: string;
-            generatedItems?: string[];
-            errorMessage?: string;
-          }
-        | undefined;
-
-      if (
-        !workflowResult?.generatedItems ||
-        workflowResult.generatedItems.length === 0
-      ) {
-        throw internalError({
-          expose: true,
-          messageCode: "AI_CHECKLIST_GENERATION_NO_ITEMS_GENERATED",
-        });
-      }
-
-      generatedItems = workflowResult.generatedItems;
-    } catch (error) {
-      // AppErrorの場合はそのまま再スロー（既に適切にハンドリング済み）
-      if (error instanceof AppError) {
-        throw error;
-      }
-      // AI関連エラー含む全てのエラーをnormalizeUnknownErrorで正規化
-      throw normalizeUnknownError(error);
     }
 
-    // チェック項目エンティティを生成
-    const items = generatedItems.map((content) =>
-      CheckListItem.create({
-        reviewSpaceId,
-        content,
-      }),
-    );
+    // ペイロードを作成
+    const payload: ChecklistGenerationTaskPayload = {
+      reviewSpaceId,
+      userId,
+      files,
+      checklistRequirements,
+      decryptedApiKey: decryptedApiKey ?? undefined,
+    };
 
-    // 一括追加を実行（既存のチェック項目に追加）
-    await this.checkListItemRepository.bulkInsert(items);
+    // ファイルをFileInfoCommand形式に変換
+    const fileInfoCommands = files.map((f) => {
+      const bufferData = fileBuffers.get(f.id);
+      if (!bufferData) {
+        throw internalError({
+          expose: true,
+          messageCode: "AI_TASK_FILE_NOT_FOUND",
+        });
+      }
+
+      // 画像モードの場合は変換済み画像のみを使用、テキストモードの場合は元ファイルを使用
+      const processMode = f.processMode ?? "text";
+      return {
+        fileId: f.id,
+        fileName: f.name,
+        fileSize: f.size,
+        mimeType: f.type,
+        processMode,
+        // テキストモード: 元ファイルのバッファ、画像モード: 空バッファ
+        buffer: processMode === "text" ? bufferData.buffer : Buffer.alloc(0),
+        // 画像モードの場合のみ変換済み画像を設定
+        convertedImageBuffers:
+          processMode === "image" ? bufferData.convertedImageBuffers : undefined,
+      };
+    });
+
+    // キューに登録
+    const enqueueResult = await this.aiTaskQueueService.enqueueTask({
+      taskType: AI_TASK_TYPE.CHECKLIST_GENERATION,
+      apiKey,
+      payload: payload as unknown as Record<string, unknown>,
+      files: fileInfoCommands,
+    });
+
+    // ワーカーを起動
+    const aiTaskBootstrap = getAiTaskBootstrap();
+    await aiTaskBootstrap.startWorkersForApiKeyHash(enqueueResult.apiKeyHash);
 
     return {
-      generatedCount: items.length,
-      items: generatedItems,
+      reviewSpaceId,
+      status: "queued",
+      queueLength: enqueueResult.queueLength,
     };
   }
 }

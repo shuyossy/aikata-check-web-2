@@ -150,6 +150,24 @@ export class ReviewTarget {
   }
 
   /**
+   * キュー待機中状態に遷移する
+   * 新しいReviewTargetインスタンスを返す（不変性を保持）
+   * @throws ドメインバリデーションエラー - 遷移が不正な場合
+   */
+  toQueued(): ReviewTarget {
+    return new ReviewTarget(
+      this._id,
+      this._reviewSpaceId,
+      this._name,
+      this._status.toQueued(),
+      this._reviewSettings,
+      this._reviewType,
+      this._createdAt,
+      new Date(),
+    );
+  }
+
+  /**
    * レビュー実行中状態に遷移する
    * 新しいReviewTargetインスタンスを返す（不変性を保持）
    * @throws ドメインバリデーションエラー - 遷移が不正な場合
@@ -230,7 +248,8 @@ export class ReviewTarget {
   }
 
   /**
-   * リトライ用に状態を準備する（reviewing状態に遷移）
+   * リトライ用に状態を準備する（queued状態に遷移）
+   * ワーカーがキューから取得して処理を開始する
    * 新しいReviewTargetインスタンスを返す（不変性を保持）
    * @throws ドメインバリデーションエラー - リトライ不可能な状態の場合
    */
@@ -239,7 +258,7 @@ export class ReviewTarget {
       this._id,
       this._reviewSpaceId,
       this._name,
-      this._status.toReviewing(),
+      this._status.toQueued(),
       this._reviewSettings,
       this._reviewType,
       this._createdAt,

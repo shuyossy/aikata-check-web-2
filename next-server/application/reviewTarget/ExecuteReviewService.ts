@@ -1,31 +1,41 @@
-import { RuntimeContext } from "@mastra/core/di";
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
-import { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository, IReviewDocumentCacheRepository } from "@/application/shared/port/repository";
-import { ReviewTarget, ReviewDocumentCache } from "@/domain/reviewTarget";
-import { createReviewResultSavedCallback } from "./createReviewResultSavedCallback";
+import { IProjectRepository } from "@/application/shared/port/repository";
+import { ReviewTarget } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
+import { domainValidationError, internalError } from "@/lib/server/error";
+import { getLogger } from "@/lib/server/logger";
+import { AI_TASK_TYPE } from "@/domain/aiTask";
 import {
-  AppError,
-  domainValidationError,
-  internalError,
-  normalizeUnknownError,
-} from "@/lib/server/error";
-import { mastra, checkWorkflowResult } from "@/application/mastra";
+  AiTaskQueueService,
+  type FileInfoCommand,
+} from "@/application/aiTask/AiTaskQueueService";
+import { getAiTaskBootstrap } from "@/application/aiTask";
 import type {
   RawUploadFileMeta,
   FileBuffersMap,
-  ReviewExecutionWorkflowRuntimeContext,
   EvaluationCriterion,
-  SingleReviewResult,
   ReviewType,
-  ExtractedFile,
 } from "@/application/mastra";
-import { ReviewCacheHelper } from "@/lib/server/reviewCacheHelper";
-import { FILE_BUFFERS_CONTEXT_KEY } from "@/application/mastra";
+import type { ReviewTaskPayload } from "@/application/aiTask";
+
+const logger = getLogger();
+
+/**
+ * デフォルトAPIキーを取得
+ */
+const getDefaultApiKey = (): string => {
+  const apiKey = process.env.AI_API_KEY;
+  if (!apiKey) {
+    throw internalError({
+      expose: true,
+      messageCode: "AI_TASK_NO_API_KEY",
+    });
+  }
+  return apiKey;
+};
 
 /**
  * レビュー設定の入力型
@@ -62,41 +72,36 @@ export interface ExecuteReviewCommand {
 }
 
 /**
- * レビュー実行結果DTO
+ * レビュー実行結果DTO（キュー登録後）
+ * 非同期処理のため、レビュー結果は含まない
  */
 export interface ExecuteReviewResult {
   /** レビュー対象ID */
   reviewTargetId: string;
-  /** ステータス */
+  /** ステータス（queued） */
   status: string;
-  /** レビュー結果の配列 */
-  reviewResults: Array<{
-    /** チェック項目の内容（スナップショット） */
-    checkListItemContent: string;
-    evaluation: string | null;
-    comment: string | null;
-    errorMessage: string | null;
-  }>;
+  /** キュー内の待機タスク数 */
+  queueLength: number;
 }
 
 /**
  * レビュー実行サービス
  * ドキュメントをチェックリストに基づいてAIレビューする
+ * 非同期処理: タスクをキューに登録し、即座にレスポンスを返す
  */
 export class ExecuteReviewService {
   constructor(
     private readonly reviewTargetRepository: IReviewTargetRepository,
-    private readonly reviewResultRepository: IReviewResultRepository,
     private readonly checkListItemRepository: ICheckListItemRepository,
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
-    private readonly reviewDocumentCacheRepository: IReviewDocumentCacheRepository,
+    private readonly aiTaskQueueService: AiTaskQueueService,
   ) {}
 
   /**
-   * レビュー実行
+   * レビュー実行（キューに登録）
    * @param command 実行コマンド
-   * @returns レビュー結果
+   * @returns キュー登録結果
    */
   async execute(command: ExecuteReviewCommand): Promise<ExecuteReviewResult> {
     const {
@@ -163,183 +168,102 @@ export class ExecuteReviewService {
       reviewType,
     });
 
-    // レビュー対象をDBに保存（ステータス: pending）
-    await this.reviewTargetRepository.save(reviewTarget);
+    // ステータスをqueuedに遷移
+    const queuedTarget = reviewTarget.toQueued();
 
-    // ステータスをreviewingに更新
-    const reviewingTarget = reviewTarget.startReviewing();
-    await this.reviewTargetRepository.save(reviewingTarget);
+    // レビュー対象をDBに保存（ステータス: queued）
+    await this.reviewTargetRepository.save(queuedTarget);
 
-    // ワークフロー実行
-    let workflowResults: SingleReviewResult[];
-    let finalTarget: ReviewTarget;
+    // APIキーを取得（プロジェクト設定 or デフォルト）
+    const apiKey = project.encryptedApiKey?.decrypt() ?? getDefaultApiKey();
+    const decryptedApiKey = project.encryptedApiKey?.decrypt();
 
-    try {
-      const workflow = mastra.getWorkflow("reviewExecutionWorkflow");
-      const run = await workflow.createRunAsync();
-
-      // RuntimeContextを作成
-      const runtimeContext =
-        new RuntimeContext<ReviewExecutionWorkflowRuntimeContext>();
-      runtimeContext.set("employeeId", userId);
-      const decryptedApiKey = project.encryptedApiKey?.decrypt();
-      if (decryptedApiKey) {
-        runtimeContext.set("projectApiKey", decryptedApiKey);
+    // ファイルバッファをFileInfoCommand配列に変換
+    const fileCommands: FileInfoCommand[] = [];
+    for (const file of files) {
+      const bufferData = fileBuffers.get(file.id);
+      if (!bufferData) {
+        logger.warn(
+          { fileId: file.id, fileName: file.name },
+          "ファイルバッファが見つかりません",
+        );
+        continue;
       }
-      // ファイルバッファをRuntimeContextに設定
-      runtimeContext.set(FILE_BUFFERS_CONTEXT_KEY, fileBuffers);
 
-      // レビュー対象IDを設定
-      runtimeContext.set("reviewTargetId", reviewTarget.id.value);
-
-      // DB保存コールバックを設定
-      // チャンクごとのレビュー完了時に呼び出される
-      const onReviewResultSaved = createReviewResultSavedCallback(
-        this.reviewResultRepository,
-      );
-      runtimeContext.set("onReviewResultSaved", onReviewResultSaved);
-
-      // ドキュメントキャッシュ保存コールバックを設定
-      // ファイル処理完了時に呼び出される（リトライ用のキャッシュ保存）
-      const onExtractedFilesCached = async (
-        extractedFiles: ExtractedFile[],
-        targetId: string,
-      ): Promise<void> => {
-        for (const file of extractedFiles) {
-          let cachePath: string;
-          if (file.processMode === "text") {
-            // テキストモード: テキスト内容をファイルに保存
-            cachePath = await ReviewCacheHelper.saveTextCache(
-              targetId,
-              file.id,
-              file.textContent ?? "",
-            );
-          } else {
-            // 画像モード: 画像データ配列をディレクトリに保存
-            cachePath = await ReviewCacheHelper.saveImageCache(
-              targetId,
-              file.id,
-              file.imageData ?? [],
-            );
-          }
-
-          // ReviewDocumentCacheエンティティを作成してDBに保存
-          const cache = ReviewDocumentCache.create({
-            reviewTargetId: targetId,
-            fileName: file.name,
-            processMode: file.processMode,
-            cachePath,
-          });
-          await this.reviewDocumentCacheRepository.save(cache);
-        }
-      };
-      runtimeContext.set("onExtractedFilesCached", onExtractedFilesCached);
-
-      // チェックリスト項目をワークフロー入力形式に変換
-      const checkListItemsInput = checkListItems.map((item) => ({
-        id: item.id.value,
-        content: item.content.value,
-      }));
-
-      const result = await run.start({
-        inputData: {
-          files,
-          checkListItems: checkListItemsInput,
-          reviewSettings: reviewSettings
-            ? {
-                additionalInstructions:
-                  reviewSettings.additionalInstructions ?? null,
-                concurrentReviewItems: reviewSettings.concurrentReviewItems,
-                commentFormat: reviewSettings.commentFormat ?? null,
-                evaluationCriteria: reviewSettings.evaluationCriteria,
-              }
-            : undefined,
-          reviewType,
-        },
-        runtimeContext,
+      // 画像モードの場合は変換済み画像のみを使用、テキストモードの場合は元ファイルを使用
+      const processMode = file.processMode ?? "text";
+      fileCommands.push({
+        fileId: file.id,
+        fileName: file.name,
+        fileSize: file.size,
+        mimeType: file.type,
+        processMode,
+        // テキストモード: 元ファイルのバッファ、画像モード: 空バッファ
+        buffer: processMode === "text" ? bufferData.buffer : Buffer.alloc(0),
+        // 画像モードの場合のみ変換済み画像を設定
+        convertedImageBuffers:
+          processMode === "image" ? bufferData.convertedImageBuffers : undefined,
       });
-
-      // ワークフロー結果の検証
-      const checkResult = checkWorkflowResult(result);
-      if (checkResult.status !== "success") {
-        // ワークフロー失敗時はエラーステータスに更新
-        finalTarget = reviewingTarget.markAsError();
-        await this.reviewTargetRepository.save(finalTarget);
-        throw internalError({
-          expose: true,
-          messageCode: "REVIEW_EXECUTION_FAILED",
-          messageParams: {
-            detail:
-              checkResult.errorMessage || "ワークフロー実行に失敗しました",
-          },
-        });
-      }
-
-      // ワークフロー結果からレビュー結果を取得
-      if (result.status !== "success") {
-        finalTarget = reviewingTarget.markAsError();
-        await this.reviewTargetRepository.save(finalTarget);
-        throw internalError({
-          expose: true,
-          messageCode: "REVIEW_EXECUTION_FAILED",
-          messageParams: { detail: "ワークフロー結果の取得に失敗しました" },
-        });
-      }
-
-      const workflowResult = result.result as
-        | {
-            status: string;
-            reviewResults?: SingleReviewResult[];
-            errorMessage?: string;
-          }
-        | undefined;
-
-      if (
-        !workflowResult?.reviewResults ||
-        workflowResult.reviewResults.length === 0
-      ) {
-        finalTarget = reviewingTarget.markAsError();
-        await this.reviewTargetRepository.save(finalTarget);
-        throw internalError({
-          expose: true,
-          messageCode: "REVIEW_EXECUTION_FAILED",
-          messageParams: { detail: "レビュー結果が取得できませんでした" },
-        });
-      }
-
-      workflowResults = workflowResult.reviewResults;
-
-      // ワークフロー成功時は完了ステータスに更新
-      finalTarget = reviewingTarget.completeReview();
-      await this.reviewTargetRepository.save(finalTarget);
-    } catch (error) {
-      // AppErrorの場合はそのまま再スロー
-      if (error instanceof AppError) {
-        throw error;
-      }
-      // その他のエラーをnormalizeUnknownErrorで正規化
-      const normalizedError = normalizeUnknownError(error);
-      // エラー時はステータスを更新
-      try {
-        finalTarget = reviewingTarget.markAsError();
-        await this.reviewTargetRepository.save(finalTarget);
-      } catch {
-        // ステータス更新失敗は無視
-      }
-      throw normalizedError;
     }
 
-    // レビュー結果はチャンクごとにDB保存コールバックで保存済み
-    // ここでは最終結果を返すのみ
+    // チェックリスト項目をペイロード形式に変換
+    const checkListItemsForPayload = checkListItems.map((item) => ({
+      id: item.id.value,
+      content: item.content.value,
+    }));
+
+    // タスクペイロードを作成
+    const payload: ReviewTaskPayload = {
+      reviewTargetId: queuedTarget.id.value,
+      reviewSpaceId,
+      userId,
+      files,
+      checkListItems: checkListItemsForPayload,
+      reviewSettings: reviewSettings
+        ? {
+            additionalInstructions:
+              reviewSettings.additionalInstructions ?? null,
+            concurrentReviewItems: reviewSettings.concurrentReviewItems,
+            commentFormat: reviewSettings.commentFormat ?? null,
+            evaluationCriteria: reviewSettings.evaluationCriteria,
+          }
+        : undefined,
+      reviewType,
+      decryptedApiKey: decryptedApiKey ?? undefined,
+    };
+
+    // タスクタイプを決定
+    const taskType =
+      reviewType === "large"
+        ? AI_TASK_TYPE.LARGE_REVIEW
+        : AI_TASK_TYPE.SMALL_REVIEW;
+
+    // キューにタスクを登録
+    const enqueueResult = await this.aiTaskQueueService.enqueueTask({
+      taskType,
+      apiKey,
+      payload: payload as unknown as Record<string, unknown>,
+      files: fileCommands,
+    });
+
+    // ワーカーを開始（まだ開始されていない場合）
+    const bootstrap = getAiTaskBootstrap();
+    await bootstrap.startWorkersForApiKeyHash(enqueueResult.apiKeyHash);
+
+    logger.info(
+      {
+        reviewTargetId: queuedTarget.id.value,
+        taskId: enqueueResult.taskId,
+        queueLength: enqueueResult.queueLength,
+        reviewType,
+      },
+      "レビュータスクをキューに登録しました",
+    );
+
     return {
-      reviewTargetId: finalTarget.id.value,
-      status: finalTarget.status.value,
-      reviewResults: workflowResults.map((r) => ({
-        checkListItemContent: r.checkListItemContent,
-        evaluation: r.evaluation,
-        comment: r.comment,
-        errorMessage: r.errorMessage,
-      })),
+      reviewTargetId: queuedTarget.id.value,
+      status: queuedTarget.status.value,
+      queueLength: enqueueResult.queueLength,
     };
   }
 }

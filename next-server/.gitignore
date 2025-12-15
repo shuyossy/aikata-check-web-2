@@ -42,3 +42,7 @@ next-env.d.ts
 
 # 開発時のキャッシュディレクトリ
 app_cache/
+
+# キューのキャッシュディレクトリ
+app_queue/
+queue_files/

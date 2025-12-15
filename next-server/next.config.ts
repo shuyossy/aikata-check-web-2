@@ -3,6 +3,8 @@ import { fileUploadConfig } from "./lib/server/fileUploadConfig";
 
 const nextConfig: NextConfig = {
   /* config options here */
+  // Instrumentation hook（サーバ起動時の初期化処理）を有効化
+  instrumentationHook: true,
   experimental: {
     // Server Actionsのbody size limitを設定（デフォルトは1MB）
     serverActions: {

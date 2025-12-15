@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
 import { internalError, domainValidationError } from "@/lib/server/error";
 import { GenerateCheckListByAIService } from "@/application/checkListItem";
+import { AiTaskQueueService } from "@/application/aiTask";
 import {
   rawUploadFileMetaSchema,
   type RawUploadFileMeta,
@@ -14,8 +15,9 @@ import {
   ProjectRepository,
   ReviewSpaceRepository,
   UserRepository,
+  AiTaskRepository,
+  AiTaskFileMetadataRepository,
 } from "@/infrastructure/adapter/db";
-import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
 import { EmployeeId } from "@/domain/user";
 import { fileUploadConfig } from "@/lib/server/fileUploadConfig";
 
@@ -157,7 +159,7 @@ async function parseFormData(formData: FormData): Promise<{
 
 /**
  * AIでチェックリストを生成するサーバーアクション
- * FormDataでファイルを受け取り、バイナリデータとして処理する
+ * FormDataでファイルを受け取り、キューに登録して即座にレスポンスを返す
  */
 export const generateCheckListByAIAction = authenticatedAction
   .schema(z.instanceof(FormData))
@@ -170,7 +172,8 @@ export const generateCheckListByAIAction = authenticatedAction
     const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
-    const checkListItemRepository = new CheckListItemRepository();
+    const aiTaskRepository = new AiTaskRepository();
+    const aiTaskFileMetadataRepository = new AiTaskFileMetadataRepository();
 
     // employeeIdからuserIdを取得
     const user = await userRepository.findByEmployeeId(
@@ -181,11 +184,17 @@ export const generateCheckListByAIAction = authenticatedAction
       throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
     }
 
-    // サービスを実行
+    // キューサービスを作成
+    const aiTaskQueueService = new AiTaskQueueService(
+      aiTaskRepository,
+      aiTaskFileMetadataRepository,
+    );
+
+    // サービスを実行（キューに登録）
     const service = new GenerateCheckListByAIService(
-      checkListItemRepository,
       reviewSpaceRepository,
       projectRepository,
+      aiTaskQueueService,
     );
 
     const result = await service.execute({
@@ -196,8 +205,10 @@ export const generateCheckListByAIAction = authenticatedAction
       checklistRequirements,
     });
 
+    // キュー登録完了を返す（非同期処理なので生成結果は含まない）
     return {
-      generatedCount: result.generatedCount,
-      items: result.items,
+      reviewSpaceId: result.reviewSpaceId,
+      status: result.status,
+      queueLength: result.queueLength,
     };
   });

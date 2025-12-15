@@ -8,39 +8,25 @@ import type { IReviewResultRepository } from "@/application/shared/port/reposito
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import type { IProjectRepository, IReviewDocumentCacheRepository } from "@/application/shared/port/repository";
+import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
 import { CheckListItem } from "@/domain/checkListItem";
-import { ReviewTarget, ReviewTargetId, ReviewDocumentCache } from "@/domain/reviewTarget";
+import { ReviewTarget, ReviewDocumentCache } from "@/domain/reviewTarget";
 import { ReviewResult } from "@/domain/reviewResult";
+import { AI_TASK_TYPE } from "@/domain/aiTask";
 
-// ReviewCacheHelperのモック
-vi.mock("@/lib/server/reviewCacheHelper", () => ({
-  ReviewCacheHelper: {
-    loadTextCache: vi.fn().mockResolvedValue("キャッシュされたテキスト内容"),
-    loadImageCache: vi.fn().mockResolvedValue(["base64image1", "base64image2"]),
-  },
+// AiTaskQueueServiceのモック
+vi.mock("@/application/aiTask/AiTaskQueueService", () => ({
+  AiTaskQueueService: vi.fn(),
 }));
 
-// Mastraワークフローのモック
-const mockStart = vi.fn();
-const mockCreateRunAsync = vi.fn(() => ({
-  start: mockStart,
+// AiTaskBootstrapのモック
+vi.mock("@/application/aiTask", () => ({
+  getAiTaskBootstrap: vi.fn(() => ({
+    startWorkersForApiKeyHash: vi.fn(),
+  })),
 }));
-const mockGetWorkflow = vi.fn(() => ({
-  createRunAsync: mockCreateRunAsync,
-}));
-
-vi.mock("@/application/mastra", async (importOriginal) => {
-  const original =
-    await importOriginal<typeof import("@/application/mastra")>();
-  return {
-    ...original,
-    mastra: {
-      getWorkflow: () => mockGetWorkflow(),
-    },
-  };
-});
 
 describe("RetryReviewService", () => {
   // モックリポジトリ
@@ -98,6 +84,19 @@ describe("RetryReviewService", () => {
     deleteByReviewTargetId: vi.fn(),
   };
 
+  // モックAiTaskQueueService
+  const mockEnqueueTask = vi.fn();
+  const mockAiTaskQueueService = {
+    enqueueTask: mockEnqueueTask,
+    dequeueTask: vi.fn(),
+    completeTask: vi.fn(),
+    failTask: vi.fn(),
+    getQueueLength: vi.fn(),
+    findById: vi.fn(),
+    findDistinctApiKeyHashesInQueue: vi.fn(),
+    findProcessingTasks: vi.fn(),
+  };
+
   let service: RetryReviewService;
 
   // テスト用データ（有効なUUID v4形式）
@@ -109,6 +108,9 @@ describe("RetryReviewService", () => {
   const testCheckListItemId2 = "550e8400-e29b-41d4-a716-446655440006";
   const testCacheId1 = "550e8400-e29b-41d4-a716-446655440007";
   const testCacheId2 = "550e8400-e29b-41d4-a716-446655440008";
+  const testTaskId = "550e8400-e29b-41d4-a716-446655440009";
+  const testResultId1 = "550e8400-e29b-41d4-a716-446655440010";
+  const testResultId2 = "550e8400-e29b-41d4-a716-446655440011";
 
   const testProject = Project.reconstruct({
     id: testProjectId,
@@ -148,7 +150,7 @@ describe("RetryReviewService", () => {
 
   // リトライ可能なレビュー対象（completed状態）
   const createTestReviewTarget = () => {
-    const target = ReviewTarget.reconstruct({
+    return ReviewTarget.reconstruct({
       id: testReviewTargetId,
       reviewSpaceId: testReviewSpaceId,
       name: "テストレビュー対象",
@@ -158,7 +160,6 @@ describe("RetryReviewService", () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     });
-    return target;
   };
 
   // テスト用ドキュメントキャッシュ
@@ -183,59 +184,40 @@ describe("RetryReviewService", () => {
 
   // テスト用レビュー結果（成功と失敗の混合）
   const createTestReviewResults = () => [
-    ReviewResult.createSuccess({
+    ReviewResult.reconstruct({
+      id: testResultId1,
       reviewTargetId: testReviewTargetId,
       checkListItemContent: "チェック項目1",
       evaluation: "A",
       comment: "問題ありません",
+      errorMessage: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }),
-    ReviewResult.createError({
+    ReviewResult.reconstruct({
+      id: testResultId2,
       reviewTargetId: testReviewTargetId,
       checkListItemContent: "チェック項目2",
+      evaluation: null,
+      comment: null,
       errorMessage: "AI処理エラー",
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }),
   ];
 
-  // ワークフロー成功時のモックレスポンス
-  const createSuccessWorkflowResponse = () => ({
-    status: "success",
-    result: {
-      status: "success",
-      reviewResults: [
-        {
-          checkListItemContent: "チェック項目2",
-          evaluation: "B",
-          comment: "修正済み",
-          errorMessage: null,
-        },
-      ],
-    },
-  });
-
-  // 全項目リトライ時のワークフロー成功レスポンス
-  const createAllItemsRetryWorkflowResponse = () => ({
-    status: "success",
-    result: {
-      status: "success",
-      reviewResults: [
-        {
-          checkListItemContent: "チェック項目1",
-          evaluation: "A",
-          comment: "問題なし",
-          errorMessage: null,
-        },
-        {
-          checkListItemContent: "チェック項目2",
-          evaluation: "B",
-          comment: "修正済み",
-          errorMessage: null,
-        },
-      ],
-    },
-  });
-
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // 環境変数を設定
+    process.env.AI_API_KEY = "test-api-key";
+
+    // モックの設定
+    mockEnqueueTask.mockResolvedValue({
+      taskId: testTaskId,
+      queueLength: 1,
+    });
+
     service = new RetryReviewService(
       mockReviewTargetRepository,
       mockReviewResultRepository,
@@ -243,11 +225,12 @@ describe("RetryReviewService", () => {
       mockReviewSpaceRepository,
       mockProjectRepository,
       mockReviewDocumentCacheRepository,
+      mockAiTaskQueueService as unknown as AiTaskQueueService,
     );
   });
 
   describe("正常系", () => {
-    it("失敗項目のみリトライが成功する", async () => {
+    it("失敗項目のみリトライでキューに登録される", async () => {
       const testTarget = createTestReviewTarget();
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
@@ -258,7 +241,6 @@ describe("RetryReviewService", () => {
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
         createTestReviewResults(),
       );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -268,22 +250,32 @@ describe("RetryReviewService", () => {
 
       const result = await service.execute(command);
 
-      expect(result.status).toBe("completed");
+      expect(result.status).toBe("queued");
       expect(result.retryItems).toBe(1); // 失敗項目は1つ
-      expect(result.reviewResults).toHaveLength(1);
-      expect(result.reviewResults[0].evaluation).toBe("B");
+      expect(result.queueLength).toBe(1);
 
-      // 削除されたのは失敗項目のみであることを確認
-      expect(mockReviewResultRepository.delete).toHaveBeenCalledTimes(1);
+      // レビュー対象がqueuedステータスで保存される
+      expect(mockReviewTargetRepository.save).toHaveBeenCalledTimes(1);
 
-      // ワークフローがキャッシュモードで実行されることを確認
-      const startCall = mockStart.mock.calls[0][0];
-      const runtimeContext = startCall.runtimeContext;
-      expect(runtimeContext.get("useCachedDocuments")).toBe(true);
-      expect(runtimeContext.get("cachedDocuments")).toBeDefined();
+      // キューにタスクが登録される（リトライモードで）
+      expect(mockEnqueueTask).toHaveBeenCalledTimes(1);
+      expect(mockEnqueueTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskType: AI_TASK_TYPE.SMALL_REVIEW,
+          apiKey: "test-api-key",
+          files: [], // リトライ時はファイルは空
+        }),
+      );
+
+      // ペイロードにリトライフラグが含まれる
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.payload.isRetry).toBe(true);
+      expect(enqueueCall.payload.retryScope).toBe("failed");
+      expect(enqueueCall.payload.resultsToDeleteIds).toHaveLength(1);
+      expect(enqueueCall.payload.resultsToDeleteIds[0]).toBe(testResultId2);
     });
 
-    it("全項目リトライ（前回チェックリスト使用）が成功する", async () => {
+    it("全項目リトライ（前回チェックリスト使用）でキューに登録される", async () => {
       const testTarget = createTestReviewTarget();
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
@@ -294,7 +286,6 @@ describe("RetryReviewService", () => {
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
         createTestReviewResults(),
       );
-      mockStart.mockResolvedValue(createAllItemsRetryWorkflowResponse());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -305,18 +296,18 @@ describe("RetryReviewService", () => {
 
       const result = await service.execute(command);
 
-      expect(result.status).toBe("completed");
+      expect(result.status).toBe("queued");
       expect(result.retryItems).toBe(2); // 全項目
-      expect(result.reviewResults).toHaveLength(2);
-
-      // 既存の結果が全て削除されることを確認
-      expect(mockReviewResultRepository.delete).toHaveBeenCalledTimes(2);
 
       // 最新チェックリストは取得されないことを確認
       expect(mockCheckListItemRepository.findByReviewSpaceId).not.toHaveBeenCalled();
+
+      // ペイロードに全削除対象が含まれる
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.payload.resultsToDeleteIds).toHaveLength(2);
     });
 
-    it("全項目リトライ（最新チェックリスト使用）が成功する", async () => {
+    it("全項目リトライ（最新チェックリスト使用）でキューに登録される", async () => {
       const testTarget = createTestReviewTarget();
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
@@ -330,7 +321,6 @@ describe("RetryReviewService", () => {
       vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
         testCheckListItems,
       );
-      mockStart.mockResolvedValue(createAllItemsRetryWorkflowResponse());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -341,11 +331,15 @@ describe("RetryReviewService", () => {
 
       const result = await service.execute(command);
 
-      expect(result.status).toBe("completed");
+      expect(result.status).toBe("queued");
       expect(result.retryItems).toBe(2);
 
       // 最新のチェックリストが取得されることを確認
       expect(mockCheckListItemRepository.findByReviewSpaceId).toHaveBeenCalled();
+
+      // ペイロードのチェックリストが最新のものであることを確認
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.payload.checkListItems[0].id).toBe(testCheckListItemId1);
     });
 
     it("レビュー種別を変更してリトライできる", async () => {
@@ -359,7 +353,6 @@ describe("RetryReviewService", () => {
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
         createTestReviewResults(),
       );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -370,11 +363,18 @@ describe("RetryReviewService", () => {
 
       const result = await service.execute(command);
 
-      expect(result.status).toBe("completed");
+      expect(result.status).toBe("queued");
 
-      // ワークフロー入力にreviewTypeが反映されることを確認
-      const startCall = mockStart.mock.calls[0][0];
-      expect(startCall.inputData.reviewType).toBe("large");
+      // タスクタイプがLARGE_REVIEWになることを確認
+      expect(mockEnqueueTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          taskType: AI_TASK_TYPE.LARGE_REVIEW,
+        }),
+      );
+
+      // ペイロードのreviewTypeも変更されることを確認
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.payload.reviewType).toBe("large");
     });
 
     it("レビュー設定を変更してリトライできる", async () => {
@@ -388,7 +388,6 @@ describe("RetryReviewService", () => {
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
         createTestReviewResults(),
       );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -402,12 +401,12 @@ describe("RetryReviewService", () => {
 
       const result = await service.execute(command);
 
-      expect(result.status).toBe("completed");
+      expect(result.status).toBe("queued");
 
-      // ワークフロー入力にreviewSettingsが反映されることを確認
-      const startCall = mockStart.mock.calls[0][0];
-      expect(startCall.inputData.reviewSettings?.additionalInstructions).toBe("セキュリティに注意");
-      expect(startCall.inputData.reviewSettings?.concurrentReviewItems).toBe(3);
+      // ペイロードにレビュー設定が反映されることを確認
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.payload.reviewSettings?.additionalInstructions).toBe("セキュリティに注意");
+      expect(enqueueCall.payload.reviewSettings?.concurrentReviewItems).toBe(3);
     });
   });
 
@@ -552,17 +551,25 @@ describe("RetryReviewService", () => {
       const testTarget = createTestReviewTarget();
       // 失敗項目がない（全て成功）
       const successResults = [
-        ReviewResult.createSuccess({
+        ReviewResult.reconstruct({
+          id: testResultId1,
           reviewTargetId: testReviewTargetId,
           checkListItemContent: "チェック項目1",
           evaluation: "A",
           comment: "問題ありません",
+          errorMessage: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
-        ReviewResult.createSuccess({
+        ReviewResult.reconstruct({
+          id: testResultId2,
           reviewTargetId: testReviewTargetId,
           checkListItemContent: "チェック項目2",
           evaluation: "A",
           comment: "問題ありません",
+          errorMessage: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
         }),
       ];
 
@@ -584,10 +591,11 @@ describe("RetryReviewService", () => {
         messageCode: "RETRY_NO_ITEMS",
       });
     });
-  });
 
-  describe("異常系 - ワークフロー失敗", () => {
-    it("ワークフローが失敗した場合、ステータスがerrorに更新される", async () => {
+    it("APIキーが設定されていない場合エラーになる", async () => {
+      // 環境変数をクリア
+      delete process.env.AI_API_KEY;
+
       const testTarget = createTestReviewTarget();
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
@@ -598,13 +606,6 @@ describe("RetryReviewService", () => {
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
         createTestReviewResults(),
       );
-      mockStart.mockResolvedValue({
-        status: "failed",
-        result: {
-          status: "failed",
-          errorMessage: "AI処理に失敗しました",
-        },
-      });
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -613,43 +614,23 @@ describe("RetryReviewService", () => {
       };
 
       await expect(service.execute(command)).rejects.toMatchObject({
-        messageCode: "REVIEW_EXECUTION_FAILED",
+        messageCode: "AI_TASK_NO_API_KEY",
       });
-
-      // ステータスがerrorに更新されることを確認
-      const saveCalls = vi.mocked(mockReviewTargetRepository.save).mock.calls;
-      const lastSave = saveCalls[saveCalls.length - 1][0] as ReviewTarget;
-      expect(lastSave.status.value).toBe("error");
     });
   });
 
-  describe("キャッシュ読み込み", () => {
-    it("テキストモードのキャッシュが正しく読み込まれる", async () => {
-      const { ReviewCacheHelper } = await import("@/lib/server/reviewCacheHelper");
-
+  describe("キュー登録", () => {
+    it("ペイロードにリトライ情報が含まれる", async () => {
       const testTarget = createTestReviewTarget();
-      // テキストモードのキャッシュのみ
-      const textOnlyCache = [
-        ReviewDocumentCache.reconstruct({
-          id: testCacheId1,
-          reviewTargetId: testReviewTargetId,
-          fileName: "test.txt",
-          processMode: "text",
-          cachePath: "/cache/path/test.txt",
-          createdAt: new Date(),
-        }),
-      ];
-
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
       vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        textOnlyCache,
+        createTestDocumentCaches(),
       );
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
         createTestReviewResults(),
       );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -659,47 +640,44 @@ describe("RetryReviewService", () => {
 
       await service.execute(command);
 
-      // ReviewCacheHelper.loadTextCacheが呼ばれることを確認
-      expect(ReviewCacheHelper.loadTextCache).toHaveBeenCalledWith("/cache/path/test.txt");
+      // ペイロードを確認
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.payload).toMatchObject({
+        reviewTargetId: testReviewTargetId,
+        reviewSpaceId: testReviewSpaceId,
+        userId: testUserId,
+        files: [], // リトライ時は空
+        isRetry: true,
+        retryScope: "failed",
+      });
+      expect(enqueueCall.payload.checkListItems).toHaveLength(1);
+      expect(enqueueCall.payload.checkListItems[0].content).toBe("チェック項目2"); // 失敗項目のみ
+      expect(enqueueCall.payload.resultsToDeleteIds).toHaveLength(1);
     });
 
-    it("画像モードのキャッシュが正しく読み込まれる", async () => {
-      const { ReviewCacheHelper } = await import("@/lib/server/reviewCacheHelper");
-
+    it("ファイルは登録されない（リトライ時はキャッシュを使用）", async () => {
       const testTarget = createTestReviewTarget();
-      // 画像モードのキャッシュのみ
-      const imageOnlyCache = [
-        ReviewDocumentCache.reconstruct({
-          id: testCacheId2,
-          reviewTargetId: testReviewTargetId,
-          fileName: "test.pdf",
-          processMode: "image",
-          cachePath: "/cache/path/images",
-          createdAt: new Date(),
-        }),
-      ];
-
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
       vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        imageOnlyCache,
+        createTestDocumentCaches(),
       );
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
         createTestReviewResults(),
       );
-      mockStart.mockResolvedValue(createSuccessWorkflowResponse());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
-        retryScope: "failed",
+        retryScope: "all",
       };
 
       await service.execute(command);
 
-      // ReviewCacheHelper.loadImageCacheが呼ばれることを確認
-      expect(ReviewCacheHelper.loadImageCache).toHaveBeenCalledWith("/cache/path/images");
+      // filesが空であることを確認
+      const enqueueCall = mockEnqueueTask.mock.calls[0][0];
+      expect(enqueueCall.files).toEqual([]);
     });
   });
 });

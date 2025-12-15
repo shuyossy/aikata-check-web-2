@@ -2,16 +2,23 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { POLLING_INTERVALS } from "@/lib/client";
 
 /**
  * ポーリング間隔（ミリ秒）
+ * @deprecated POLLING_INTERVALS.TASK_STATUS を使用してください
  */
-export const POLLING_INTERVAL = 10000;
+export const POLLING_INTERVAL = POLLING_INTERVALS.TASK_STATUS;
 
 /**
  * レビュー実行中のステータス
  */
 export const REVIEWING_STATUS = "reviewing";
+
+/**
+ * キュー待機中のステータス
+ */
+export const QUEUED_STATUS = "queued";
 
 /**
  * レビュー結果ポーリングフックの引数
@@ -22,8 +29,15 @@ interface UseReviewResultsPollingProps {
 }
 
 /**
+ * ポーリングが必要なステータスか判定
+ */
+function shouldPollForStatus(status: string): boolean {
+  return status === REVIEWING_STATUS || status === QUEUED_STATUS;
+}
+
+/**
  * レビュー結果ポーリングフック
- * レビュー実行中のステータスの場合、10秒間隔でrouter.refresh()を呼び出し
+ * レビュー実行中またはキュー待機中のステータスの場合、10秒間隔でrouter.refresh()を呼び出し
  * RSCを再実行して最新のレビュー結果を取得する
  */
 export function useReviewResultsPolling({
@@ -34,8 +48,10 @@ export function useReviewResultsPolling({
 
   // ポーリングのセットアップ・クリーンアップ
   useEffect(() => {
-    // レビュー実行中でない場合はポーリングしない
-    if (currentStatus !== REVIEWING_STATUS) {
+    const shouldPoll = shouldPollForStatus(currentStatus);
+
+    // ポーリングが不要な場合は停止
+    if (!shouldPoll) {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
@@ -45,7 +61,12 @@ export function useReviewResultsPolling({
 
     // ポーリング開始
     intervalRef.current = setInterval(() => {
-      router.refresh();
+      try {
+        router.refresh();
+      } catch (error) {
+        // ネットワークエラー等が発生してもポーリングを継続
+        console.error("Polling refresh failed:", error);
+      }
     }, POLLING_INTERVAL);
 
     // クリーンアップ
@@ -57,6 +78,6 @@ export function useReviewResultsPolling({
     };
   }, [currentStatus, router]);
 
-  // isPollingはステータスがreviewingかどうかで判定
-  return { isPolling: currentStatus === REVIEWING_STATUS };
+  // isPollingはポーリングが必要なステータスかどうかで判定
+  return { isPolling: shouldPollForStatus(currentStatus) };
 }

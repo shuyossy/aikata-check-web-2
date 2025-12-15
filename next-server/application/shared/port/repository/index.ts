@@ -13,3 +13,8 @@ export type {
 } from "./IReviewTargetRepository";
 export type { IReviewResultRepository } from "./IReviewResultRepository";
 export type { IReviewDocumentCacheRepository } from "./IReviewDocumentCacheRepository";
+export type {
+  IAiTaskRepository,
+  FindAiTasksOptions,
+} from "./IAiTaskRepository";
+export type { IAiTaskFileMetadataRepository } from "./IAiTaskFileMetadataRepository";

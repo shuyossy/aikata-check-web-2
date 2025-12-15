@@ -83,6 +83,16 @@ function getStatusBannerConfig(status: string) {
         title: "準備中",
         message: "レビュー実行を待機しています。",
       };
+    case "queued":
+      return {
+        icon: Clock,
+        bgColor: "bg-yellow-50",
+        borderColor: "border-yellow-500",
+        textColor: "text-yellow-800",
+        iconColor: "text-yellow-500",
+        title: "待機中",
+        message: "AIレビュータスクが実行待ちリストに登録されました。順番が来るまでお待ちください。",
+      };
     case "reviewing":
       return {
         icon: Loader2,
@@ -161,8 +171,9 @@ export function ReviewResultsClient({
     currentStatus: reviewTarget.status,
   });
 
-  // アクションボタンを無効にすべきか
-  const isActionsDisabled = reviewTarget.status === "reviewing";
+  // アクションボタンを無効にすべきか（キュー待機中またはレビュー中は無効化）
+  const isActionsDisabled =
+    reviewTarget.status === "reviewing" || reviewTarget.status === "queued";
 
   // ステータスバナー設定
   const bannerConfig = getStatusBannerConfig(reviewTarget.status);

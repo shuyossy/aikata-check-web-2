@@ -55,4 +55,14 @@ export interface IReviewSpaceRepository {
    * @param id レビュースペースID
    */
   delete(id: ReviewSpaceId): Promise<void>;
+
+  /**
+   * チェックリスト生成エラーを更新
+   * @param id レビュースペースID
+   * @param errorMessage エラーメッセージ（nullでクリア）
+   */
+  updateChecklistGenerationError(
+    id: ReviewSpaceId,
+    errorMessage: string | null,
+  ): Promise<void>;
 }

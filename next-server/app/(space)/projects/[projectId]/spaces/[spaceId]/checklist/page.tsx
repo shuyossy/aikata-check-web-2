@@ -3,13 +3,17 @@ import { redirect, notFound } from "next/navigation";
 import { authOptions } from "@/auth";
 import { GetProjectService } from "@/application/project";
 import { GetReviewSpaceService } from "@/application/reviewSpace";
-import { ListReviewSpaceCheckListItemsService } from "@/application/checkListItem";
+import {
+  ListReviewSpaceCheckListItemsService,
+  GetChecklistGenerationTaskStatusService,
+} from "@/application/checkListItem";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
   UserRepository,
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
+import { AiTaskRepository } from "@/infrastructure/adapter/db/drizzle/repository/AiTaskRepository";
 import { EmployeeId } from "@/domain/user";
 import { CheckListEditClient } from "./components/CheckListEditClient";
 
@@ -37,6 +41,7 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
   const projectRepository = new ProjectRepository();
   const reviewSpaceRepository = new ReviewSpaceRepository();
   const checkListItemRepository = new CheckListItemRepository();
+  const aiTaskRepository = new AiTaskRepository();
 
   // ユーザー情報を取得
   const user = await userRepository.findByEmployeeId(
@@ -89,6 +94,18 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
     limit: 1000,
   });
 
+  // チェックリスト生成タスクの状態を取得
+  const getTaskStatusService = new GetChecklistGenerationTaskStatusService(
+    aiTaskRepository,
+    reviewSpaceRepository,
+    projectRepository,
+  );
+
+  const taskStatus = await getTaskStatusService.execute({
+    reviewSpaceId: spaceId,
+    userId: user.id.value,
+  });
+
   return (
     <CheckListEditClient
       projectId={projectId}
@@ -97,6 +114,7 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
       spaceName={reviewSpace.name}
       initialItems={initialData.items}
       initialTotal={initialData.total}
+      taskStatus={taskStatus}
     />
   );
 }

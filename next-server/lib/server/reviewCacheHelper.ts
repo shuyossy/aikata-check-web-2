@@ -74,7 +74,9 @@ export class ReviewCacheHelper {
     for (let i = 0; i < imageDataArray.length; i++) {
       const imageData = imageDataArray[i];
       const imagePath = path.join(cacheDir, `page_${i + 1}.png`);
-      const buffer = Buffer.from(imageData, "base64");
+      // Data URLプレフィックス（data:image/xxx;base64,）を削除してからデコード
+      const base64Data = imageData.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
       await fs.writeFile(imagePath, buffer);
     }
 
@@ -116,7 +118,8 @@ export class ReviewCacheHelper {
     for (const file of pngFiles) {
       const filePath = path.join(cacheDir, file);
       const buffer = await fs.readFile(filePath);
-      imageDataArray.push(buffer.toString("base64"));
+      // Data URLプレフィックスを付加して返す（AI APIがData URL形式を期待するため）
+      imageDataArray.push(`data:image/png;base64,${buffer.toString("base64")}`);
     }
 
     logger.debug(

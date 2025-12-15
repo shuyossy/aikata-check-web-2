@@ -31,7 +31,7 @@ Guidelines for topic extraction:
 - Each topic should be independent and cover a specific area
 - Provide a clear, concise title for each topic
 - Focus on topics that would benefit from separate review criteria
-- Aim for 3-8 topics per document (adjust based on document complexity)
+- Aim for 1-5 topics per document (adjust based on document complexity)
 - Topics should be specific enough to generate targeted checklist items
 
 ${
@@ -86,7 +86,7 @@ Please ensure that the checklist items you create align with these requirements 
 }## Output Style
 - Write in **the same language as the topic description**. If unclear, default to **Japanese**.
 - Explain the reason why the checklist items based on the document are valuable.
-- Provide **5–15 items** unless the topic naturally yields fewer high-quality items.
+- Provide **1-5 items** unless the topic naturally yields fewer high-quality items.
 - **Do NOT add unnecessary prefixes or suffixes** to checklist items
 
 ## Quality Requirements

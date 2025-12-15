@@ -4,6 +4,7 @@ import {
   useReviewResultsPolling,
   POLLING_INTERVAL,
   REVIEWING_STATUS,
+  QUEUED_STATUS,
 } from "../useReviewResultsPolling";
 
 // next/navigation のモック
@@ -32,6 +33,10 @@ describe("useReviewResultsPolling", () => {
     it("レビュー実行中ステータスがreviewingである", () => {
       expect(REVIEWING_STATUS).toBe("reviewing");
     });
+
+    it("キュー待機中ステータスがqueuedである", () => {
+      expect(QUEUED_STATUS).toBe("queued");
+    });
   });
 
   describe("正常系", () => {
@@ -39,6 +44,14 @@ describe("useReviewResultsPolling", () => {
       it('status === "reviewing"の場合、isPollingがtrueになる', () => {
         const { result } = renderHook(() =>
           useReviewResultsPolling({ currentStatus: "reviewing" })
+        );
+
+        expect(result.current.isPolling).toBe(true);
+      });
+
+      it('status === "queued"の場合、isPollingがtrueになる', () => {
+        const { result } = renderHook(() =>
+          useReviewResultsPolling({ currentStatus: "queued" })
         );
 
         expect(result.current.isPolling).toBe(true);
@@ -97,7 +110,28 @@ describe("useReviewResultsPolling", () => {
         expect(mockRefresh).toHaveBeenCalledTimes(3);
       });
 
-      it('status !== "reviewing"の場合、router.refresh()は呼ばれない', async () => {
+      it('status === "queued"の場合、10秒間隔でrouter.refresh()が呼ばれる', async () => {
+        renderHook(() =>
+          useReviewResultsPolling({ currentStatus: "queued" })
+        );
+
+        // 初期状態では呼ばれていない
+        expect(mockRefresh).not.toHaveBeenCalled();
+
+        // 10秒経過
+        await act(async () => {
+          vi.advanceTimersByTime(POLLING_INTERVAL);
+        });
+        expect(mockRefresh).toHaveBeenCalledTimes(1);
+
+        // さらに10秒経過（合計20秒）
+        await act(async () => {
+          vi.advanceTimersByTime(POLLING_INTERVAL);
+        });
+        expect(mockRefresh).toHaveBeenCalledTimes(2);
+      });
+
+      it('status !== "reviewing" && status !== "queued"の場合、router.refresh()は呼ばれない', async () => {
         renderHook(() =>
           useReviewResultsPolling({ currentStatus: "completed" })
         );

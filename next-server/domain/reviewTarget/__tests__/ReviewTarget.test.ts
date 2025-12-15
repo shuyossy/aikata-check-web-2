@@ -112,7 +112,7 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const reviewingTarget = reviewTarget.startReviewing();
+        const reviewingTarget = reviewTarget.toQueued().startReviewing();
 
         expect(reviewingTarget.status.isReviewing()).toBe(true);
         // 新しいインスタンスが返される（不変性）
@@ -129,7 +129,7 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const reviewingTarget = reviewTarget.startReviewing();
+        const reviewingTarget = reviewTarget.toQueued().startReviewing();
         const completedTarget = reviewingTarget.completeReview();
 
         expect(completedTarget.status.isCompleted()).toBe(true);
@@ -154,7 +154,7 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const reviewingTarget = reviewTarget.startReviewing();
+        const reviewingTarget = reviewTarget.toQueued().startReviewing();
         const errorTarget = reviewingTarget.markAsError();
 
         expect(errorTarget.status.isError()).toBe(true);
@@ -177,7 +177,7 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const reviewingTarget = reviewTarget.startReviewing();
+        const reviewingTarget = reviewTarget.toQueued().startReviewing();
 
         expect(reviewingTarget.canDelete()).toBe(false);
       });
@@ -189,6 +189,7 @@ describe("ReviewTarget", () => {
         });
 
         const completedTarget = reviewTarget
+          .toQueued()
           .startReviewing()
           .completeReview();
 
@@ -223,7 +224,7 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const reviewingTarget = reviewTarget.startReviewing();
+        const reviewingTarget = reviewTarget.toQueued().startReviewing();
 
         expect(reviewingTarget.canRetry()).toBe(false);
       });
@@ -234,7 +235,7 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const completedTarget = reviewTarget.startReviewing().completeReview();
+        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
 
         expect(completedTarget.canRetry()).toBe(true);
       });
@@ -257,7 +258,7 @@ describe("ReviewTarget", () => {
           reviewType: "api",
         });
 
-        const completedTarget = reviewTarget.startReviewing().completeReview();
+        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
 
         expect(completedTarget.canRetry()).toBe(false);
       });
@@ -281,7 +282,7 @@ describe("ReviewTarget", () => {
           reviewType: "small",
         });
 
-        const completedTarget = reviewTarget.startReviewing().completeReview();
+        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
 
         expect(completedTarget.canRetry()).toBe(true);
       });
@@ -293,28 +294,28 @@ describe("ReviewTarget", () => {
           reviewType: "large",
         });
 
-        const completedTarget = reviewTarget.startReviewing().completeReview();
+        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
 
         expect(completedTarget.canRetry()).toBe(true);
       });
     });
 
     describe("prepareForRetry", () => {
-      it("completed状態からreviewingに遷移できる", () => {
+      it("completed状態からqueuedに遷移できる", () => {
         const reviewTarget = ReviewTarget.create({
           reviewSpaceId: testReviewSpaceId,
           name: "テストレビュー対象",
         });
 
-        const completedTarget = reviewTarget.startReviewing().completeReview();
+        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
         const retryTarget = completedTarget.prepareForRetry();
 
-        expect(retryTarget.status.isReviewing()).toBe(true);
+        expect(retryTarget.status.isQueued()).toBe(true);
         // 不変性の確認
         expect(completedTarget.status.isCompleted()).toBe(true);
       });
 
-      it("error状態からreviewingに遷移できる", () => {
+      it("error状態からqueuedに遷移できる", () => {
         const reviewTarget = ReviewTarget.create({
           reviewSpaceId: testReviewSpaceId,
           name: "テストレビュー対象",
@@ -323,7 +324,7 @@ describe("ReviewTarget", () => {
         const errorTarget = reviewTarget.markAsError();
         const retryTarget = errorTarget.prepareForRetry();
 
-        expect(retryTarget.status.isReviewing()).toBe(true);
+        expect(retryTarget.status.isQueued()).toBe(true);
         // 不変性の確認
         expect(errorTarget.status.isError()).toBe(true);
       });
@@ -488,7 +489,7 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const reviewingTarget = reviewTarget.startReviewing();
+        const reviewingTarget = reviewTarget.toQueued().startReviewing();
 
         expect(() => reviewingTarget.startReviewing()).toThrow();
       });
@@ -509,6 +510,7 @@ describe("ReviewTarget", () => {
         });
 
         const completedTarget = reviewTarget
+          .toQueued()
           .startReviewing()
           .completeReview();
 

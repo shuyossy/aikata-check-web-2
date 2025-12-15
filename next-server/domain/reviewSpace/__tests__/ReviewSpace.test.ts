@@ -308,6 +308,133 @@ describe("ReviewSpace", () => {
         expect(dto.updatedAt).toBe(reviewSpace.updatedAt.toISOString());
       });
     });
+
+    describe("checklistGenerationError", () => {
+      it("新規作成時はchecklistGenerationErrorがnull", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "テスト",
+        });
+
+        expect(reviewSpace.checklistGenerationError).toBeNull();
+      });
+
+      it("setChecklistGenerationErrorでエラーメッセージを設定できる", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "テスト",
+        });
+
+        const updated = reviewSpace.setChecklistGenerationError("エラー発生しました");
+
+        expect(updated.checklistGenerationError).toBe("エラー発生しました");
+      });
+
+      it("clearChecklistGenerationErrorでエラーメッセージをクリアできる", () => {
+        const reviewSpace = ReviewSpace.reconstruct({
+          id: "223e4567-e89b-12d3-a456-426614174001",
+          projectId: validProjectId,
+          name: "テスト",
+          description: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          checklistGenerationError: "既存のエラー",
+        });
+
+        const cleared = reviewSpace.clearChecklistGenerationError();
+
+        expect(cleared.checklistGenerationError).toBeNull();
+      });
+
+      it("元のインスタンスは変更されない（不変性）", () => {
+        const reviewSpace = ReviewSpace.create({
+          projectId: validProjectId,
+          name: "テスト",
+        });
+
+        reviewSpace.setChecklistGenerationError("エラー");
+
+        expect(reviewSpace.checklistGenerationError).toBeNull();
+      });
+
+      it("reconstruct時にchecklistGenerationErrorが復元される", () => {
+        const reviewSpace = ReviewSpace.reconstruct({
+          id: "223e4567-e89b-12d3-a456-426614174001",
+          projectId: validProjectId,
+          name: "テスト",
+          description: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          checklistGenerationError: "保存されたエラー",
+        });
+
+        expect(reviewSpace.checklistGenerationError).toBe("保存されたエラー");
+      });
+
+      it("toDtoにchecklistGenerationErrorが含まれる", () => {
+        const reviewSpace = ReviewSpace.reconstruct({
+          id: "223e4567-e89b-12d3-a456-426614174001",
+          projectId: validProjectId,
+          name: "テスト",
+          description: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          checklistGenerationError: "DTOエラー",
+        });
+
+        const dto = reviewSpace.toDto();
+
+        expect(dto.checklistGenerationError).toBe("DTOエラー");
+      });
+
+      it("updateName後もchecklistGenerationErrorが保持される", () => {
+        const reviewSpace = ReviewSpace.reconstruct({
+          id: "223e4567-e89b-12d3-a456-426614174001",
+          projectId: validProjectId,
+          name: "テスト",
+          description: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          checklistGenerationError: "保持されるエラー",
+        });
+
+        const updated = reviewSpace.updateName("新しい名前");
+
+        expect(updated.checklistGenerationError).toBe("保持されるエラー");
+      });
+
+      it("updateDescription後もchecklistGenerationErrorが保持される", () => {
+        const reviewSpace = ReviewSpace.reconstruct({
+          id: "223e4567-e89b-12d3-a456-426614174001",
+          projectId: validProjectId,
+          name: "テスト",
+          description: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          checklistGenerationError: "保持されるエラー",
+        });
+
+        const updated = reviewSpace.updateDescription("新しい説明");
+
+        expect(updated.checklistGenerationError).toBe("保持されるエラー");
+      });
+
+      it("updateDefaultReviewSettings後もchecklistGenerationErrorが保持される", () => {
+        const reviewSpace = ReviewSpace.reconstruct({
+          id: "223e4567-e89b-12d3-a456-426614174001",
+          projectId: validProjectId,
+          name: "テスト",
+          description: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          checklistGenerationError: "保持されるエラー",
+        });
+
+        const updated = reviewSpace.updateDefaultReviewSettings(validReviewSettings);
+
+        expect(updated.checklistGenerationError).toBe("保持されるエラー");
+      });
+    });
   });
 
   describe("異常系", () => {

@@ -23,6 +23,13 @@ describe("ReviewTargetStatus", () => {
         expect(status.isPending()).toBe(true);
       });
 
+      it("queuedステータスを復元できる", () => {
+        const status = ReviewTargetStatus.reconstruct("queued");
+
+        expect(status.value).toBe(REVIEW_TARGET_STATUS.QUEUED);
+        expect(status.isQueued()).toBe(true);
+      });
+
       it("reviewingステータスを復元できる", () => {
         const status = ReviewTargetStatus.reconstruct("reviewing");
 
@@ -46,7 +53,21 @@ describe("ReviewTargetStatus", () => {
     });
 
     describe("状態遷移", () => {
-      it("pending → reviewing に遷移できる", () => {
+      it("pending → queued に遷移できる", () => {
+        const pending = ReviewTargetStatus.create();
+        const queued = pending.toQueued();
+
+        expect(queued.isQueued()).toBe(true);
+      });
+
+      it("queued → reviewing に遷移できる", () => {
+        const queued = ReviewTargetStatus.reconstruct("queued");
+        const reviewing = queued.toReviewing();
+
+        expect(reviewing.isReviewing()).toBe(true);
+      });
+
+      it("pending → reviewing に遷移できる（API呼び出しレビュー用）", () => {
         const pending = ReviewTargetStatus.create();
         const reviewing = pending.toReviewing();
 
@@ -67,6 +88,13 @@ describe("ReviewTargetStatus", () => {
         expect(error.isError()).toBe(true);
       });
 
+      it("queued → error に遷移できる", () => {
+        const queued = ReviewTargetStatus.reconstruct("queued");
+        const error = queued.toError();
+
+        expect(error.isError()).toBe(true);
+      });
+
       it("reviewing → error に遷移できる", () => {
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const error = reviewing.toError();
@@ -74,41 +102,59 @@ describe("ReviewTargetStatus", () => {
         expect(error.isError()).toBe(true);
       });
 
-      it("completed → reviewing に遷移できる（リトライ）", () => {
+      it("completed → queued に遷移できる（リトライ）", () => {
         const completed = ReviewTargetStatus.reconstruct("completed");
-        const reviewing = completed.toReviewing();
+        const queued = completed.toQueued();
 
-        expect(reviewing.isReviewing()).toBe(true);
+        expect(queued.isQueued()).toBe(true);
       });
 
-      it("error → reviewing に遷移できる（リトライ）", () => {
+      it("error → queued に遷移できる（リトライ）", () => {
         const error = ReviewTargetStatus.reconstruct("error");
-        const reviewing = error.toReviewing();
+        const queued = error.toQueued();
 
-        expect(reviewing.isReviewing()).toBe(true);
+        expect(queued.isQueued()).toBe(true);
       });
     });
 
     describe("判定メソッド", () => {
       it("isPending()はpending状態のときのみtrueを返す", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
         const error = ReviewTargetStatus.reconstruct("error");
 
         expect(pending.isPending()).toBe(true);
+        expect(queued.isPending()).toBe(false);
         expect(reviewing.isPending()).toBe(false);
         expect(completed.isPending()).toBe(false);
         expect(error.isPending()).toBe(false);
       });
 
+      it("isQueued()はqueued状態のときのみtrueを返す", () => {
+        const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
+        const reviewing = ReviewTargetStatus.reconstruct("reviewing");
+        const completed = ReviewTargetStatus.reconstruct("completed");
+        const error = ReviewTargetStatus.reconstruct("error");
+
+        expect(pending.isQueued()).toBe(false);
+        expect(queued.isQueued()).toBe(true);
+        expect(reviewing.isQueued()).toBe(false);
+        expect(completed.isQueued()).toBe(false);
+        expect(error.isQueued()).toBe(false);
+      });
+
       it("isReviewing()はreviewing状態のときのみtrueを返す", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
         const error = ReviewTargetStatus.reconstruct("error");
 
         expect(pending.isReviewing()).toBe(false);
+        expect(queued.isReviewing()).toBe(false);
         expect(reviewing.isReviewing()).toBe(true);
         expect(completed.isReviewing()).toBe(false);
         expect(error.isReviewing()).toBe(false);
@@ -116,11 +162,13 @@ describe("ReviewTargetStatus", () => {
 
       it("isCompleted()はcompleted状態のときのみtrueを返す", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
         const error = ReviewTargetStatus.reconstruct("error");
 
         expect(pending.isCompleted()).toBe(false);
+        expect(queued.isCompleted()).toBe(false);
         expect(reviewing.isCompleted()).toBe(false);
         expect(completed.isCompleted()).toBe(true);
         expect(error.isCompleted()).toBe(false);
@@ -128,11 +176,13 @@ describe("ReviewTargetStatus", () => {
 
       it("isError()はerror状態のときのみtrueを返す", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
         const error = ReviewTargetStatus.reconstruct("error");
 
         expect(pending.isError()).toBe(false);
+        expect(queued.isError()).toBe(false);
         expect(reviewing.isError()).toBe(false);
         expect(completed.isError()).toBe(false);
         expect(error.isError()).toBe(true);
@@ -140,37 +190,57 @@ describe("ReviewTargetStatus", () => {
     });
 
     describe("遷移可能判定メソッド", () => {
-      it("canTransitionToReviewing()はpending/completed/error状態のときtrueを返す（リトライ対応）", () => {
+      it("canTransitionToQueued()はpending/completed/error状態のときtrueを返す（リトライ対応）", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
+        const reviewing = ReviewTargetStatus.reconstruct("reviewing");
+        const completed = ReviewTargetStatus.reconstruct("completed");
+        const error = ReviewTargetStatus.reconstruct("error");
+
+        expect(pending.canTransitionToQueued()).toBe(true);
+        expect(queued.canTransitionToQueued()).toBe(false);
+        expect(reviewing.canTransitionToQueued()).toBe(false);
+        expect(completed.canTransitionToQueued()).toBe(true);
+        expect(error.canTransitionToQueued()).toBe(true);
+      });
+
+      it("canTransitionToReviewing()はpending/queued状態のときtrueを返す（API呼び出しレビュー、キュー経由レビュー）", () => {
+        const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
         const error = ReviewTargetStatus.reconstruct("error");
 
         expect(pending.canTransitionToReviewing()).toBe(true);
+        expect(queued.canTransitionToReviewing()).toBe(true);
         expect(reviewing.canTransitionToReviewing()).toBe(false);
-        expect(completed.canTransitionToReviewing()).toBe(true);
-        expect(error.canTransitionToReviewing()).toBe(true);
+        expect(completed.canTransitionToReviewing()).toBe(false);
+        expect(error.canTransitionToReviewing()).toBe(false);
       });
 
       it("canTransitionToCompleted()はreviewing状態のときのみtrueを返す", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
         const error = ReviewTargetStatus.reconstruct("error");
 
         expect(pending.canTransitionToCompleted()).toBe(false);
+        expect(queued.canTransitionToCompleted()).toBe(false);
         expect(reviewing.canTransitionToCompleted()).toBe(true);
         expect(completed.canTransitionToCompleted()).toBe(false);
         expect(error.canTransitionToCompleted()).toBe(false);
       });
 
-      it("canTransitionToError()はpendingまたはreviewing状態のときtrueを返す", () => {
+      it("canTransitionToError()はpending/queued/reviewing状態のときtrueを返す", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
         const error = ReviewTargetStatus.reconstruct("error");
 
         expect(pending.canTransitionToError()).toBe(true);
+        expect(queued.canTransitionToError()).toBe(true);
         expect(reviewing.canTransitionToError()).toBe(true);
         expect(completed.canTransitionToError()).toBe(false);
         expect(error.canTransitionToError()).toBe(false);
@@ -196,11 +266,13 @@ describe("ReviewTargetStatus", () => {
     describe("toString", () => {
       it("ステータス値を文字列で返す", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
+        const queued = ReviewTargetStatus.reconstruct("queued");
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
         const completed = ReviewTargetStatus.reconstruct("completed");
         const error = ReviewTargetStatus.reconstruct("error");
 
         expect(pending.toString()).toBe("pending");
+        expect(queued.toString()).toBe("queued");
         expect(reviewing.toString()).toBe("reviewing");
         expect(completed.toString()).toBe("completed");
         expect(error.toString()).toBe("error");
@@ -220,18 +292,49 @@ describe("ReviewTargetStatus", () => {
     });
 
     describe("不正な状態遷移", () => {
+      // toQueued()の不正遷移
+      it("queued状態からtoQueued()でエラーをスローする", () => {
+        const queued = ReviewTargetStatus.reconstruct("queued");
+
+        expect(() => queued.toQueued()).toThrow();
+      });
+
+      it("reviewing状態からtoQueued()でエラーをスローする", () => {
+        const reviewing = ReviewTargetStatus.reconstruct("reviewing");
+
+        expect(() => reviewing.toQueued()).toThrow();
+      });
+
+      // toReviewing()の不正遷移（pending/queued以外からは不可）
       it("reviewing状態からtoReviewing()でエラーをスローする", () => {
         const reviewing = ReviewTargetStatus.reconstruct("reviewing");
 
         expect(() => reviewing.toReviewing()).toThrow();
       });
 
-      // completed/error状態からtoReviewing()はリトライのため許可されるのでテスト削除
+      it("completed状態からtoReviewing()でエラーをスローする", () => {
+        const completed = ReviewTargetStatus.reconstruct("completed");
 
+        expect(() => completed.toReviewing()).toThrow();
+      });
+
+      it("error状態からtoReviewing()でエラーをスローする", () => {
+        const error = ReviewTargetStatus.reconstruct("error");
+
+        expect(() => error.toReviewing()).toThrow();
+      });
+
+      // toCompleted()の不正遷移
       it("pending状態からtoCompleted()でエラーをスローする", () => {
         const pending = ReviewTargetStatus.reconstruct("pending");
 
         expect(() => pending.toCompleted()).toThrow();
+      });
+
+      it("queued状態からtoCompleted()でエラーをスローする", () => {
+        const queued = ReviewTargetStatus.reconstruct("queued");
+
+        expect(() => queued.toCompleted()).toThrow();
       });
 
       it("completed状態からtoCompleted()でエラーをスローする", () => {
@@ -246,6 +349,7 @@ describe("ReviewTargetStatus", () => {
         expect(() => error.toCompleted()).toThrow();
       });
 
+      // toError()の不正遷移
       it("completed状態からtoError()でエラーをスローする", () => {
         const completed = ReviewTargetStatus.reconstruct("completed");
 

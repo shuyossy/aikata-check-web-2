@@ -1,0 +1,170 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { AiTaskBootstrap, getAiTaskBootstrap } from "../AiTaskBootstrap";
+
+// 依存モジュールのモック
+vi.mock("../AiTaskQueueService", () => {
+  return {
+    AiTaskQueueService: vi.fn().mockImplementation(() => ({
+      findDistinctApiKeyHashesInQueue: vi.fn().mockResolvedValue([]),
+    })),
+  };
+});
+
+vi.mock("../AiTaskWorkerPool", () => {
+  return {
+    AiTaskWorkerPool: vi.fn().mockImplementation(() => ({
+      startWorkers: vi.fn().mockResolvedValue(undefined),
+      stopAllWorkers: vi.fn().mockResolvedValue(undefined),
+      hasWorkers: vi.fn().mockReturnValue(false),
+    })),
+  };
+});
+
+vi.mock("../AiTaskExecutor", () => {
+  return {
+    AiTaskExecutor: vi.fn().mockImplementation(() => ({})),
+  };
+});
+
+vi.mock("@/infrastructure/adapter/db/drizzle/repository", () => {
+  return {
+    AiTaskRepository: vi.fn().mockImplementation(() => ({
+      findByStatus: vi.fn().mockResolvedValue([]),
+    })),
+    AiTaskFileMetadataRepository: vi.fn().mockImplementation(() => ({})),
+    ReviewTargetRepository: vi.fn().mockImplementation(() => ({})),
+    ReviewResultRepository: vi.fn().mockImplementation(() => ({})),
+    CheckListItemRepository: vi.fn().mockImplementation(() => ({})),
+    ReviewDocumentCacheRepository: vi.fn().mockImplementation(() => ({})),
+    ReviewSpaceRepository: vi.fn().mockImplementation(() => ({})),
+  };
+});
+
+vi.mock("@/lib/server/taskFileHelper", () => {
+  return {
+    TaskFileHelper: {
+      ensureBaseDir: vi.fn().mockResolvedValue(undefined),
+      deleteTaskFiles: vi.fn().mockResolvedValue(undefined),
+    },
+  };
+});
+
+describe("AiTaskBootstrap", () => {
+  let bootstrap: AiTaskBootstrap;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    // シングルトンインスタンスをリセット
+    // プライベートフィールドにアクセスするためのワークアラウンド
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (AiTaskBootstrap as any).instance = null;
+
+    bootstrap = getAiTaskBootstrap();
+  });
+
+  afterEach(async () => {
+    // テスト後にシャットダウン
+    if (bootstrap.getIsInitialized()) {
+      await bootstrap.shutdown();
+    }
+  });
+
+  describe("getAiTaskBootstrap", () => {
+    it("シングルトンインスタンスを返す", () => {
+      // Act
+      const instance1 = getAiTaskBootstrap();
+      const instance2 = getAiTaskBootstrap();
+
+      // Assert
+      expect(instance1).toBe(instance2);
+    });
+  });
+
+  describe("initialize", () => {
+    it("初期化が正常に完了する", async () => {
+      // Act
+      await bootstrap.initialize();
+
+      // Assert
+      expect(bootstrap.getIsInitialized()).toBe(true);
+      expect(bootstrap.getWorkerPool()).not.toBeNull();
+      expect(bootstrap.getQueueService()).not.toBeNull();
+    });
+
+    it("既に初期化済みの場合は何もしない", async () => {
+      // Arrange
+      await bootstrap.initialize();
+      const workerPool = bootstrap.getWorkerPool();
+
+      // Act
+      await bootstrap.initialize();
+
+      // Assert
+      expect(bootstrap.getWorkerPool()).toBe(workerPool);
+    });
+  });
+
+  describe("startWorkersForApiKeyHash", () => {
+    it("未初期化の場合は自動的に初期化を行う（遅延初期化）", async () => {
+      // Arrange
+      expect(bootstrap.getIsInitialized()).toBe(false);
+
+      // Act
+      await bootstrap.startWorkersForApiKeyHash("test-api-key-hash");
+
+      // Assert
+      expect(bootstrap.getIsInitialized()).toBe(true);
+      expect(bootstrap.getWorkerPool()).not.toBeNull();
+    });
+
+    it("初期化済みの場合はワーカープールのstartWorkersを呼び出す", async () => {
+      // Arrange
+      await bootstrap.initialize();
+      const workerPool = bootstrap.getWorkerPool();
+      const apiKeyHash = "test-api-key-hash";
+
+      // Act
+      await bootstrap.startWorkersForApiKeyHash(apiKeyHash);
+
+      // Assert
+      expect(workerPool?.startWorkers).toHaveBeenCalledWith(apiKeyHash);
+    });
+
+    it("既にワーカーが存在する場合は新しいワーカーを開始しない", async () => {
+      // Arrange
+      await bootstrap.initialize();
+      const workerPool = bootstrap.getWorkerPool();
+      vi.mocked(workerPool!.hasWorkers).mockReturnValue(true);
+      const apiKeyHash = "existing-api-key-hash";
+
+      // Act
+      await bootstrap.startWorkersForApiKeyHash(apiKeyHash);
+
+      // Assert
+      expect(workerPool?.startWorkers).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("shutdown", () => {
+    it("シャットダウン後は初期化状態がfalseになる", async () => {
+      // Arrange
+      await bootstrap.initialize();
+      expect(bootstrap.getIsInitialized()).toBe(true);
+
+      // Act
+      await bootstrap.shutdown();
+
+      // Assert
+      expect(bootstrap.getIsInitialized()).toBe(false);
+    });
+
+    it("未初期化の場合は何もしない", async () => {
+      // Arrange
+      expect(bootstrap.getIsInitialized()).toBe(false);
+
+      // Act & Assert - エラーが発生しないことを確認
+      await expect(bootstrap.shutdown()).resolves.toBeUndefined();
+    });
+  });
+});

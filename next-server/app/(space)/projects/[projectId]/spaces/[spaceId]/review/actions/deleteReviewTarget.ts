@@ -9,6 +9,7 @@ import {
   ReviewSpaceRepository,
   UserRepository,
   ReviewTargetRepository,
+  AiTaskRepository,
 } from "@/infrastructure/adapter/db";
 import { EmployeeId } from "@/domain/user";
 import { internalError } from "@/lib/server/error";
@@ -32,6 +33,7 @@ export const deleteReviewTargetAction = authenticatedAction
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
     const reviewTargetRepository = new ReviewTargetRepository();
+    const aiTaskRepository = new AiTaskRepository();
 
     // employeeIdからuserIdを取得
     const user = await userRepository.findByEmployeeId(
@@ -46,7 +48,8 @@ export const deleteReviewTargetAction = authenticatedAction
     const service = new DeleteReviewTargetService(
       reviewTargetRepository,
       reviewSpaceRepository,
-      projectRepository
+      projectRepository,
+      aiTaskRepository
     );
 
     await service.execute({

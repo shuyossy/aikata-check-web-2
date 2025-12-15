@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
 import { internalError, domainValidationError } from "@/lib/server/error";
 import { ExecuteReviewService } from "@/application/reviewTarget";
+import { AiTaskQueueService } from "@/application/aiTask";
 import {
   rawUploadFileMetaSchema,
   type RawUploadFileMeta,
@@ -16,9 +17,11 @@ import {
   ProjectRepository,
   ReviewSpaceRepository,
   UserRepository,
+  AiTaskRepository,
+  AiTaskFileMetadataRepository,
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
-import { ReviewTargetRepository, ReviewResultRepository, ReviewDocumentCacheRepository } from "@/infrastructure/adapter/db";
+import { ReviewTargetRepository } from "@/infrastructure/adapter/db";
 import { EmployeeId } from "@/domain/user";
 import { fileUploadConfig } from "@/lib/server/fileUploadConfig";
 
@@ -148,34 +151,40 @@ async function parseFormData(formData: FormData): Promise<{
     // メタデータをバリデーション
     const metadata = formDataMetadataItemSchema.parse(metadataArray[i]);
 
-    // ファイルを取得
-    const file = formData.get(`file_${i}`);
-    if (!(file instanceof File)) {
-      throw domainValidationError("VALIDATION_ERROR");
-    }
+    // 画像モードかテキストモードかで処理を分岐
+    const isImageMode = metadata.processMode === "image" && metadata.convertedImageCount && metadata.convertedImageCount > 0;
 
-    // ファイルサイズチェック
-    if (file.size > fileUploadConfig.maxFileSizeBytes) {
-      throw internalError({
-        expose: true,
-        messageCode: "CHECK_LIST_FILE_IMPORT_FILE_TOO_LARGE",
-        messageParams: { maxSize: String(fileUploadConfig.maxFileSizeMB) },
-      });
-    }
-
-    // バイナリデータを取得
-    const buffer = Buffer.from(await file.arrayBuffer());
-
-    // 変換済み画像を取得（存在する場合）
+    let buffer: Buffer;
     const convertedImageBuffers: Buffer[] = [];
-    if (metadata.convertedImageCount && metadata.convertedImageCount > 0) {
-      for (let j = 0; j < metadata.convertedImageCount; j++) {
+
+    if (isImageMode) {
+      // 画像モード: 変換済み画像のみを取得（元ファイルは送信されない）
+      for (let j = 0; j < metadata.convertedImageCount!; j++) {
         const imageFile = formData.get(`file_${i}_image_${j}`);
         if (!(imageFile instanceof File)) {
           throw domainValidationError("VALIDATION_ERROR");
         }
         convertedImageBuffers.push(Buffer.from(await imageFile.arrayBuffer()));
       }
+      // 画像モードでは元ファイルバッファは空
+      buffer = Buffer.alloc(0);
+    } else {
+      // テキストモード: 元ファイルを取得
+      const file = formData.get(`file_${i}`);
+      if (!(file instanceof File)) {
+        throw domainValidationError("VALIDATION_ERROR");
+      }
+
+      // ファイルサイズチェック
+      if (file.size > fileUploadConfig.maxFileSizeBytes) {
+        throw internalError({
+          expose: true,
+          messageCode: "CHECK_LIST_FILE_IMPORT_FILE_TOO_LARGE",
+          messageParams: { maxSize: String(fileUploadConfig.maxFileSizeMB) },
+        });
+      }
+
+      buffer = Buffer.from(await file.arrayBuffer());
     }
 
     // RawUploadFileMetaを構築（zodスキーマでバリデーション）
@@ -210,7 +219,7 @@ async function parseFormData(formData: FormData): Promise<{
 
 /**
  * レビューを実行するサーバーアクション
- * FormDataでファイルを受け取り、バイナリデータとして処理する
+ * FormDataでファイルを受け取り、キューに登録して即座にレスポンスを返す
  */
 export const executeReviewAction = authenticatedAction
   .schema(z.instanceof(FormData))
@@ -225,8 +234,8 @@ export const executeReviewAction = authenticatedAction
     const reviewSpaceRepository = new ReviewSpaceRepository();
     const checkListItemRepository = new CheckListItemRepository();
     const reviewTargetRepository = new ReviewTargetRepository();
-    const reviewResultRepository = new ReviewResultRepository();
-    const reviewDocumentCacheRepository = new ReviewDocumentCacheRepository();
+    const aiTaskRepository = new AiTaskRepository();
+    const aiTaskFileMetadataRepository = new AiTaskFileMetadataRepository();
 
     // employeeIdからuserIdを取得
     const user = await userRepository.findByEmployeeId(
@@ -237,14 +246,19 @@ export const executeReviewAction = authenticatedAction
       throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
     }
 
-    // サービスを実行
+    // キューサービスを作成
+    const aiTaskQueueService = new AiTaskQueueService(
+      aiTaskRepository,
+      aiTaskFileMetadataRepository,
+    );
+
+    // サービスを実行（キューに登録）
     const service = new ExecuteReviewService(
       reviewTargetRepository,
-      reviewResultRepository,
       checkListItemRepository,
       reviewSpaceRepository,
       projectRepository,
-      reviewDocumentCacheRepository,
+      aiTaskQueueService,
     );
 
     const result = await service.execute({
@@ -257,9 +271,10 @@ export const executeReviewAction = authenticatedAction
       reviewType,
     });
 
+    // キュー登録完了を返す（非同期処理なのでレビュー結果は含まない）
     return {
       reviewTargetId: result.reviewTargetId,
       status: result.status,
-      reviewResults: result.reviewResults,
+      queueLength: result.queueLength,
     };
   });

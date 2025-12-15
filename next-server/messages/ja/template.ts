@@ -116,4 +116,19 @@ export const template = {
   REVIEW_API_NO_RESULTS: `保存するレビュー結果がありません。`,
   // レビューステータスエラー
   REVIEW_STATUS_NOT_REVIEWING: `レビュー実行中ではありません。`,
+  // AIタスクキュー管理ドメインバリデーションエラー
+  AI_TASK_ID_INVALID_FORMAT: `AIタスクIDの形式が不正です。有効なUUID形式である必要があります。`,
+  AI_TASK_TYPE_INVALID: `AIタスクタイプが不正です。small_review、large_review、checklist_generationのいずれかである必要があります。`,
+  AI_TASK_STATUS_INVALID: `AIタスクステータスが不正です。queued、processing、completed、failedのいずれかである必要があります。`,
+  AI_TASK_STATUS_INVALID_TRANSITION: `AIタスクステータスの遷移が不正です。`,
+  AI_TASK_PRIORITY_INVALID: `AIタスク優先度が不正です。1から10の範囲で指定してください。`,
+  AI_TASK_FILE_METADATA_ID_INVALID_FORMAT: `AIタスクファイルメタデータIDの形式が不正です。有効なUUID形式である必要があります。`,
+  AI_TASK_NOT_FOUND: `指定されたAIタスクが見つかりません。`,
+  AI_TASK_CANNOT_CANCEL_PROCESSING: `処理中のタスクはキャンセルできません。`,
+  // AIタスクキュー処理エラー
+  AI_TASK_ENQUEUE_FAILED: `AIタスクの実行待ちリスト登録に失敗しました。{detail}`,
+  AI_TASK_EXECUTION_FAILED: `AIタスクの実行に失敗しました。{detail}`,
+  AI_TASK_ACCEPTED: `処理を受け付けました。ステータス画面で進捗をご確認ください。`,
+  AI_TASK_NO_API_KEY: `APIキーが設定されていません。プロジェクト設定またはシステム設定でAPIキーを設定してください。`,
+  AI_TASK_FILE_NOT_FOUND: `指定されたファイルが見つかりません。`,
 } as const;

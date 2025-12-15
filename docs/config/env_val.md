@@ -17,3 +17,6 @@
 | セキュリティ | ENCRYPTION_KEY   | Yes  | -      | APIキー等の暗号化に使用するAES-256キー（64桁の16進数文字列）              | lib/server/encryption.ts                      |
 | ファイルアップロード | FILE_UPLOAD_MAX_FILE_SIZE_MB | No | 50 | ファイルアップロード時のサイズ上限（MB）。チェックリストインポート、AIチェックリスト生成で共通利用 | lib/server/fileUploadConfig.ts |
 | キャッシュ | REVIEW_CACHE_DIR | No | ./review_cache | レビュードキュメントキャッシュの保存先ディレクトリ。リトライ時にドキュメントの再処理を省略するために使用 | lib/server/reviewCacheHelper.ts |
+| AIタスクキュー | AI_QUEUE_CONCURRENCY | No | 1 | APIキー毎のAIタスク並列実行数。流量制限を考慮して設定 | application/aiTask/AiTaskWorkerPool.ts |
+| AIタスクキュー | AI_QUEUE_POLLING_INTERVAL_MS | No | 10000 | ワーカーのキューポーリング間隔（ミリ秒） | application/aiTask/AiTaskWorker.ts |
+| AIタスクキュー | QUEUE_FILE_DIR | No | ./queue_files | キュー用ファイル保存ディレクトリ。アップロードされたレビュー対象ファイルの実体を保存 | lib/server/taskFileHelper.ts |

@@ -59,8 +59,13 @@ export function AIChecklistGenerateClient({
     generateCheckListByAIAction,
     {
       onSuccess: (result) => {
-        showSuccess(`${result.data?.generatedCount}件のチェック項目を生成しました`);
-        // チェックリスト編集画面に遷移
+        // キュー登録が成功した場合
+        if (result.data?.status === "queued") {
+          showSuccess("チェックリスト生成タスクが実行待ちリストに登録されました。処理完了後にチェックリスト画面に反映されます。");
+        } else {
+          showSuccess("チェックリスト生成を受け付けました。");
+        }
+        // チェックリスト編集画面に遷移（ポーリングで新規項目を確認）
         router.push(`/projects/${projectId}/spaces/${spaceId}/checklist`);
       },
       onError: ({ error: actionError }) => {
