@@ -416,3 +416,69 @@ AIタスクに紐づくファイルのメタデータを管理するテーブル
 - ファイルの実体はQUEUE_FILE_DIR環境変数で指定されたディレクトリに保存される。
 - タスク削除時はDBレコードとファイルシステム上のファイルの両方を削除する。
 - リトライ時はファイルを再アップロードせず、キャッシュ（review_document_cachesテーブル）を使用する。
+
+---
+
+## qa_histories テーブル
+
+Q&A履歴を管理するテーブル。レビュー対象に対するユーザからの質問とAIによる回答を保存する。
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|------|------|-----------|------|
+| id | UUID | NOT NULL | gen_random_uuid() | Q&A履歴ID（PK） |
+| review_target_id | UUID | NOT NULL | - | レビュー対象ID（FK → review_targets.id） |
+| user_id | UUID | NOT NULL | - | 質問者のユーザID（FK → users.id） |
+| question | TEXT | NOT NULL | - | ユーザからの質問内容 |
+| check_list_item_content | TEXT | NOT NULL | - | 質問対象のチェック項目内容（スナップショット） |
+| answer | TEXT | NULL | - | AIによる回答 |
+| research_summary | JSONB | NULL | - | 調査サマリー（JSON形式） |
+| status | VARCHAR(20) | NOT NULL | 'processing' | 処理ステータス |
+| error_message | TEXT | NULL | - | エラー発生時のメッセージ |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
+
+### インデックス
+- PRIMARY KEY (id)
+- INDEX idx_qa_histories_review_target_id (review_target_id) - レビュー対象のQ&A履歴一覧取得を高速化
+- INDEX idx_qa_histories_user_id (user_id) - ユーザのQ&A履歴一覧取得を高速化
+
+### 外部キー制約
+- review_target_id → review_targets.id (ON DELETE CASCADE)
+- user_id → users.id (ON DELETE CASCADE)
+
+### 設計思想
+- **id**: UUIDを採用し、Q&A履歴を一意に識別する。SSE購読時のイベントタイプキーとしても使用される。
+- **review_target_id**: Q&Aが紐づくレビュー対象への参照。CASCADE削除によりレビュー対象削除時に関連するQ&A履歴も自動的に削除される。
+- **user_id**: 質問を行ったユーザへの参照。CASCADE削除によりユーザ削除時に関連するQ&A履歴も自動的に削除される。
+- **question**: ユーザが入力した質問内容。
+- **check_list_item_content**: @メンションで選択されたチェック項目の内容をスナップショットとして保存。チェック項目が後から編集・削除されても、Q&A時点の内容を保持する。
+- **answer**: AIが生成した回答。処理完了時に設定される。処理中はNULL。
+- **research_summary**: AIが調査した内容のサマリー。JSONB形式で保存。処理完了時に設定される。
+- **status**: Q&A処理の進行状態。以下の値を取る:
+  - `processing`: 処理中
+  - `completed`: 完了
+  - `error`: エラー
+- **error_message**: 処理失敗時のエラーメッセージ。成功時はNULL。
+- **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。
+
+### research_summary JSON構造
+```json
+[
+  {
+    "documentName": "string",
+    "researchContent": "string",
+    "researchResult": "string"
+  }
+]
+```
+
+| プロパティ | 型 | 説明 |
+|-----------|------|------|
+| documentName | string | 調査対象のドキュメント名 |
+| researchContent | string | 調査内容（AIに指示した調査観点） |
+| researchResult | string | 調査結果（AIが返した情報） |
+
+### 備考
+- 一問一答形式のため、会話のスレッド構造は持たない。
+- Q&A処理はAIタスクキュー（ai_tasksテーブル）を経由せず、即時実行される。
+- SSEでリアルタイムに進捗を通知するため、idがイベントタイプのキーとして使用される。

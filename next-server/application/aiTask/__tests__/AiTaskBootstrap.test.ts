@@ -37,6 +37,7 @@ vi.mock("@/infrastructure/adapter/db/drizzle/repository", () => {
     CheckListItemRepository: vi.fn().mockImplementation(() => ({})),
     ReviewDocumentCacheRepository: vi.fn().mockImplementation(() => ({})),
     ReviewSpaceRepository: vi.fn().mockImplementation(() => ({})),
+    LargeDocumentResultCacheRepository: vi.fn().mockImplementation(() => ({})),
   };
 });
 

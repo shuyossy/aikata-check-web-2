@@ -6,6 +6,7 @@ import { IReviewResultRepository } from "@/application/shared/port/repository/IR
 import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
+import { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
 import { ReviewTargetId, ReviewDocumentCache } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { CheckListItem } from "@/domain/checkListItem";
@@ -28,6 +29,7 @@ import type {
   ExtractedFile,
   ReviewType,
   CachedDocument,
+  IndividualDocumentResult,
 } from "@/application/mastra";
 import { ReviewResultId } from "@/domain/reviewResult";
 
@@ -103,6 +105,7 @@ export class AiTaskExecutor {
     private readonly checkListItemRepository: ICheckListItemRepository,
     private readonly reviewDocumentCacheRepository: IReviewDocumentCacheRepository,
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
+    private readonly largeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository,
   ) {}
 
   /**
@@ -233,6 +236,69 @@ export class AiTaskExecutor {
         this.reviewResultRepository,
       );
       runtimeContext.set("onReviewResultSaved", onReviewResultSaved);
+
+      // 大量レビュー時の個別結果保存コールバックを設定
+      const onIndividualResultsSaved = async (
+        individualResults: IndividualDocumentResult[],
+        targetId: string,
+      ): Promise<void> => {
+        if (individualResults.length === 0) return;
+
+        // ドキュメントキャッシュを取得してファイル名からIDをマッピング
+        const documentCaches = await this.reviewDocumentCacheRepository.findByReviewTargetId(
+          ReviewTargetId.reconstruct(targetId),
+        );
+        const fileNameToCacheId = new Map<string, string>();
+        for (const cache of documentCaches) {
+          fileNameToCacheId.set(cache.fileName, cache.id.value);
+        }
+
+        // レビュー結果を取得してチェック項目内容からIDをマッピング
+        const reviewResults = await this.reviewResultRepository.findByReviewTargetId(
+          ReviewTargetId.reconstruct(targetId),
+        );
+        const contentToResultId = new Map<string, string>();
+        for (const result of reviewResults) {
+          contentToResultId.set(result.checkListItemContent, result.id.value);
+        }
+
+        // 個別結果を保存
+        const cacheEntries = [];
+        for (const result of individualResults) {
+          const reviewDocumentCacheId = fileNameToCacheId.get(result.documentName);
+          const reviewResultId = contentToResultId.get(result.checklistItemContent);
+
+          if (reviewDocumentCacheId && reviewResultId) {
+            cacheEntries.push({
+              reviewDocumentCacheId,
+              reviewResultId,
+              comment: result.comment,
+              totalChunks: result.totalChunks,
+              chunkIndex: result.chunkIndex,
+              individualFileName: result.documentName,
+            });
+          } else {
+            logger.warn(
+              {
+                documentName: result.documentName,
+                checklistItemContent: result.checklistItemContent,
+                hasDocCache: !!reviewDocumentCacheId,
+                hasReviewResult: !!reviewResultId,
+              },
+              "個別結果の保存に必要な関連データが見つかりませんでした",
+            );
+          }
+        }
+
+        if (cacheEntries.length > 0) {
+          await this.largeDocumentResultCacheRepository.saveMany(cacheEntries);
+          logger.debug(
+            { reviewTargetId: targetId, savedCount: cacheEntries.length },
+            "大量レビューの個別結果を保存しました",
+          );
+        }
+      };
+      runtimeContext.set("onIndividualResultsSaved", onIndividualResultsSaved);
 
       // リトライモードの場合はキャッシュからドキュメントを読み込む
       if (isRetry) {

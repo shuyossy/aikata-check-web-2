@@ -9,7 +9,7 @@ import { baseStepOutputSchema } from "../../schema";
 import { extractedFileSchema } from "../../shared";
 import { createCombinedMessage } from "../../lib";
 import { createRuntimeContext, judgeFinishReason } from "../../../lib/agentUtils";
-import { isContentLengthError } from "../../../lib/util";
+import { judgeErrorIsContentLengthError } from "../../../lib/util";
 import { normalizeUnknownError } from "@/lib/server/error";
 import { formatMessage } from "@/lib/server/messages";
 import type { IndividualDocumentReviewAgentRuntimeContext } from "../../../agents";
@@ -264,7 +264,7 @@ Please provide a thorough review based on the document content provided above.`;
     } catch (error) {
       // エラーを正規化して統一的に処理
       const normalizedError = normalizeUnknownError(error);
-      const isCtxLengthError = isContentLengthError(error);
+      const isCtxLengthError = judgeErrorIsContentLengthError(error);
 
       return {
         status: "failed",

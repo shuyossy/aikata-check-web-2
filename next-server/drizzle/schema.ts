@@ -449,3 +449,108 @@ export type AiTaskFileMetadataDbEntity =
   typeof aiTaskFileMetadata.$inferSelect;
 export type NewAiTaskFileMetadataDbEntity =
   typeof aiTaskFileMetadata.$inferInsert;
+
+/**
+ * qa_historiesテーブル
+ * レビュー結果に対するQ&A履歴を管理
+ */
+export const qaHistories = pgTable(
+  "qa_histories",
+  {
+    /** Q&A履歴ID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 所属レビュー対象ID（FK） */
+    reviewTargetId: uuid("review_target_id")
+      .notNull()
+      .references(() => reviewTargets.id, { onDelete: "cascade" }),
+    /** 質問したユーザID（FK） */
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** 質問内容（最大2000文字） */
+    question: text("question").notNull(),
+    /**
+     * 対象チェック項目内容のスナップショット
+     * @メンションで選択されたチェック項目の内容
+     */
+    checkListItemContent: text("check_list_item_content").notNull(),
+    /** AIによる回答（ストリーミング完了後に保存） */
+    answer: text("answer"),
+    /**
+     * 調査サマリー（JSON形式）
+     * 構造: [{ documentName: string, researchContent: string, researchResult: string }]
+     */
+    researchSummary: jsonb("research_summary"),
+    /**
+     * Q&Aステータス
+     * processing: 処理中, completed: 完了, error: エラー
+     */
+    status: varchar("status", { length: 20 }).notNull().default("processing"),
+    /** エラーメッセージ（エラー時） */
+    errorMessage: text("error_message"),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** レコード更新日時 */
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_qa_histories_review_target_id").on(table.reviewTargetId),
+    index("idx_qa_histories_user_id").on(table.userId),
+    index("idx_qa_histories_created_at").on(table.createdAt),
+  ],
+);
+
+/**
+ * Q&A履歴テーブルの型定義
+ */
+export type QaHistoryDbEntity = typeof qaHistories.$inferSelect;
+export type NewQaHistoryDbEntity = typeof qaHistories.$inferInsert;
+
+/**
+ * large_document_result_cachesテーブル
+ * 大量レビュー時の個別ドキュメントレビュー結果をキャッシュ
+ * Q&A機能で個別結果を参照するために使用
+ */
+export const largeDocumentResultCaches = pgTable(
+  "large_document_result_caches",
+  {
+    /** キャッシュID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 所属レビュードキュメントキャッシュID（FK） */
+    reviewDocumentCacheId: uuid("review_document_cache_id")
+      .notNull()
+      .references(() => reviewDocumentCaches.id, { onDelete: "cascade" }),
+    /** 所属レビュー結果ID（FK） */
+    reviewResultId: uuid("review_result_id")
+      .notNull()
+      .references(() => reviewResults.id, { onDelete: "cascade" }),
+    /** 個別レビューコメント */
+    comment: text("comment").notNull(),
+    /** チャンク総数（分割時のみ1より大きい） */
+    totalChunks: integer("total_chunks").notNull().default(1),
+    /** 何番目のチャンクか（0から始まる） */
+    chunkIndex: integer("chunk_index").notNull().default(0),
+    /** 個別ファイル名（分割時は分割後の名前） */
+    individualFileName: varchar("individual_file_name", { length: 255 }).notNull(),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("idx_large_doc_result_cache_doc").on(table.reviewDocumentCacheId),
+    index("idx_large_doc_result_cache_result").on(table.reviewResultId),
+  ],
+);
+
+/**
+ * 大量ドキュメント結果キャッシュテーブルの型定義
+ */
+export type LargeDocumentResultCacheDbEntity =
+  typeof largeDocumentResultCaches.$inferSelect;
+export type NewLargeDocumentResultCacheDbEntity =
+  typeof largeDocumentResultCaches.$inferInsert;

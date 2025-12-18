@@ -249,3 +249,81 @@
       - ドメインバリデーションエラー（REVIEW_TARGET_CANNOT_DELETE_REVIEWING）を返す
   - 事後処理
     - なし
+
+---
+
+## Q&A履歴管理
+
+- Q&A実行
+  - 識別子: ExecuteQaService
+  - 前提条件
+    - 認証済みユーザであること
+    - 対象レビュー対象が属するプロジェクトのメンバーであること
+    - レビュー対象のレビューが完了していること（status=completed）
+  - 入力: ExecuteQaCommand { reviewTargetId: string, userId: string, question: string, checklistItemContent: string }
+  - 出力: ExecuteQaResult { qaHistoryId: string }
+  - メインフロー
+    1. 入力されたレビュー対象IDでレビュー対象の存在を確認する
+    2. レビュー対象が属するレビュースペースを取得する
+    3. レビュースペースが属するプロジェクトを取得する
+    4. ユーザがプロジェクトのメンバーであることを確認する
+    5. 新規Q&A履歴エンティティを作成する（status=processing）
+    6. Q&A履歴をDBに保存する
+    7. Q&A履歴IDを即座に返却する（非同期処理のため）
+    8. Mastra Q&A実行ワークフローを非同期で開始する
+       8.1. 調査計画ステップ: 質問に対する調査計画を立案する
+       8.2. ドキュメント調査ステップ: 計画に基づきレビュー結果・ドキュメントキャッシュを調査する（並列処理）
+       8.3. 回答生成ステップ: 調査結果を元に回答を生成する（ストリーミング）
+    9. ワークフロー進捗をSSEでクライアントに通知する
+       - research_start: 調査開始時
+       - research_progress: 各ドキュメント調査完了時
+       - answer_chunk: 回答生成のストリーミングチャンク
+       - complete: 完了時（回答・調査サマリ含む）
+       - error: エラー発生時
+    10. ワークフロー完了後、Q&A履歴を更新する（回答・調査サマリ・status=completed）
+  - 例外
+    - パターン1: レビュー対象が存在しない場合
+      - ドメインバリデーションエラー（REVIEW_TARGET_NOT_FOUND）を返す
+    - パターン2: レビュースペースが存在しない場合
+      - ドメインバリデーションエラー（REVIEW_SPACE_NOT_FOUND）を返す
+    - パターン3: プロジェクトが存在しない場合
+      - ドメインバリデーションエラー（PROJECT_NOT_FOUND）を返す
+    - パターン4: プロジェクトへのアクセス権がない場合
+      - ドメインバリデーションエラー（PROJECT_ACCESS_DENIED）を返す
+    - パターン5: 質問が空の場合
+      - ドメインバリデーションエラー（QA_QUESTION_EMPTY）を返す
+    - パターン6: チェック項目内容が空の場合
+      - ドメインバリデーションエラー（QA_CHECKLIST_ITEM_CONTENT_EMPTY）を返す
+    - パターン7: AIワークフロー実行中にエラーが発生した場合
+      - Q&A履歴のステータスをerrorに更新し、エラーメッセージを保存する
+      - SSEでエラーイベントを通知する
+  - 事後処理
+    - なし
+
+- Q&A履歴一覧取得
+  - 識別子: ListQaHistoriesService
+  - 前提条件
+    - 認証済みユーザであること
+    - 対象レビュー対象が属するプロジェクトのメンバーであること
+  - 入力: ListQaHistoriesCommand { reviewTargetId: string, userId: string, limit?: number, offset?: number }
+  - 出力: ListQaHistoriesResult { items: QaHistoryDto[], total: number }
+    - QaHistoryDto: { id: string, question: string, checkListItemContent: string, answer: string | null, researchSummary: ResearchSummaryDto[] | null, status: string, errorMessage: string | null, createdAt: Date }
+    - ResearchSummaryDto: { documentName: string, researchContent: string, result: string }
+  - メインフロー
+    1. 入力されたレビュー対象IDでレビュー対象の存在を確認する
+    2. レビュー対象が属するレビュースペースを取得する
+    3. レビュースペースが属するプロジェクトを取得する
+    4. ユーザがプロジェクトのメンバーであることを確認する
+    5. レビュー対象に紐づくQ&A履歴一覧を取得する（作成日時降順）
+    6. Q&A履歴一覧DTOと総件数を返却する
+  - 例外
+    - パターン1: レビュー対象が存在しない場合
+      - ドメインバリデーションエラー（REVIEW_TARGET_NOT_FOUND）を返す
+    - パターン2: レビュースペースが存在しない場合
+      - ドメインバリデーションエラー（REVIEW_SPACE_NOT_FOUND）を返す
+    - パターン3: プロジェクトが存在しない場合
+      - ドメインバリデーションエラー（PROJECT_NOT_FOUND）を返す
+    - パターン4: プロジェクトへのアクセス権がない場合
+      - ドメインバリデーションエラー（PROJECT_ACCESS_DENIED）を返す
+  - 事後処理
+    - なし

@@ -18,3 +18,15 @@ export type {
   FindAiTasksOptions,
 } from "./IAiTaskRepository";
 export type { IAiTaskFileMetadataRepository } from "./IAiTaskFileMetadataRepository";
+export type { ICheckListItemRepository } from "./ICheckListItemRepository";
+export type {
+  IQaHistoryRepository,
+  FindQaHistoriesOptions,
+  FindQaHistoriesResult,
+} from "./IQaHistoryRepository";
+export type {
+  ILargeDocumentResultCacheRepository,
+  LargeDocumentResultCache,
+  NewLargeDocumentResultCache,
+  ChecklistResultWithIndividualResults,
+} from "./ILargeDocumentResultCacheRepository";

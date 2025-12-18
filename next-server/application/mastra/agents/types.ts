@@ -76,3 +76,40 @@ export type ConsolidateReviewAgentRuntimeContext = BaseRuntimeContext & {
   evaluationCriteria?: EvaluationCriterionItem[];
   [key: string]: unknown;
 };
+
+// ========== Q&A関連のRuntimeContext型定義 ==========
+
+/**
+ * Q&A調査計画エージェントのRuntimeContext型定義
+ */
+export type QaPlanningAgentRuntimeContext = BaseRuntimeContext & {
+  availableDocuments: { id: string; fileName: string }[];
+  checklistInfo: string;
+  reviewMode: "large" | "small";
+  [key: string]: unknown;
+};
+
+/**
+ * Q&Aドキュメント調査エージェントのRuntimeContext型定義
+ */
+export type QaResearchAgentRuntimeContext = BaseRuntimeContext & {
+  researchContent: string;
+  totalChunks: number;
+  chunkIndex: number;
+  fileName: string;
+  checklistInfo: string;
+  userQuestion: string;
+  reasoning?: string;
+  reviewMode: "large" | "small";
+  [key: string]: unknown;
+};
+
+/**
+ * Q&A回答生成エージェントのRuntimeContext型定義
+ */
+export type QaAnswerAgentRuntimeContext = BaseRuntimeContext & {
+  userQuestion: string;
+  checklistInfo: string;
+  reviewMode: "large" | "small";
+  [key: string]: unknown;
+};

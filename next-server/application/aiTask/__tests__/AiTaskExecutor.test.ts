@@ -5,6 +5,7 @@ import type { IReviewResultRepository } from "@/application/shared/port/reposito
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
+import type { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
 import type { AiTaskDto } from "@/domain/aiTask";
 import { ReviewTarget } from "@/domain/reviewTarget";
 import { ReviewSpace } from "@/domain/reviewSpace";
@@ -70,27 +71,31 @@ describe("AiTaskExecutor", () => {
   const mockReviewResultRepository: IReviewResultRepository = {
     findById: vi.fn(),
     findByReviewTargetId: vi.fn(),
-    findByReviewTargetIdAndCheckListItemId: vi.fn(),
+    countByReviewTargetId: vi.fn(),
     save: vi.fn(),
+    saveMany: vi.fn(),
     delete: vi.fn(),
     deleteByReviewTargetId: vi.fn(),
   };
 
   const mockCheckListItemRepository: ICheckListItemRepository = {
     findById: vi.fn(),
+    findByIds: vi.fn(),
     findByReviewSpaceId: vi.fn(),
-    findByReviewSpaceIdOrdered: vi.fn(),
+    countByReviewSpaceId: vi.fn(),
     save: vi.fn(),
+    bulkSave: vi.fn(),
     bulkInsert: vi.fn(),
-    bulkUpdate: vi.fn(),
     delete: vi.fn(),
+    deleteMany: vi.fn(),
     deleteByReviewSpaceId: vi.fn(),
-    getMaxDisplayOrder: vi.fn(),
   };
 
   const mockReviewDocumentCacheRepository: IReviewDocumentCacheRepository = {
+    findById: vi.fn(),
     findByReviewTargetId: vi.fn(),
     save: vi.fn(),
+    saveMany: vi.fn(),
     deleteByReviewTargetId: vi.fn(),
   };
 
@@ -101,6 +106,15 @@ describe("AiTaskExecutor", () => {
     save: vi.fn(),
     delete: vi.fn(),
     updateChecklistGenerationError: vi.fn(),
+  };
+
+  const mockLargeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository = {
+    save: vi.fn(),
+    saveMany: vi.fn(),
+    findByReviewTargetId: vi.fn(),
+    deleteByReviewTargetId: vi.fn(),
+    findChecklistResultsWithIndividualResults: vi.fn(),
+    getMaxTotalChunksForDocument: vi.fn(),
   };
 
   let executor: AiTaskExecutor;
@@ -129,6 +143,7 @@ describe("AiTaskExecutor", () => {
       mockCheckListItemRepository,
       mockReviewDocumentCacheRepository,
       mockReviewSpaceRepository,
+      mockLargeDocumentResultCacheRepository,
     );
   });
 

@@ -7,9 +7,13 @@ import {
   reviewExecuteAgent,
   individualDocumentReviewAgent,
   consolidateReviewAgent,
+  qaPlanningAgent,
+  qaResearchAgent,
+  qaAnswerAgent,
 } from "./agents";
 import { checklistGenerationWorkflow } from "./workflows/checklistGeneration";
 import { reviewExecutionWorkflow } from "./workflows/reviewExecution";
+import { qaExecutionWorkflow } from "./workflows/qaExecution";
 import { getLogLevel } from "@/lib/server/logger";
 
 /**
@@ -28,10 +32,14 @@ export const mastra = new Mastra({
     reviewExecuteAgent,
     individualDocumentReviewAgent,
     consolidateReviewAgent,
+    qaPlanningAgent,
+    qaResearchAgent,
+    qaAnswerAgent,
   },
   workflows: {
     checklistGenerationWorkflow,
     reviewExecutionWorkflow,
+    qaExecutionWorkflow,
   },
 });
 
@@ -65,6 +73,7 @@ export type {
   ReviewExecutionWorkflowRuntimeContext,
   ReviewType,
   CachedDocument,
+  IndividualDocumentResult,
 } from "./workflows/reviewExecution";
 
 export {
@@ -80,3 +89,13 @@ export type {
 } from "./agents";
 
 export { checkWorkflowResult, checkStatuses } from "./lib/workflowUtils";
+
+export { qaExecutionWorkflow } from "./workflows/qaExecution";
+export type {
+  QaExecutionWorkflowInput,
+  QaExecutionWorkflowOutput,
+  QaExecutionWorkflowRuntimeContext,
+  ChecklistResultWithIndividual,
+  AvailableDocument,
+  ResearchResult,
+} from "./workflows/qaExecution";

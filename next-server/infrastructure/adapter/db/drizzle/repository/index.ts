@@ -7,3 +7,5 @@ export { CheckListItemRepository } from "./CheckListItemRepository";
 export { ReviewDocumentCacheRepository } from "./ReviewDocumentCacheRepository";
 export { AiTaskRepository } from "./AiTaskRepository";
 export { AiTaskFileMetadataRepository } from "./AiTaskFileMetadataRepository";
+export { QaHistoryRepository } from "./QaHistoryRepository";
+export { LargeDocumentResultCacheRepository } from "./LargeDocumentResultCacheRepository";

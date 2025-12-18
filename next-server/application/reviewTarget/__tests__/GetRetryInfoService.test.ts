@@ -52,6 +52,7 @@ const createMockCheckListItemRepository = (): ICheckListItemRepository => ({
 });
 
 const createMockReviewDocumentCacheRepository = (): IReviewDocumentCacheRepository => ({
+  findById: vi.fn(),
   findByReviewTargetId: vi.fn(),
   save: vi.fn(),
   saveMany: vi.fn(),

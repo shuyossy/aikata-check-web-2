@@ -40,6 +40,11 @@ export {
   consolidateReviewOutputSchema,
 } from "./consolidateReviewAgent";
 
+// Q&A関連
+export { qaPlanningAgent } from "./qaPlanningAgent";
+export { qaResearchAgent } from "./qaResearchAgent";
+export { qaAnswerAgent } from "./qaAnswerAgent";
+
 export type {
   TopicExtractionAgentRuntimeContext,
   TopicChecklistAgentRuntimeContext,
@@ -48,4 +53,7 @@ export type {
   IndividualDocumentReviewAgentRuntimeContext,
   ConsolidateReviewAgentRuntimeContext,
   EvaluationCriterionItem,
+  QaPlanningAgentRuntimeContext,
+  QaResearchAgentRuntimeContext,
+  QaAnswerAgentRuntimeContext,
 } from "./types";

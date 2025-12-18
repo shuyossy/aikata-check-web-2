@@ -78,6 +78,7 @@ describe("RetryReviewService", () => {
   };
 
   const mockReviewDocumentCacheRepository: IReviewDocumentCacheRepository = {
+    findById: vi.fn(),
     findByReviewTargetId: vi.fn(),
     save: vi.fn(),
     saveMany: vi.fn(),

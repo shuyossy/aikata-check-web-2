@@ -9,4 +9,6 @@ export {
   ReviewDocumentCacheRepository,
   AiTaskRepository,
   AiTaskFileMetadataRepository,
+  QaHistoryRepository,
+  LargeDocumentResultCacheRepository,
 } from "./drizzle/repository";

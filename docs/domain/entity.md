@@ -458,3 +458,114 @@
     - update: 評定とコメントを更新する
     - hasError: エラーが発生しているか確認する
     - toDto: DTOに変換する
+
+---
+
+## Q&A履歴管理
+
+- Q&A履歴ID
+  - 識別子: QaHistoryId
+  - 種類: 値オブジェクト
+  - 不変条件
+    - UUIDv4形式であること
+  - 属性
+    - value: string - UUID文字列
+  - 振る舞い
+    - create: 新規UUIDを生成して返却する
+    - reconstruct: 既存のUUID文字列から復元する
+
+- 質問
+  - 識別子: Question
+  - 種類: 値オブジェクト
+  - 不変条件
+    - 空文字でないこと
+    - 10000文字以内であること
+  - 属性
+    - value: string - 質問内容
+  - 振る舞い
+    - create: 文字列から質問を生成する
+    - reconstruct: 既存の文字列から復元する
+
+- 回答
+  - 識別子: Answer
+  - 種類: 値オブジェクト
+  - 不変条件
+    - nullも許可
+  - 属性
+    - value: string | null - AIによる回答
+  - 振る舞い
+    - create: 回答文字列から生成する
+    - reconstruct: 既存の文字列から復元する
+    - isEmpty: 回答が設定されていないか確認する
+
+- 調査サマリーアイテム
+  - 識別子: ResearchSummaryItem
+  - 種類: 値オブジェクト
+  - 不変条件
+    - ドキュメント名は空文字でないこと
+    - 調査内容は空文字でないこと
+    - 調査結果は空文字でないこと
+  - 属性
+    - documentName: string - 調査対象ドキュメント名
+    - researchContent: string - 調査内容
+    - researchResult: string - 調査結果
+  - 振る舞い
+    - create: 各属性から生成する
+    - reconstruct: 既存のデータから復元する
+    - toJson: JSON形式に変換する
+
+- 調査サマリー
+  - 識別子: ResearchSummary
+  - 種類: 値オブジェクト
+  - 不変条件
+    - nullも許可
+  - 属性
+    - items: ResearchSummaryItem[] | null - 調査サマリーアイテムのリスト
+  - 振る舞い
+    - create: アイテムリストから生成する
+    - reconstruct: 既存のデータから復元する
+    - toJson: JSON形式に変換する
+    - isEmpty: 調査サマリーが設定されていないか確認する
+
+- Q&A処理ステータス
+  - 識別子: QaStatus
+  - 種類: 値オブジェクト
+  - 不変条件
+    - processing, completed, error のいずれかであること
+  - 属性
+    - value: string - ステータス文字列
+  - 振る舞い
+    - create: ステータス文字列から生成する
+    - reconstruct: 既存の文字列から復元する
+    - isProcessing: 処理中か確認する
+    - isCompleted: 完了したか確認する
+    - isError: エラー状態か確認する
+
+- Q&A履歴
+  - 識別子: QaHistory
+  - 種類: 集約ルート
+  - 不変条件
+    - Q&A履歴IDは空ではないこと（UUID形式）
+    - レビュー対象IDは空ではないこと（UUID形式）
+    - ユーザIDは空ではないこと（UUID形式）
+    - 質問は空ではないこと
+    - チェック項目内容は空ではないこと
+    - ステータスは有効な値であること
+  - 属性
+    - id: QaHistoryId - Q&A履歴ID
+    - reviewTargetId: ReviewTargetId - レビュー対象ID
+    - userId: UserId - 質問者ユーザID
+    - question: Question - 質問内容
+    - checkListItemContent: CheckListItemContent - 質問対象のチェック項目内容（スナップショット）
+    - answer: Answer - AIによる回答
+    - researchSummary: ResearchSummary - 調査サマリー
+    - status: QaStatus - 処理ステータス
+    - errorMessage: string | null - エラーメッセージ
+    - createdAt: Date - 作成日時
+    - updatedAt: Date - 更新日時
+  - 振る舞い
+    - create: 新規Q&A履歴を作成する（status=processing）
+    - reconstruct: DBから取得したデータからQ&A履歴を復元する
+    - complete: 処理完了する（answer, researchSummaryを設定、status→completed）
+    - fail: エラー状態にする（errorMessageを設定、status→error）
+    - toDto: DTOに変換する

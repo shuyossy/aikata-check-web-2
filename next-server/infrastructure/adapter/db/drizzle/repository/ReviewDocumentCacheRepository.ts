@@ -12,6 +12,31 @@ export class ReviewDocumentCacheRepository
   implements IReviewDocumentCacheRepository
 {
   /**
+   * IDでドキュメントキャッシュを検索
+   */
+  async findById(id: string): Promise<ReviewDocumentCache | null> {
+    const result = await db
+      .select()
+      .from(reviewDocumentCaches)
+      .where(eq(reviewDocumentCaches.id, id))
+      .limit(1);
+
+    if (result.length === 0) {
+      return null;
+    }
+
+    const row = result[0];
+    return ReviewDocumentCache.reconstruct({
+      id: row.id,
+      reviewTargetId: row.reviewTargetId,
+      fileName: row.fileName,
+      processMode: row.processMode,
+      cachePath: row.cachePath,
+      createdAt: row.createdAt,
+    });
+  }
+
+  /**
    * レビュー対象IDでドキュメントキャッシュ一覧を検索
    */
   async findByReviewTargetId(

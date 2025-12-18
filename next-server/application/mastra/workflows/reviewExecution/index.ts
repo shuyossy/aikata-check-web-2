@@ -410,6 +410,7 @@ export type {
   ReviewType,
   CachedDocument,
   OnExtractedFilesCachedCallback,
+  IndividualDocumentResult,
 } from "./types";
 
 // shared typesも再エクスポート（ワークフロー利用者の便宜のため）

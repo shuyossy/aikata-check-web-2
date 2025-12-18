@@ -81,6 +81,27 @@ export type OnExtractedFilesCachedCallback = (
 ) => Promise<void>;
 
 /**
+ * 個別ドキュメントレビュー結果（大量レビュー時）
+ */
+export interface IndividualDocumentResult {
+  documentId: string;
+  documentName: string;
+  checklistItemContent: string;
+  comment: string;
+  totalChunks: number;
+  chunkIndex: number;
+}
+
+/**
+ * 個別ドキュメントレビュー結果保存コールバック関数の型
+ * 大量レビュー時、統合前に呼び出される
+ */
+export type OnIndividualResultsSavedCallback = (
+  results: IndividualDocumentResult[],
+  reviewTargetId: string,
+) => Promise<void>;
+
+/**
  * キャッシュされたドキュメント（リトライ時に使用）
  */
 export interface CachedDocument {
@@ -104,6 +125,8 @@ export interface ReviewExecutionWorkflowRuntimeContext extends BaseRuntimeContex
   onReviewResultSaved?: OnReviewResultSavedCallback;
   /** 抽出済みファイルキャッシュ保存コールバック（初回レビュー時にリトライ用キャッシュを保存） */
   onExtractedFilesCached?: OnExtractedFilesCachedCallback;
+  /** 個別ドキュメントレビュー結果保存コールバック（大量レビュー時） */
+  onIndividualResultsSaved?: OnIndividualResultsSavedCallback;
   /** キャッシュされたドキュメントを使用するか（リトライ時） */
   useCachedDocuments?: boolean;
   /** キャッシュされたドキュメント配列（リトライ時） */

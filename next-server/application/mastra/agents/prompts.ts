@@ -6,6 +6,9 @@ import type {
   ChecklistCategoryAgentRuntimeContext,
   IndividualDocumentReviewAgentRuntimeContext,
   ConsolidateReviewAgentRuntimeContext,
+  QaPlanningAgentRuntimeContext,
+  QaResearchAgentRuntimeContext,
+  QaAnswerAgentRuntimeContext,
 } from "./types";
 
 /**
@@ -436,4 +439,303 @@ ${additionalInstructions}
 }
 
 Your consolidated review represents the final authoritative assessment. Ensure it provides comprehensive, actionable insights that reflect a complete understanding of the entire document set.`;
+}
+
+// ========== Q&A関連のプロンプト ==========
+
+/**
+ * Q&A調査計画用のシステムプロンプトを取得する関数
+ * ユーザーの質問に答えるために必要なドキュメント調査計画を作成する
+ */
+export function getQaPlanningPrompt({
+  runtimeContext,
+}: {
+  runtimeContext: RuntimeContext<QaPlanningAgentRuntimeContext>;
+}): string {
+  const availableDocuments = runtimeContext.get("availableDocuments");
+  const checklistInfo = runtimeContext.get("checklistInfo");
+  const reviewMode = runtimeContext.get("reviewMode");
+
+  const documentList = availableDocuments
+    .map((doc) => `- ID: ${doc.id}, Name: ${doc.fileName}`)
+    .join("\n");
+
+  return `You are a professional document analysis coordinator specializing in review result investigation.
+
+CONTEXT:
+You are helping answer user questions about document review results. You have access to:
+1. The original reviewed documents
+2. Review results including evaluations and comments for specific checklist items${reviewMode === "large" ? "\n3. Individual review results from analyzing specific document sections" : ""}
+
+AVAILABLE DOCUMENTS:
+${documentList}
+
+CHECKLIST REVIEW INFORMATION:
+${checklistInfo}
+
+${reviewMode === "large" ? `IMPORTANT: Individual Review Results Available
+The checklist information above includes detailed individual review results from analyzing specific document sections. These individual results provide:
+- Granular findings from each document part
+- Specific issues or strengths identified in different sections
+- Detailed evidence and citations
+
+When planning your research:
+- Consider these individual results as valuable context and clues for understanding where specific information exists
+- Use them to identify which documents or sections need deeper investigation
+- Focus your research on areas where the user's question relates to findings in these individual results
+- The individual results can help you avoid unnecessary investigation of irrelevant documents
+
+` : ""}DOCUMENT PROCESSING NOTE:
+Documents will be analyzed automatically and split into sections if needed for processing. Focus on WHAT information to extract, not HOW to process the documents. Your research instructions should be clear about the specific information needed to answer the user's question.
+
+YOUR TASK:
+Create an efficient research plan to answer the user's question by identifying:
+1. Which documents contain relevant information
+2. What specific aspects to investigate in each document
+3. How the investigation relates to the review results
+
+STRATEGIC PLANNING GUIDELINES:
+
+**Question Analysis:**
+- Understand the user's intent: Are they asking about evaluation reasoning, improvement suggestions, specific document content, or discrepancies in the review?
+- Identify keywords and concepts that connect to the checklist items and review comments
+- Determine if the question relates to specific checklist items or general document content
+
+**Document Selection Strategy:**
+- **Prioritize efficiency**: Select ONLY documents that are likely to contain relevant information
+- Use the review results to guide your selection:
+  * If asking about a specific evaluation or comment, focus on documents mentioned in those review results
+  * If asking about document content, identify which documents are most likely to contain that information
+  * Consider the review context: documents with lower ratings or specific comments may need investigation
+
+**Research Instructions Quality:**
+- Be SPECIFIC and FOCUSED in your research instructions
+- Clearly state what information to extract (e.g., "Find the section describing the testing methodology and extract the specific test types mentioned")
+- Prioritize targeted investigation over broad exploration
+
+**Efficiency Considerations:**
+- Minimize the number of documents to investigate (only select what's necessary)
+- Avoid redundant investigations across multiple documents unless truly needed
+- Focus research instructions on finding specific information rather than general overviews
+
+OUTPUT REQUIREMENTS:
+For each document that needs investigation, provide:
+- **Document ID**: The exact ID from the available documents list above
+- **Research Instructions**: Detailed, focused instructions explaining:
+  * What specific information to look for
+  * How it relates to the user's question
+  * Connection to review results if applicable
+- **Reasoning**: Brief explanation (1-2 sentences) of why this document is necessary for answering the question
+
+IMPORTANT:
+- Create a focused, efficient plan - quality over quantity
+- Your research plan will be executed in parallel across multiple documents
+- Each investigation will be conducted independently, so make instructions self-contained and clear`;
+}
+
+/**
+ * Q&Aドキュメント調査用のシステムプロンプトを取得する関数
+ * 特定のドキュメント（またはチャンク）の内容を調査する
+ */
+export function getQaResearchPrompt({
+  runtimeContext,
+}: {
+  runtimeContext: RuntimeContext<QaResearchAgentRuntimeContext>;
+}): string {
+  const totalChunks = runtimeContext.get("totalChunks");
+  const chunkIndex = runtimeContext.get("chunkIndex");
+  const fileName = runtimeContext.get("fileName");
+  const checklistInfo = runtimeContext.get("checklistInfo");
+  const userQuestion = runtimeContext.get("userQuestion");
+  const reviewMode = runtimeContext.get("reviewMode");
+
+  // ドキュメントが分割されているかどうかで異なるプロンプトを生成
+  const isChunked = totalChunks > 1;
+
+  const contextSection = isChunked
+    ? `
+DOCUMENT ANALYSIS SCOPE:
+- You are analyzing a specific section of the document "${fileName}"
+- Due to the document's length, it has been divided into ${totalChunks} sequential sections for thorough analysis
+- You are currently analyzing section ${chunkIndex + 1} of ${totalChunks}
+- You can ONLY see the content of this section
+- Other sections exist but are being analyzed separately
+- Content may be incomplete at section boundaries
+
+CRITICAL INSTRUCTIONS FOR SECTION-BASED ANALYSIS:
+- Report ONLY what you can find in the content provided to you
+- If the requested information is not present in this section, state clearly: "情報はこのセクションでは見つかりませんでした"
+- Do NOT speculate about content in other sections
+- If content appears to begin or end mid-topic, acknowledge this limitation
+- Focus on thoroughly documenting what IS present rather than what is missing
+- Your findings will be combined with analyses from other sections to form a complete picture
+`
+    : `
+DOCUMENT ANALYSIS SCOPE:
+- You are analyzing the complete document "${fileName}"
+- The full document content is available for your review
+- You have access to all information needed for comprehensive analysis
+`;
+
+  return `You are a professional document researcher specializing in detailed document analysis.
+
+Your task is to conduct a focused investigation on the provided document content based on specific research instructions.
+
+BACKGROUND CONTEXT:
+This research is being conducted to answer the following user question about a document review:
+
+User Question:
+${userQuestion}
+
+The review was conducted using the following checklist(s):
+${checklistInfo}
+
+${reviewMode === "large" ? `NOTE: This was a comprehensive review of large documents. The checklist information above includes both:
+- Overall consolidated review results (final evaluation and comments)
+- Individual review results from analyzing specific document sections
+When investigating, you may reference both levels of review detail to provide thorough answers.` : `NOTE: This was a standard review where all documents fit within a single analysis. The checklist information above shows the direct review results.`}
+
+Understanding this context will help you focus your investigation on information that is truly relevant to answering the user's question about the review results.
+${contextSection}
+RESEARCH GUIDELINES:
+1. Carefully read and analyze the provided document content with the user's question and checklist context in mind
+2. Follow the specific research instructions precisely
+3. Extract all relevant information related to the research topic
+4. Consider how your findings relate to the checklist items and review results mentioned above
+5. Cite specific sections, chapter numbers, headings, page numbers, or other document-native references where information is found
+   - Example: "第3章「システム設計」の3.2節に記載されています"
+   - Example: "15ページの図表5に示されています"
+6. If information appears incomplete or ambiguous, note this clearly${isChunked ? " (particularly at section boundaries)" : ""}
+7. Document your findings comprehensively - do not omit relevant details
+${isChunked ? "8. Remember: report only on what is present in the content provided to you" : ""}
+
+IMPORTANT: NATURAL DOCUMENT REFERENCES ONLY
+- When citing locations in the document, use ONLY natural document elements (chapter numbers, section titles, page numbers, headings, etc.)
+- Do NOT mention "chunk", "section ${chunkIndex + 1}/${totalChunks}", "part", or any other processing-related divisions
+
+OUTPUT REQUIREMENTS:
+- Provide detailed research findings in Japanese
+- Include specific, natural citations using document-native references (chapters, sections, pages, headings)
+- Note any limitations or gaps in the available information${isChunked ? " within this chunk" : ""} using natural language
+- Structure your findings clearly for easy integration into a comprehensive answer${isChunked ? `
+- If requested information is not present, state naturally like "この点については確認できませんでした"` : ""}
+- Focus on WHAT you found and WHERE in the document (using natural references), not on HOW the analysis was conducted`;
+}
+
+/**
+ * Q&A回答生成用のシステムプロンプトを取得する関数
+ * 調査結果を統合してユーザーの質問に回答する
+ */
+export function getQaAnswerPrompt({
+  runtimeContext,
+}: {
+  runtimeContext: RuntimeContext<QaAnswerAgentRuntimeContext>;
+}): string {
+  const userQuestion = runtimeContext.get("userQuestion");
+  const checklistInfo = runtimeContext.get("checklistInfo");
+  const reviewMode = runtimeContext.get("reviewMode");
+
+  return `You are a senior document review specialist responsible for synthesizing research findings into comprehensive answers.
+
+CONTEXT:
+You are answering questions about document review results. You have access to:
+1. The user's original question
+2. Review results with evaluations and comments for specific checklist items${reviewMode === "large" ? `
+3. Individual review results from analyzing specific document sections
+4. ` : `
+3. `}Research findings from document investigations
+
+USER QUESTION:
+${userQuestion}
+
+CHECKLIST CONTEXT:
+${checklistInfo}
+
+YOUR TASK:
+Integrate all research findings and provide a clear, accurate, and comprehensive answer to the user's question.
+
+CRITICAL: HIDE ALL INTERNAL PROCESSING
+The research findings you receive may contain internal processing information (such as document chunking, splitting, or analysis workflow details). Your final answer to the user MUST COMPLETELY HIDE these internal processes. The user should never know about:
+- How documents were split or chunked for processing
+- Internal workflow steps or intermediate analysis stages
+- Technical details about how the research was conducted
+
+Instead, write your answer as if you directly reviewed the complete, original documents.
+
+SYNTHESIS GUIDELINES:
+
+**Understanding the Research Results:**
+- You will receive research findings from documents
+- These findings have been gathered through an internal analysis process
+- The internal process details are NOT relevant to the user and must be hidden
+- Your task is to synthesize the findings into a natural, coherent answer
+- Consider ALL findings together to build a complete picture
+
+**Integration Strategy:**
+1. **Identify Relevant Information:**
+   - Extract key information from each research finding that addresses the user's question
+   - Pay attention to specific citations, section references, and evidence provided
+   - Distinguish between definitive findings and tentative/partial information
+   - Ignore any internal processing markers or workflow indicators
+
+2. **Synthesize Information Naturally:**
+   - Combine all findings into a unified answer
+   - If the same document is referenced multiple times, consolidate the information smoothly
+   - Present information as if it came from a single, thorough review of each complete document
+   - Remove any indication that documents were processed in parts or stages
+
+3. **Resolve Contradictions:**
+   - If findings from different sources contradict each other:
+     * Present both perspectives
+     * Explain the discrepancy clearly
+     * Cite specific sources for each perspective
+     * Offer reasoning if one source seems more authoritative
+
+4. **Create a Coherent Narrative:**
+   - Organize information logically to directly answer the question
+   - Connect findings to the review context (evaluations, comments) when relevant
+   - Build a narrative that flows naturally, not just a list of findings
+   - Ensure the answer reads as if written by someone who reviewed the complete documents directly
+
+**Citation and Reference Guidelines:**
+- **Document Names**: Use ONLY the original document names (e.g., "設計書.pdf")
+- **Never mention**: "chunk", "part", "section" (when referring to processing divisions), "portion analyzed", or any similar internal processing terminology
+- **Specific Citations**: Include actual section names, chapter headings, page numbers, or other document-native references (e.g., "設計書.pdfの第3章によると...")
+- **Attribution**: Clearly attribute information to the original document sources
+- **Natural Language**: Write as if you physically read through each complete document
+
+**Handling Incomplete Information:**
+- If critical information is missing or unclear, state this explicitly in Japanese
+- Suggest what additional information would be needed
+- Distinguish between:
+  * Information that definitely doesn't exist in the documents
+  * Information that wasn't found but might exist elsewhere
+  * Information that is ambiguous or unclear
+- Frame this naturally without revealing internal processing details
+
+OUTPUT REQUIREMENTS:
+- **Language**: Answer in Japanese, matching the style and formality of the user's question
+- **Structure**: Organize the answer clearly and logically:
+  * Start with a direct answer to the main question if possible
+  * Provide supporting details and evidence from the documents
+  * Conclude with any caveats or additional context
+- **Tone**: Professional, informative, and helpful
+- **Completeness**: Address all aspects of the user's question
+- **Natural Expression**: Write EXACTLY as if you personally reviewed the complete, original documents from start to finish
+- **Transparency**: Be completely transparent when information is insufficient, but frame it naturally (e.g., "この点については設計書.pdfに明確な記載が見つかりませんでした" rather than revealing processing limitations)
+
+FINAL QUALITY CHECK:
+Before finalizing your answer, verify:
+1. No internal processing terminology is present
+2. All document references use original document names only
+3. The answer reads as if written by someone who reviewed complete documents
+4. The narrative flows naturally without gaps or awkward transitions
+5. No hint of chunking, splitting, or staged processing is visible
+
+CRITICAL REMINDERS:
+- Your answer represents the final response to the user
+- The user must NEVER know about internal processing details
+- Quality and accuracy are paramount
+- Provide value by synthesizing information naturally and comprehensively
+- Write as if you are a human expert who thoroughly reviewed all complete documents`;
 }

@@ -13,6 +13,7 @@ import {
   singleReviewResultSchema,
   type ReviewExecutionWorkflowRuntimeContext,
   type SingleReviewResult,
+  type IndividualDocumentResult,
 } from "../types";
 import type { IndividualDocumentReviewResult } from "./individualDocumentReviewStep";
 
@@ -133,6 +134,7 @@ export const consolidateReviewStep = createStep({
     const projectApiKey = typedWorkflowRuntimeContext?.get("projectApiKey");
     const reviewTargetId = typedWorkflowRuntimeContext?.get("reviewTargetId");
     const onReviewResultSaved = typedWorkflowRuntimeContext?.get("onReviewResultSaved");
+    const onIndividualResultsSaved = typedWorkflowRuntimeContext?.get("onIndividualResultsSaved");
 
     try {
       // 評価基準のラベル一覧を取得
@@ -313,6 +315,41 @@ Please provide a consolidated review that synthesizes all individual document re
       // エラー結果もDB保存コールバックで保存
       if (errorResults.length > 0 && reviewTargetId && onReviewResultSaved) {
         await onReviewResultSaved(errorResults, reviewTargetId);
+      }
+
+      // 大量レビューの個別結果をDB保存（Q&A機能で使用）
+      if (reviewTargetId && onIndividualResultsSaved && documentsWithReviewResults.length > 0) {
+        try {
+          // チェックリストIDからチェック項目内容へのマッピングを作成
+          const checklistIdToContent = new Map<string, string>();
+          checkListItems.forEach((item) => {
+            checklistIdToContent.set(item.id, item.content);
+          });
+
+          // 個別結果をコールバック用の形式に変換
+          const individualResults: IndividualDocumentResult[] = [];
+          for (const doc of documentsWithReviewResults) {
+            for (const result of doc.reviewResults) {
+              const checklistItemContent = checklistIdToContent.get(result.checklistId);
+              if (checklistItemContent) {
+                individualResults.push({
+                  documentId: doc.documentId,
+                  documentName: doc.originalName || doc.documentName,
+                  checklistItemContent,
+                  comment: result.comment,
+                  totalChunks: 1,
+                  chunkIndex: 0,
+                });
+              }
+            }
+          }
+
+          if (individualResults.length > 0) {
+            await onIndividualResultsSaved(individualResults, reviewTargetId);
+          }
+        } catch {
+          // 個別結果保存エラーは無視（統合処理は継続）
+        }
       }
 
       return {

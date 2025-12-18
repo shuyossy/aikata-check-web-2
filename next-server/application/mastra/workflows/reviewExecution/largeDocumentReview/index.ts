@@ -367,6 +367,7 @@ export const largeDocumentReviewWorkflow = createWorkflow({
     }
 
     // 統合ステップ用のデータを準備
+    // 注意: 個別結果のDB保存はconsolidateReviewStep内で実行（レビュー結果保存後に実行する必要があるため）
     const documentsWithReviewResults = groupReviewResultsByDocument(allReviewResults);
 
     // OriginalNameを復元

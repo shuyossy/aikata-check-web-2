@@ -1,6 +1,5 @@
-/**
- * 大量レビュー用ユーティリティ関数
- */
+import { APICallError } from "ai";
+import { AppError, extractAIAPISafeError } from "@/lib/server/error";
 
 /**
  * 文書を等分ベースで分割し、指定のオーバーラップを安全に付与する関数
@@ -68,44 +67,22 @@ export function makeChunksByCount<T extends { length: number }>(
  * @param error エラーオブジェクトまたはfinishReason
  * @returns コンテキスト長エラーの場合はtrue
  */
-export function isContentLengthError(error: unknown): boolean {
-  // finishReason='length'のチェック（AIの出力が途中で切れた場合）
-  if (typeof error === "string") {
-    return error === "length";
+export const judgeErrorIsContentLengthError = (error: unknown) => {
+  const apiError = extractAIAPISafeError(error);
+  if (!apiError) return false;
+  if (apiError instanceof AppError) {
+    return apiError.messageCode === 'AI_MESSAGE_TOO_LARGE';
   }
-
-  // finishReasonオブジェクトの場合
-  if (
-    typeof error === "object" &&
-    error !== null &&
-    "finishReason" in error
-  ) {
-    const finishReason = (error as { finishReason: unknown }).finishReason;
-    if (finishReason === "length") {
-      return true;
-    }
+  if (APICallError.isInstance(apiError)) {
+    return (
+      apiError.responseBody?.includes('maximum context length') ||
+      apiError.responseBody?.includes('tokens_limit_reached') ||
+      apiError.responseBody?.includes('context_length_exceeded') ||
+      apiError.responseBody?.includes('many images')
+    );
   }
-
-  // エラーメッセージからのチェック
-  if (error instanceof Error) {
-    const message = error.message.toLowerCase();
-    // 一般的なコンテキスト長エラーパターン
-    if (
-      message.includes("context_length") ||
-      message.includes("context length") ||
-      message.includes("maximum context") ||
-      message.includes("token limit") ||
-      message.includes("tokens exceed") ||
-      message.includes("too many tokens") ||
-      message.includes("max_tokens") ||
-      message.includes("input is too long")
-    ) {
-      return true;
-    }
-  }
-
   return false;
-}
+};
 
 /**
  * デフォルトの分割オーバーラップ設定

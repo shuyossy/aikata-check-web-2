@@ -131,4 +131,22 @@ export const template = {
   AI_TASK_ACCEPTED: `処理を受け付けました。ステータス画面で進捗をご確認ください。`,
   AI_TASK_NO_API_KEY: `APIキーが設定されていません。プロジェクト設定またはシステム設定でAPIキーを設定してください。`,
   AI_TASK_FILE_NOT_FOUND: `指定されたファイルが見つかりません。`,
+  // Q&A履歴管理ドメインバリデーションエラー
+  QA_HISTORY_ID_INVALID_FORMAT: `Q&A履歴IDの形式が不正です。有効なUUID形式である必要があります。`,
+  QA_HISTORY_QUESTION_EMPTY: `質問は必須です。`,
+  QA_HISTORY_QUESTION_TOO_LONG: `質問は2000文字以内で入力してください。`,
+  QA_HISTORY_ANSWER_TOO_LONG: `回答は10000文字以内である必要があります。`,
+  QA_HISTORY_CHECKLIST_ITEM_CONTENT_EMPTY: `チェック項目の内容は必須です。`,
+  QA_HISTORY_CHECKLIST_ITEM_CONTENT_INVALID_JSON: `チェック項目の内容が不正なJSON形式です。`,
+  QA_HISTORY_CHECKLIST_ITEM_CONTENT_TOO_LONG: `チェック項目の内容は5000文字以内である必要があります。`,
+  QA_HISTORY_STATUS_INVALID: `Q&Aステータスが不正です。processing、completed、errorのいずれかである必要があります。`,
+  QA_HISTORY_NOT_FOUND: `指定されたQ&A履歴が見つかりません。`,
+  QA_HISTORY_ACCESS_DENIED: `このQ&A履歴へのアクセス権がありません。`,
+  // Q&A実行エラー
+  QA_EXECUTION_NO_DOCUMENT_CACHE: `ドキュメントキャッシュが見つかりません。レビューを実行してから再度お試しください。`,
+  QA_EXECUTION_NO_REVIEW_RESULT: `レビュー結果が見つかりません。レビューを実行してから再度お試しください。`,
+  QA_EXECUTION_FAILED: `Q&A処理に失敗しました。{detail}`,
+  // Q&A入力バリデーションエラー
+  QA_CHECKLIST_NOT_SELECTED: `@でチェック項目を選択してください`,
+  QA_QUESTION_EMPTY: `質問を入力してください`,
 } as const;

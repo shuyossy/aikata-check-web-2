@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
   makeChunksByCount,
-  isContentLengthError,
   DEFAULT_CHUNK_OVERLAP,
   splitTextByCount,
   splitImagesByCount,
@@ -80,39 +79,6 @@ describe("makeChunksByCount", () => {
   });
 });
 
-describe("isContentLengthError", () => {
-  it("finishReason='length'の場合はtrueを返す", () => {
-    expect(isContentLengthError("length")).toBe(true);
-  });
-
-  it("finishReason='stop'の場合はfalseを返す", () => {
-    expect(isContentLengthError("stop")).toBe(false);
-  });
-
-  it("finishReasonオブジェクトの場合もチェックする", () => {
-    expect(isContentLengthError({ finishReason: "length" })).toBe(true);
-    expect(isContentLengthError({ finishReason: "stop" })).toBe(false);
-  });
-
-  it("context_lengthを含むエラーメッセージを検出する", () => {
-    expect(isContentLengthError(new Error("context_length exceeded"))).toBe(
-      true
-    );
-  });
-
-  it("token limitを含むエラーメッセージを検出する", () => {
-    expect(isContentLengthError(new Error("token limit exceeded"))).toBe(true);
-  });
-
-  it("通常のエラーの場合はfalseを返す", () => {
-    expect(isContentLengthError(new Error("network error"))).toBe(false);
-  });
-
-  it("nullやundefinedの場合はfalseを返す", () => {
-    expect(isContentLengthError(null)).toBe(false);
-    expect(isContentLengthError(undefined)).toBe(false);
-  });
-});
 
 describe("DEFAULT_CHUNK_OVERLAP", () => {
   it("テキスト用のデフォルトオーバーラップが300文字", () => {

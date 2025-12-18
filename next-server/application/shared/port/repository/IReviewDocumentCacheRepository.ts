@@ -5,6 +5,13 @@ import { ReviewDocumentCache, ReviewTargetId } from "@/domain/reviewTarget";
  */
 export interface IReviewDocumentCacheRepository {
   /**
+   * IDでドキュメントキャッシュを検索
+   * @param id ドキュメントキャッシュID
+   * @returns ドキュメントキャッシュエンティティ、存在しない場合はnull
+   */
+  findById(id: string): Promise<ReviewDocumentCache | null>;
+
+  /**
    * レビュー対象IDでドキュメントキャッシュ一覧を検索
    * @param reviewTargetId レビュー対象ID
    * @returns ドキュメントキャッシュエンティティの配列

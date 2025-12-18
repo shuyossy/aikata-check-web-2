@@ -11,6 +11,7 @@ import {
   CheckListItemRepository,
   ReviewDocumentCacheRepository,
   ReviewSpaceRepository,
+  LargeDocumentResultCacheRepository,
 } from "@/infrastructure/adapter/db/drizzle/repository";
 import { AI_TASK_STATUS, AiTaskId } from "@/domain/aiTask";
 import { TaskFileHelper } from "@/lib/server/taskFileHelper";
@@ -65,6 +66,7 @@ export class AiTaskBootstrap {
       const checkListItemRepository = new CheckListItemRepository();
       const reviewDocumentCacheRepository = new ReviewDocumentCacheRepository();
       const reviewSpaceRepository = new ReviewSpaceRepository();
+      const largeDocumentResultCacheRepository = new LargeDocumentResultCacheRepository();
 
       // サービスの作成
       this.queueService = new AiTaskQueueService(
@@ -78,6 +80,7 @@ export class AiTaskBootstrap {
         checkListItemRepository,
         reviewDocumentCacheRepository,
         reviewSpaceRepository,
+        largeDocumentResultCacheRepository,
       );
 
       this.workerPool = new AiTaskWorkerPool(this.queueService, executor);
