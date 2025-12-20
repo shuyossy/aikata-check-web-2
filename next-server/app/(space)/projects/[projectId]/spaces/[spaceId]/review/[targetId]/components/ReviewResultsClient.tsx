@@ -2,6 +2,10 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
+import { useAction } from "next-safe-action/hooks";
+import { exportReviewResultsToCsvAction } from "../actions/exportReviewResultsToCsv";
+import { showSuccess, showError } from "@/lib/client";
+import { extractServerErrorMessage } from "@/hooks";
 import {
   MessageCircle,
   RefreshCw,
@@ -198,11 +202,47 @@ export function ReviewResultsClient({
     });
   };
 
-  // CSV出力ハンドラー（今後実装）
+  // CSV出力アクション
+  const { execute: executeExportCsv, isExecuting: isExporting } = useAction(
+    exportReviewResultsToCsvAction,
+    {
+      onSuccess: (result) => {
+        if (result.data?.csvContent) {
+          // BlobからダウンロードURLを生成
+          const blob = new Blob([result.data.csvContent], {
+            type: "text/csv;charset=utf-8",
+          });
+          const url = URL.createObjectURL(blob);
+
+          // ダウンロードリンクを作成してクリック
+          const a = document.createElement("a");
+          a.href = url;
+          const dateStr = new Date().toISOString().slice(0, 10);
+          a.download = `review_results_${reviewTarget.name}_${dateStr}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          showSuccess(
+            `${result.data.exportedCount}件のレビュー結果をエクスポートしました`,
+          );
+        }
+      },
+      onError: ({ error: actionError }) => {
+        const message = extractServerErrorMessage(
+          actionError,
+          "エクスポートに失敗しました",
+        );
+        showError(message);
+      },
+    },
+  );
+
+  // CSV出力ハンドラー
   const handleExportCsv = useCallback(() => {
-    // TODO: CSV出力機能を実装
-    router.push(`/projects/${projectId}/spaces/${spaceId}/review/${targetId}/export`);
-  }, [router, projectId, spaceId, targetId]);
+    executeExportCsv({ reviewTargetId: targetId });
+  }, [targetId, executeExportCsv]);
 
   // リトライハンドラー（今後実装）
   const handleRetry = useCallback(() => {
@@ -257,11 +297,11 @@ export function ReviewResultsClient({
             <Button
               variant="outline"
               onClick={handleExportCsv}
-              disabled={isActionsDisabled}
+              disabled={isActionsDisabled || isExporting}
               className="flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
-              CSV出力
+              {isExporting ? "出力中..." : "CSV出力"}
             </Button>
           </div>
         </div>

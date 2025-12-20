@@ -81,6 +81,9 @@ export type MessageCode =
   // レビュー結果管理ドメインバリデーションエラー
   | "REVIEW_RESULT_ID_INVALID_FORMAT"
   | "REVIEW_RESULT_EVALUATION_TOO_LONG"
+  // レビュー結果CSV出力エラー
+  | "REVIEW_RESULT_EXPORT_NO_ITEMS"
+  | "REVIEW_RESULT_EXPORT_TOO_MANY_ITEMS"
   // レビュー実行エラー
   | "REVIEW_EXECUTION_NO_FILES"
   | "REVIEW_EXECUTION_NO_CHECKLIST"

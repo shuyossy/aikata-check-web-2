@@ -161,4 +161,7 @@ export const template = {
   SYSTEM_NOTIFICATION_MESSAGE_EMPTY: `通知メッセージは必須です。`,
   SYSTEM_NOTIFICATION_MESSAGE_TOO_LONG: `通知メッセージは1000文字以内で入力してください。`,
   SYSTEM_NOTIFICATION_NOT_FOUND: `指定されたシステム通知が見つかりません。`,
+  // レビュー結果CSV出力エラー
+  REVIEW_RESULT_EXPORT_NO_ITEMS: `レビュー結果がありません。出力するにはレビューを実行してください。`,
+  REVIEW_RESULT_EXPORT_TOO_MANY_ITEMS: `レビュー結果数が上限（{maxItems}件）を超えています。`,
 } as const;
