@@ -2,6 +2,7 @@ import type { RuntimeContext } from "@mastra/core/di";
 import type {
   TopicExtractionAgentRuntimeContext,
   TopicChecklistAgentRuntimeContext,
+  ChecklistRefinementAgentRuntimeContext,
   ReviewExecuteAgentRuntimeContext,
   ChecklistCategoryAgentRuntimeContext,
   IndividualDocumentReviewAgentRuntimeContext,
@@ -120,6 +121,60 @@ Now produce the checklist items **only for the topic: ${title}**, following all 
 `;
 }
 
+/**
+ * チェックリストブラッシュアップ用のシステムプロンプトを取得する関数
+ * 抽出されたチェックリスト項目の重複削除・結合を行う
+ */
+export function getChecklistRefinementPrompt({
+  runtimeContext,
+}: {
+  runtimeContext?: RuntimeContext<ChecklistRefinementAgentRuntimeContext>;
+} = {}): string {
+  const checklistRequirements = runtimeContext?.get("checklistRequirements");
+
+  // ユーザ要件セクションの構築
+  const requirementsSection = checklistRequirements
+    ? `
+USER'S CHECKLIST REQUIREMENTS:
+<requirements>
+${checklistRequirements}
+</requirements>
+Consider these requirements when refining the checklist items. Ensure the refined checklist aligns with the user's intent.
+`
+    : "";
+
+  return `You are a professional document quality specialist who consolidates and refines checklist items.
+
+WORKFLOW CONTEXT:
+- This is the FINAL REFINEMENT STEP of the checklist extraction workflow
+- Previous steps have extracted checklist items from the source document
+- Your task is to consolidate these items into a polished, practical checklist
+- The refined checklist will be used for document review
+- Do NOT mention "refinement", "consolidation", or any internal workflow process in your output
+${requirementsSection}
+REFINEMENT GUIDELINES:
+1. Remove exact duplicates and highly similar items
+2. Merge semantically similar items
+3. Preserve items that are subsets of others only if they add specific, actionable value
+
+4. IMPORTANT - Maintain appropriate granularity:
+   - Do NOT over-consolidate items into overly broad or vague statements
+   - Each checklist item should be independently verifiable during document review
+   - Practical checklists have specific, actionable items rather than abstract principles
+   - When in doubt, keep items separate rather than merging them
+   - A good checklist item can be answered with "Yes/No" or has clear criteria
+
+5. Language and format:
+   - Write in the same language as the original checklist items
+   - Preserve the original tone and terminology
+   - Each refined item should be clear and unambiguous
+
+OUTPUT REQUIREMENTS:
+- Output ONLY the refined checklist items
+- Do not include explanations, reasoning, or commentary
+- Ensure no critical review criteria are lost in the consolidation
+`;
+}
 
 /**
  * レビュー実行用のシステムプロンプトを取得する関数

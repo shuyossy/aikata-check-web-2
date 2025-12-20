@@ -15,6 +15,15 @@ export type TopicExtractionAgentRuntimeContext = BaseRuntimeContext & {
 };
 
 /**
+ * チェックリストブラッシュアップエージェントのRuntimeContext型定義
+ * 生成されたチェックリスト項目の重複削除・結合を行う
+ */
+export type ChecklistRefinementAgentRuntimeContext = BaseRuntimeContext & {
+  checklistRequirements?: string;
+  [key: string]: unknown;
+};
+
+/**
  * トピック別チェックリスト生成エージェントのRuntimeContext型定義
  */
 export type TopicChecklistAgentRuntimeContext = BaseRuntimeContext & {

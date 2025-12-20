@@ -6,6 +6,10 @@ export { topicChecklistAgent } from "./topicChecklistAgent";
 export type { TopicChecklistOutput } from "./topicChecklistAgent";
 export { topicChecklistOutputSchema } from "./topicChecklistAgent";
 
+export { checklistRefinementAgent } from "./checklistRefinementAgent";
+export type { ChecklistRefinementOutput } from "./checklistRefinementAgent";
+export { checklistRefinementOutputSchema } from "./checklistRefinementAgent";
+
 export { reviewExecuteAgent } from "./reviewExecuteAgent";
 export type {
   ReviewResultItem,
@@ -48,6 +52,7 @@ export { qaAnswerAgent } from "./qaAnswerAgent";
 export type {
   TopicExtractionAgentRuntimeContext,
   TopicChecklistAgentRuntimeContext,
+  ChecklistRefinementAgentRuntimeContext,
   ReviewExecuteAgentRuntimeContext,
   ChecklistCategoryAgentRuntimeContext,
   IndividualDocumentReviewAgentRuntimeContext,

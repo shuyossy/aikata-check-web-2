@@ -4,6 +4,7 @@ import { baseStepOutputSchema } from '../schema';
 import { triggerSchema } from './types';
 import { topicExtractionStep } from './steps/topicExtractionStep';
 import { topicChecklistCreationStep } from './steps/topicChecklistCreationStep';
+import { checklistRefinementStep } from './steps/checklistRefinementStep';
 import { fileProcessingStep } from '../shared';
 
 /**
@@ -27,7 +28,9 @@ export type ChecklistGenerationOutput = z.infer<
  * 2. topicExtractionStep: ドキュメントからトピックを抽出
  * 3. .map(): トピック配列をforeachの入力形式に変換
  * 4. .foreach(topicChecklistCreationStep): 各トピックに対してチェックリスト項目を生成
- * 5. .map(): 結果を統合して最終出力に変換
+ * 5. .map(): foreachの結果をchecklistRefinementStepの入力形式に変換
+ * 6. checklistRefinementStep: チェックリスト項目をブラッシュアップ（重複削除・結合）
+ * 7. .map(): 結果を統合して最終出力に変換
  */
 export const checklistGenerationWorkflow = createWorkflow({
   id: 'checklist-generation-workflow',
@@ -90,8 +93,8 @@ export const checklistGenerationWorkflow = createWorkflow({
     }));
   })
   .foreach(topicChecklistCreationStep)
-  .map(async ({ inputData }) => {
-    // 結果を統合
+  .map(async ({ inputData, getStepResult, bail }) => {
+    // foreachの結果を統合してchecklistRefinementStepの入力形式に変換
     const allItems: string[] = [];
     let hasFailure = false;
     const errorMessages: string[] = [];
@@ -110,24 +113,52 @@ export const checklistGenerationWorkflow = createWorkflow({
 
     // 全て失敗した場合はエラーを返す
     if (allItems.length === 0 && hasFailure) {
-      return {
+      return bail({
         status: 'failed' as const,
         errorMessage: errorMessages.join('; '),
-      };
+      });
     }
 
     // 結果が空の場合（foreachに何も渡されなかった場合）
     if (inputData.length === 0) {
-      return {
+      return bail({
         status: 'failed' as const,
         errorMessage: 'トピックを抽出できませんでした',
+      });
+    }
+
+    // トピック抽出結果からchecklistRequirementsを取得
+    const topicExtractionResult = getStepResult(topicExtractionStep);
+    const checklistRequirements = topicExtractionResult?.checklistRequirements;
+
+    // checklistRefinementStepの入力形式に変換
+    return {
+      systemChecklists: allItems,
+      checklistRequirements,
+    };
+  })
+  .then(checklistRefinementStep)
+  .map(async ({ inputData }) => {
+    // ブラッシュアップステップが失敗した場合
+    if (inputData.status === 'failed') {
+      return {
+        status: 'failed' as const,
+        errorMessage: inputData.errorMessage,
+      };
+    }
+
+    // ブラッシュアップ後の項目がない場合
+    if (!inputData.refinedItems || inputData.refinedItems.length === 0) {
+      return {
+        status: 'failed' as const,
+        errorMessage: 'チェックリスト項目を生成できませんでした',
       };
     }
 
     return {
       status: 'success' as const,
-      generatedItems: allItems,
-      totalCount: allItems.length,
+      generatedItems: inputData.refinedItems,
+      totalCount: inputData.refinedItems.length,
     };
   })
   .commit();

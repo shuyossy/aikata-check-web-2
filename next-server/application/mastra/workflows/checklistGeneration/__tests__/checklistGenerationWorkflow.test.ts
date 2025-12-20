@@ -10,9 +10,10 @@ import { checkWorkflowResult } from "../../../lib/workflowUtils";
 import type { RawUploadFileMeta } from "../../shared";
 
 // vi.hoistedを使ってモック関数をホイスト（vi.mockより先に宣言される）
-const { mockTopicExtractionAgentGenerateLegacy, mockTopicChecklistAgentGenerateLegacy, mockFileProcessingStep } = vi.hoisted(() => ({
+const { mockTopicExtractionAgentGenerateLegacy, mockTopicChecklistAgentGenerateLegacy, mockChecklistRefinementAgentGenerateLegacy, mockFileProcessingStep } = vi.hoisted(() => ({
   mockTopicExtractionAgentGenerateLegacy: vi.fn(),
   mockTopicChecklistAgentGenerateLegacy: vi.fn(),
+  mockChecklistRefinementAgentGenerateLegacy: vi.fn(),
   mockFileProcessingStep: vi.fn(),
 }));
 
@@ -30,6 +31,13 @@ vi.mock("../../../agents", () => ({
       mockTopicChecklistAgentGenerateLegacy(...args),
   },
   topicChecklistOutputSchema: {
+    parse: vi.fn((v: unknown) => v),
+  },
+  checklistRefinementAgent: {
+    generateLegacy: (...args: unknown[]) =>
+      mockChecklistRefinementAgentGenerateLegacy(...args),
+  },
+  checklistRefinementOutputSchema: {
     parse: vi.fn((v: unknown) => v),
   },
 }));
@@ -89,9 +97,41 @@ describe("checklistGenerationWorkflow", () => {
     });
   };
 
+  // checklistRefinementAgentのデフォルトモック（入力をそのまま返す）
+  const setupDefaultRefinementMock = () => {
+    mockChecklistRefinementAgentGenerateLegacy.mockImplementation(async (message) => {
+      // userプロンプトからチェックリスト項目を抽出（簡易実装）
+      const content = message.content as string;
+      const lines = content.split('\n');
+      const items: string[] = [];
+      let inOriginalSection = false;
+      for (const line of lines) {
+        if (line.includes('ORIGINAL CHECKLIST ITEMS TO REFINE')) {
+          inOriginalSection = true;
+          continue;
+        }
+        if (line.includes('ALREADY REFINED ITEMS') || line.includes('Please refine') || line.includes('Please continue')) {
+          inOriginalSection = false;
+        }
+        if (inOriginalSection) {
+          const match = line.match(/^\d+\.\s+(.+)$/);
+          if (match) {
+            items.push(match[1]);
+          }
+        }
+      }
+      return {
+        object: {
+          refinedChecklists: items,
+        },
+      };
+    });
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
     setupDefaultFileProcessingMock();
+    setupDefaultRefinementMock();
   });
 
   afterEach(() => {
@@ -99,7 +139,7 @@ describe("checklistGenerationWorkflow", () => {
   });
 
   describe("正常系", () => {
-    it("トピック抽出とチェックリスト作成が成功すること", async () => {
+    it("トピック抽出、チェックリスト作成、ブラッシュアップが成功すること", async () => {
       // Arrange
       mockTopicExtractionAgentGenerateLegacy.mockResolvedValue({
         object: {
@@ -122,6 +162,16 @@ describe("checklistGenerationWorkflow", () => {
           },
         });
 
+      // ブラッシュアップ結果（重複削除後）
+      mockChecklistRefinementAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          refinedChecklists: [
+            "セキュリティ項目（統合）",
+            "データ保護項目",
+          ],
+        },
+      });
+
       // Act
       const run = await checklistGenerationWorkflow.createRunAsync();
       const result = await run.start({
@@ -137,8 +187,9 @@ describe("checklistGenerationWorkflow", () => {
       expect(checkResult.status).toBe("success");
       expect(mockTopicExtractionAgentGenerateLegacy).toHaveBeenCalledTimes(1);
       expect(mockTopicChecklistAgentGenerateLegacy).toHaveBeenCalledTimes(2);
+      expect(mockChecklistRefinementAgentGenerateLegacy).toHaveBeenCalledTimes(1);
 
-      // 結果の検証
+      // ブラッシュアップ後の結果を検証
       if (result.status === "success") {
         const workflowResult = result.result as {
           status: string;
@@ -146,11 +197,10 @@ describe("checklistGenerationWorkflow", () => {
           totalCount?: number;
         };
         expect(workflowResult.status).toBe("success");
-        expect(workflowResult.generatedItems).toHaveLength(3);
-        expect(workflowResult.generatedItems).toContain("セキュリティ項目1");
-        expect(workflowResult.generatedItems).toContain("セキュリティ項目2");
-        expect(workflowResult.generatedItems).toContain("データ保護項目1");
-        expect(workflowResult.totalCount).toBe(3);
+        expect(workflowResult.generatedItems).toHaveLength(2);
+        expect(workflowResult.generatedItems).toContain("セキュリティ項目（統合）");
+        expect(workflowResult.generatedItems).toContain("データ保護項目");
+        expect(workflowResult.totalCount).toBe(2);
       }
     });
 
@@ -663,6 +713,162 @@ describe("checklistGenerationWorkflow", () => {
           }),
         ]),
       );
+    });
+  });
+
+  describe("ブラッシュアップステップのテスト", () => {
+    it("ブラッシュアップステップにchecklistRequirementsが渡されること", async () => {
+      // Arrange
+      mockTopicExtractionAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          topics: [{ title: "トピック1", reason: "理由1" }],
+        },
+      });
+
+      mockTopicChecklistAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          checklistItems: ["チェック項目1", "チェック項目2"],
+        },
+      });
+
+      mockChecklistRefinementAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          refinedChecklists: ["ブラッシュアップ後の項目"],
+        },
+      });
+
+      // Act
+      const run = await checklistGenerationWorkflow.createRunAsync();
+      await run.start({
+        inputData: {
+          files: testFiles,
+          checklistRequirements: testChecklistRequirements,
+        },
+        runtimeContext: createTestRuntimeContext(),
+      });
+
+      // Assert
+      const refinementCallArgs = mockChecklistRefinementAgentGenerateLegacy.mock.calls[0];
+      const options = refinementCallArgs[1];
+      expect(options.runtimeContext.get("checklistRequirements")).toBe(testChecklistRequirements);
+    });
+
+    it("ブラッシュアップステップに全チェックリスト項目が渡されること", async () => {
+      // Arrange
+      mockTopicExtractionAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          topics: [
+            { title: "トピック1", reason: "理由1" },
+            { title: "トピック2", reason: "理由2" },
+          ],
+        },
+      });
+
+      mockTopicChecklistAgentGenerateLegacy
+        .mockResolvedValueOnce({
+          object: {
+            checklistItems: ["項目A1", "項目A2"],
+          },
+        })
+        .mockResolvedValueOnce({
+          object: {
+            checklistItems: ["項目B1"],
+          },
+        });
+
+      mockChecklistRefinementAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          refinedChecklists: ["統合された項目"],
+        },
+      });
+
+      // Act
+      const run = await checklistGenerationWorkflow.createRunAsync();
+      await run.start({
+        inputData: {
+          files: testFiles,
+          checklistRequirements: testChecklistRequirements,
+        },
+        runtimeContext: createTestRuntimeContext(),
+      });
+
+      // Assert
+      const refinementCallArgs = mockChecklistRefinementAgentGenerateLegacy.mock.calls[0];
+      const message = refinementCallArgs[0];
+      // 全3項目がuserプロンプトに含まれること
+      expect(message.content).toContain("項目A1");
+      expect(message.content).toContain("項目A2");
+      expect(message.content).toContain("項目B1");
+    });
+
+    it("ブラッシュアップステップが失敗した場合にworkflowが失敗すること", async () => {
+      // Arrange
+      mockTopicExtractionAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          topics: [{ title: "トピック1", reason: "理由1" }],
+        },
+      });
+
+      mockTopicChecklistAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          checklistItems: ["チェック項目"],
+        },
+      });
+
+      mockChecklistRefinementAgentGenerateLegacy.mockRejectedValue(
+        new Error("ブラッシュアップ処理エラー")
+      );
+
+      // Act
+      const run = await checklistGenerationWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: testFiles,
+          checklistRequirements: testChecklistRequirements,
+        },
+        runtimeContext: createTestRuntimeContext(),
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("failed");
+    });
+
+    it("ブラッシュアップ後に項目が空の場合にworkflowが失敗すること", async () => {
+      // Arrange
+      mockTopicExtractionAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          topics: [{ title: "トピック1", reason: "理由1" }],
+        },
+      });
+
+      mockTopicChecklistAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          checklistItems: ["チェック項目"],
+        },
+      });
+
+      // ブラッシュアップ後に項目が空
+      mockChecklistRefinementAgentGenerateLegacy.mockResolvedValue({
+        object: {
+          refinedChecklists: [],
+        },
+      });
+
+      // Act
+      const run = await checklistGenerationWorkflow.createRunAsync();
+      const result = await run.start({
+        inputData: {
+          files: testFiles,
+          checklistRequirements: testChecklistRequirements,
+        },
+        runtimeContext: createTestRuntimeContext(),
+      });
+
+      // Assert
+      const checkResult = checkWorkflowResult(result);
+      expect(checkResult.status).toBe("failed");
+      expect(checkResult.errorMessage).toContain("チェックリスト項目を生成できませんでした");
     });
   });
 });
