@@ -595,6 +595,7 @@ export function CheckListEditClient({
                           variant="outline"
                           size="sm"
                           onClick={handleAddItem}
+                          disabled={isTaskProcessing}
                         >
                           <Plus className="w-4 h-4 mr-1" />
                           最初の項目を追加
