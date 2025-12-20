@@ -5,13 +5,18 @@ import { NextResponse } from "next/server";
  * 認証ミドルウェア
  * 未認証ユーザをサインインページにリダイレクト
  * 認証後は元のパスに戻る（callbackUrl）
+ * 管理者ページへのアクセス制御を実施
  */
 export default withAuth(
   function middleware(req) {
-    // 管理者ページへのアクセス制御（将来用）
-    // if (req.nextUrl.pathname.startsWith("/(admin)")) {
-    //   // TODO: 管理者権限チェックを実装
-    // }
+    // 管理者ページへのアクセス制御
+    if (req.nextUrl.pathname.startsWith("/admin")) {
+      const isAdmin = req.nextauth.token?.isAdmin;
+      if (!isAdmin) {
+        // 管理者でない場合はプロジェクト一覧にリダイレクト
+        return NextResponse.redirect(new URL("/projects", req.url));
+      }
+    }
     return NextResponse.next();
   },
   {

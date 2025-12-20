@@ -7,7 +7,7 @@ import type { IReviewTargetRepository } from "@/application/shared/port/reposito
 import type { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository, IReviewDocumentCacheRepository } from "@/application/shared/port/repository";
+import type { IProjectRepository, IReviewDocumentCacheRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
@@ -83,6 +83,11 @@ describe("RetryReviewService", () => {
     save: vi.fn(),
     saveMany: vi.fn(),
     deleteByReviewTargetId: vi.fn(),
+  };
+
+  const mockSystemSettingRepository: ISystemSettingRepository = {
+    find: vi.fn(),
+    save: vi.fn(),
   };
 
   // モックAiTaskQueueService
@@ -219,6 +224,9 @@ describe("RetryReviewService", () => {
       queueLength: 1,
     });
 
+    // システム設定はデフォルトでnullを返す（環境変数を使用）
+    vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(null);
+
     service = new RetryReviewService(
       mockReviewTargetRepository,
       mockReviewResultRepository,
@@ -226,6 +234,7 @@ describe("RetryReviewService", () => {
       mockReviewSpaceRepository,
       mockProjectRepository,
       mockReviewDocumentCacheRepository,
+      mockSystemSettingRepository,
       mockAiTaskQueueService as unknown as AiTaskQueueService,
     );
   });

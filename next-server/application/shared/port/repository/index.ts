@@ -1,4 +1,13 @@
-export type { IUserRepository, SearchUsersOptions } from "./IUserRepository";
+export type {
+  IUserRepository,
+  SearchUsersOptions,
+  FindAllUsersOptions,
+} from "./IUserRepository";
+export type { ISystemSettingRepository } from "./ISystemSettingRepository";
+export type {
+  ISystemNotificationRepository,
+  FindSystemNotificationsOptions,
+} from "./ISystemNotificationRepository";
 export type {
   IProjectRepository,
   FindProjectsOptions,

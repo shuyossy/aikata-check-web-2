@@ -1,4 +1,4 @@
-import { IProjectRepository } from "@/application/shared/port/repository";
+import { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { getAiTaskBootstrap } from "@/application/aiTask";
@@ -45,6 +45,7 @@ export class GenerateCheckListByAIService {
   constructor(
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
+    private readonly systemSettingRepository: ISystemSettingRepository,
     private readonly aiTaskQueueService: AiTaskQueueService,
   ) {}
 
@@ -94,9 +95,11 @@ export class GenerateCheckListByAIService {
       throw domainValidationError("PROJECT_ACCESS_DENIED");
     }
 
-    // APIキーを取得
+    // APIキーを取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const decryptedApiKey = project.encryptedApiKey?.decrypt();
-    const apiKey = decryptedApiKey ?? process.env.AI_API_KEY;
+    const systemSetting = await this.systemSettingRepository.find();
+    const systemApiKey = systemSetting?.toDto().apiKey;
+    const apiKey = decryptedApiKey ?? systemApiKey ?? process.env.AI_API_KEY;
     if (!apiKey) {
       throw internalError({
         expose: true,

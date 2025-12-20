@@ -110,6 +110,7 @@ export default function ProjectSettingsPage({ params }: Props) {
         id: session.user.id ?? "",
         employeeId: session.user.employeeId ?? "",
         displayName: session.user.displayName ?? "",
+        isAdmin: session.user.isAdmin ?? false,
       }
     : null;
 
@@ -217,6 +218,7 @@ export default function ProjectSettingsPage({ params }: Props) {
       id: m.userId,
       employeeId: m.employeeId,
       displayName: m.displayName,
+      isAdmin: false, // プロジェクトメンバー情報からはisAdminは不明なのでデフォルトfalse
     })),
   };
 

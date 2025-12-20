@@ -149,4 +149,16 @@ export const template = {
   // Q&A入力バリデーションエラー
   QA_CHECKLIST_NOT_SELECTED: `@でチェック項目を選択してください`,
   QA_QUESTION_EMPTY: `質問を入力してください`,
+  // 管理者機能エラー
+  ADMIN_NOT_FOUND: `指定されたユーザが見つかりません。`,
+  ADMIN_ALREADY_EXISTS: `指定されたユーザは既に管理者です。`,
+  ADMIN_CANNOT_REVOKE_SELF: `自分自身の管理者権限を削除することはできません。`,
+  ADMIN_LAST_ADMIN_CANNOT_REVOKE: `最後の管理者の権限を削除することはできません。`,
+  USER_NOT_FOUND: `指定されたユーザが見つかりません。`,
+  FORBIDDEN_ERROR: `この操作を実行する権限がありません。`,
+  // システム通知ドメインバリデーションエラー
+  SYSTEM_NOTIFICATION_ID_INVALID_FORMAT: `システム通知IDの形式が不正です。有効なUUID形式である必要があります。`,
+  SYSTEM_NOTIFICATION_MESSAGE_EMPTY: `通知メッセージは必須です。`,
+  SYSTEM_NOTIFICATION_MESSAGE_TOO_LONG: `通知メッセージは1000文字以内で入力してください。`,
+  SYSTEM_NOTIFICATION_NOT_FOUND: `指定されたシステム通知が見つかりません。`,
 } as const;

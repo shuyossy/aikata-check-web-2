@@ -33,6 +33,7 @@ export const deleteProjectAction = authenticatedAction
     await service.execute({
       projectId: parsedInput.projectId,
       userId: user.id.value,
+      isAdmin: ctx.auth.isAdmin,
     });
 
     return { success: true };

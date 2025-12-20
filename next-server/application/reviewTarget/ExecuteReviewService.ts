@@ -1,7 +1,7 @@
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository } from "@/application/shared/port/repository";
+import { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
 import { ReviewTarget } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
@@ -23,19 +23,6 @@ import type { ReviewTaskPayload } from "@/application/aiTask";
 
 const logger = getLogger();
 
-/**
- * デフォルトAPIキーを取得
- */
-const getDefaultApiKey = (): string => {
-  const apiKey = process.env.AI_API_KEY;
-  if (!apiKey) {
-    throw internalError({
-      expose: true,
-      messageCode: "AI_TASK_NO_API_KEY",
-    });
-  }
-  return apiKey;
-};
 
 /**
  * レビュー設定の入力型
@@ -95,6 +82,7 @@ export class ExecuteReviewService {
     private readonly checkListItemRepository: ICheckListItemRepository,
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
+    private readonly systemSettingRepository: ISystemSettingRepository,
     private readonly aiTaskQueueService: AiTaskQueueService,
   ) {}
 
@@ -174,9 +162,18 @@ export class ExecuteReviewService {
     // レビュー対象をDBに保存（ステータス: queued）
     await this.reviewTargetRepository.save(queuedTarget);
 
-    // APIキーを取得（プロジェクト設定 or デフォルト）
-    const apiKey = project.encryptedApiKey?.decrypt() ?? getDefaultApiKey();
+    // APIキーを取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const decryptedApiKey = project.encryptedApiKey?.decrypt();
+    const systemSetting = await this.systemSettingRepository.find();
+    const systemApiKey = systemSetting?.toDto().apiKey;
+    const apiKey = decryptedApiKey ?? systemApiKey ?? process.env.AI_API_KEY;
+
+    if (!apiKey) {
+      throw internalError({
+        expose: true,
+        messageCode: "AI_TASK_NO_API_KEY",
+      });
+    }
 
     // ファイルバッファをFileInfoCommand配列に変換
     const fileCommands: FileInfoCommand[] = [];

@@ -10,6 +10,7 @@ export interface UserDto {
   id: string;
   employeeId: string;
   displayName: string;
+  isAdmin: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ export interface UserDto {
 export interface CreateUserParams {
   employeeId: string;
   displayName: string;
+  isAdmin?: boolean;
 }
 
 /**
@@ -27,6 +29,7 @@ export interface ReconstructUserParams {
   id: string;
   employeeId: string;
   displayName: string;
+  isAdmin: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -39,6 +42,7 @@ export class User {
   private readonly _id: UserId;
   private readonly _employeeId: EmployeeId;
   private readonly _displayName: string;
+  private readonly _isAdmin: boolean;
   private readonly _createdAt: Date;
   private readonly _updatedAt: Date;
 
@@ -46,12 +50,14 @@ export class User {
     id: UserId,
     employeeId: EmployeeId,
     displayName: string,
+    isAdmin: boolean,
     createdAt: Date,
     updatedAt: Date,
   ) {
     this._id = id;
     this._employeeId = employeeId;
     this._displayName = displayName;
+    this._isAdmin = isAdmin;
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
   }
@@ -61,7 +67,7 @@ export class User {
    * @throws ドメインバリデーションエラー - バリデーション失敗時
    */
   static create(params: CreateUserParams): User {
-    const { employeeId, displayName } = params;
+    const { employeeId, displayName, isAdmin = false } = params;
 
     // 表示名のバリデーション
     User.validateDisplayName(displayName);
@@ -71,6 +77,7 @@ export class User {
       UserId.create(),
       EmployeeId.create(employeeId),
       displayName,
+      isAdmin,
       now,
       now,
     );
@@ -81,7 +88,7 @@ export class User {
    * @throws ドメインバリデーションエラー - バリデーション失敗時
    */
   static reconstruct(params: ReconstructUserParams): User {
-    const { id, employeeId, displayName, createdAt, updatedAt } = params;
+    const { id, employeeId, displayName, isAdmin, createdAt, updatedAt } = params;
 
     // 表示名のバリデーション
     User.validateDisplayName(displayName);
@@ -90,6 +97,7 @@ export class User {
       UserId.reconstruct(id),
       EmployeeId.reconstruct(employeeId),
       displayName,
+      isAdmin,
       createdAt,
       updatedAt,
     );
@@ -115,6 +123,22 @@ export class User {
       this._id,
       this._employeeId,
       newDisplayName,
+      this._isAdmin,
+      this._createdAt,
+      new Date(),
+    );
+  }
+
+  /**
+   * 管理者ステータスを更新する
+   * 新しいUserインスタンスを返す（不変性を保持）
+   */
+  updateAdminStatus(isAdmin: boolean): User {
+    return new User(
+      this._id,
+      this._employeeId,
+      this._displayName,
+      isAdmin,
       this._createdAt,
       new Date(),
     );
@@ -135,6 +159,7 @@ export class User {
       id: this._id.value,
       employeeId: this._employeeId.value,
       displayName: this._displayName,
+      isAdmin: this._isAdmin,
     };
   }
 
@@ -149,6 +174,10 @@ export class User {
 
   get displayName(): string {
     return this._displayName;
+  }
+
+  get isAdmin(): boolean {
+    return this._isAdmin;
   }
 
   get createdAt(): Date {

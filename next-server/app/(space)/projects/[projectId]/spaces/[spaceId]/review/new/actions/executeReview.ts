@@ -19,6 +19,7 @@ import {
   UserRepository,
   AiTaskRepository,
   AiTaskFileMetadataRepository,
+  SystemSettingRepository,
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
 import { ReviewTargetRepository } from "@/infrastructure/adapter/db";
@@ -253,11 +254,13 @@ export const executeReviewAction = authenticatedAction
     );
 
     // サービスを実行（キューに登録）
+    const systemSettingRepository = new SystemSettingRepository();
     const service = new ExecuteReviewService(
       reviewTargetRepository,
       checkListItemRepository,
       reviewSpaceRepository,
       projectRepository,
+      systemSettingRepository,
       aiTaskQueueService,
     );
 

@@ -20,6 +20,8 @@ export const authOptions: NextAuthOptions = {
           employeeId: profile.preferred_username,
           displayName:
             profile.display_name || profile.name || profile.preferred_username,
+          // 管理者フラグ（初期値、signInでDB値に更新される）
+          isAdmin: false,
           // 標準属性
           name: profile.name,
           email: profile.email,
@@ -42,6 +44,7 @@ export const authOptions: NextAuthOptions = {
         token.id = user.id; // DBのユーザーID（UUID）
         token.employeeId = user.employeeId;
         token.displayName = user.displayName;
+        token.isAdmin = user.isAdmin;
       }
       return token;
     },
@@ -53,6 +56,7 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string; // DBのユーザーID（UUID）
         session.user.employeeId = token.employeeId as string;
         session.user.displayName = token.displayName as string;
+        session.user.isAdmin = (token.isAdmin as boolean) ?? false;
       }
       return session;
     },
@@ -68,6 +72,8 @@ export const authOptions: NextAuthOptions = {
         });
         // DBのユーザーID（UUID）をuserオブジェクトに設定
         user.id = syncedUser.id;
+        // 管理者フラグをDBから取得
+        user.isAdmin = syncedUser.isAdmin;
         return true;
       } catch (error) {
         console.error("Failed to sync user:", error);

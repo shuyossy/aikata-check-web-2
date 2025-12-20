@@ -4,7 +4,7 @@ import {
   type GenerateCheckListByAICommand,
 } from "../GenerateCheckListByAIService";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository } from "@/application/shared/port/repository";
+import type { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
@@ -39,6 +39,11 @@ describe("GenerateCheckListByAIService", () => {
     countByMemberId: vi.fn(),
     save: vi.fn(),
     delete: vi.fn(),
+  };
+
+  const mockSystemSettingRepository: ISystemSettingRepository = {
+    find: vi.fn(),
+    save: vi.fn(),
   };
 
   // モックAiTaskQueueService
@@ -119,9 +124,13 @@ describe("GenerateCheckListByAIService", () => {
       apiKeyHash: testApiKeyHash,
     });
 
+    // システム設定はデフォルトでnullを返す（環境変数を使用）
+    vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(null);
+
     service = new GenerateCheckListByAIService(
       mockReviewSpaceRepository,
       mockProjectRepository,
+      mockSystemSettingRepository,
       mockAiTaskQueueService as unknown as AiTaskQueueService,
     );
   });

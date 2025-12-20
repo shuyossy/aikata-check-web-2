@@ -66,7 +66,7 @@ export const planQaResearchStep = createStep({
   description: '調査計画を作成するステップ',
   inputSchema: planQaResearchStepInputSchema,
   outputSchema: planQaResearchStepOutputSchema,
-  execute: async ({ inputData, bail, mastra }) => {
+  execute: async ({ inputData, bail, mastra, runtimeContext: workflowRuntimeContext }) => {
     try {
       const { question, availableDocuments, checklistResults } = inputData;
 
@@ -76,12 +76,23 @@ export const planQaResearchStep = createStep({
       // チェックリスト情報の文字列を生成
       const checklistInfo = buildPlanningChecklistInfo(checklistResults);
 
-      // RuntimeContext作成
+      // ワークフローRuntimeContextからシステム設定を取得
+      const typedWorkflowRuntimeContext = workflowRuntimeContext as
+        | RuntimeContext<QaExecutionWorkflowRuntimeContext>
+        | undefined;
+      const systemApiKey = typedWorkflowRuntimeContext?.get('systemApiKey');
+      const systemApiUrl = typedWorkflowRuntimeContext?.get('systemApiUrl');
+      const systemApiModel = typedWorkflowRuntimeContext?.get('systemApiModel');
+
+      // RuntimeContext作成（システム設定も含める）
       const runtimeContext =
         createRuntimeContext<QaPlanningAgentRuntimeContext>({
           availableDocuments,
           checklistInfo,
           reviewMode,
+          systemApiKey,
+          systemApiUrl,
+          systemApiModel,
         });
 
       // Mastraエージェント経由でAI呼び出し（構造化出力）

@@ -60,6 +60,12 @@ export const unauthorizedError = () =>
     messageCode: "UNAUTHORIZED_ERROR",
   });
 
+export const forbiddenError = () =>
+  new AppError("FORBIDDEN", {
+    expose: true,
+    messageCode: "FORBIDDEN_ERROR",
+  });
+
 export const validationGeneralParamError = () =>
   new AppError("VALIDATION", {
     expose: true,

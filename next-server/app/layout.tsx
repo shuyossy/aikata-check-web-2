@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { Toaster } from "@/components/ui/sonner";
+import { SystemNotificationBannerWrapper } from "@/components/layout/SystemNotificationBannerWrapper";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,9 +32,12 @@ export default function RootLayout({
   return (
     <html lang="ja">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col overflow-hidden`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <SystemNotificationBannerWrapper />
+          <div className="flex-1 overflow-hidden">{children}</div>
+        </AuthProvider>
         <Toaster />
       </body>
     </html>

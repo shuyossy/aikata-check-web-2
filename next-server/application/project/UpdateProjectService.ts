@@ -14,6 +14,8 @@ export interface UpdateProjectCommand {
   projectId: string;
   /** リクエストユーザID */
   userId: string;
+  /** 管理者フラグ（管理者の場合はメンバーチェックをスキップ） */
+  isAdmin?: boolean;
   /** プロジェクト名（更新する場合） */
   name?: string;
   /** プロジェクト説明（更新する場合） */
@@ -39,7 +41,7 @@ export class UpdateProjectService {
    * @throws ドメインバリデーションエラー - プロジェクトが存在しない場合、またはアクセス権がない場合
    */
   async execute(command: UpdateProjectCommand): Promise<ProjectDto> {
-    const { projectId, userId, name, description, apiKey } = command;
+    const { projectId, userId, isAdmin, name, description, apiKey } = command;
 
     // プロジェクトを取得
     let project = await this.projectRepository.findById(
@@ -50,8 +52,8 @@ export class UpdateProjectService {
       throw domainValidationError("PROJECT_NOT_FOUND");
     }
 
-    // アクセス権の確認（メンバーのみ編集可能）
-    if (!project.hasMember(userId)) {
+    // アクセス権の確認（管理者またはメンバーのみ編集可能）
+    if (!isAdmin && !project.hasMember(userId)) {
       throw domainValidationError("PROJECT_ACCESS_DENIED");
     }
 

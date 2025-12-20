@@ -15,6 +15,7 @@ import {
   ReviewDocumentCacheRepository,
   AiTaskRepository,
   AiTaskFileMetadataRepository,
+  SystemSettingRepository,
 } from "@/infrastructure/adapter/db";
 import { EmployeeId } from "@/domain/user";
 
@@ -85,6 +86,7 @@ export const retryReviewAction = authenticatedAction
     );
 
     // サービスを実行（キューに登録）
+    const systemSettingRepository = new SystemSettingRepository();
     const service = new RetryReviewService(
       reviewTargetRepository,
       reviewResultRepository,
@@ -92,6 +94,7 @@ export const retryReviewAction = authenticatedAction
       reviewSpaceRepository,
       projectRepository,
       reviewDocumentCacheRepository,
+      systemSettingRepository,
       aiTaskQueueService,
     );
 

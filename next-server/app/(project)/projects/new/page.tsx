@@ -42,6 +42,7 @@ export default function NewProjectPage() {
         id: session.user.id ?? "",
         employeeId: session.user.employeeId ?? "",
         displayName: session.user.displayName ?? "",
+        isAdmin: session.user.isAdmin ?? false,
       }
     : null;
 

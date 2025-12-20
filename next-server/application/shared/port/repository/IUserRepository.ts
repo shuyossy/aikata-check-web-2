@@ -12,6 +12,18 @@ export interface SearchUsersOptions {
 }
 
 /**
+ * 全ユーザ取得オプション
+ */
+export interface FindAllUsersOptions {
+  /** 取得件数 */
+  limit?: number;
+  /** オフセット */
+  offset?: number;
+  /** 検索クエリ（名前または社員IDで部分一致） */
+  query?: string;
+}
+
+/**
  * ユーザリポジトリインターフェース
  * インフラ層で実装される
  */
@@ -57,4 +69,30 @@ export interface IUserRepository {
    * @param user ユーザエンティティ
    */
   save(user: User): Promise<void>;
+
+  /**
+   * 全ての管理者ユーザを取得
+   * @returns 管理者ユーザエンティティの配列
+   */
+  findAllAdmins(): Promise<User[]>;
+
+  /**
+   * 管理者ユーザの数をカウント
+   * @returns 管理者の人数
+   */
+  countAdmins(): Promise<number>;
+
+  /**
+   * 全ユーザを取得（ページネーション対応）
+   * @param options 取得オプション
+   * @returns ユーザエンティティの配列
+   */
+  findAll(options?: FindAllUsersOptions): Promise<User[]>;
+
+  /**
+   * 全ユーザ数をカウント
+   * @param query 検索クエリ（オプション）
+   * @returns 件数
+   */
+  countAll(query?: string): Promise<number>;
 }

@@ -117,7 +117,7 @@ export default async function ProjectLayout({
   );
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-full bg-gray-50">
       {/* サイドバー */}
       <Sidebar
         currentProject={{

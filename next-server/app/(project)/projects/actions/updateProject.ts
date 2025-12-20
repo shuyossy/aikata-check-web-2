@@ -36,6 +36,7 @@ export const updateProjectAction = authenticatedAction
     return service.execute({
       projectId: parsedInput.projectId,
       userId: user.id.value,
+      isAdmin: ctx.auth.isAdmin,
       name: parsedInput.name,
       description: parsedInput.description,
       apiKey: parsedInput.apiKey,

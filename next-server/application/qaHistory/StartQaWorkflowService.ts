@@ -3,6 +3,7 @@ import { IReviewTargetRepository } from "@/application/shared/port/repository/IR
 import { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
+import { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
 import { IEventBroker } from "@/application/shared/port/push/IEventBroker";
 import { QaHistory, QaHistoryId, Answer, ResearchSummary, QaStatus } from "@/domain/qaHistory";
 import { ReviewTargetId } from "@/domain/reviewTarget";
@@ -36,6 +37,7 @@ export class StartQaWorkflowService {
     private readonly reviewResultRepository: IReviewResultRepository,
     private readonly reviewDocumentCacheRepository: IReviewDocumentCacheRepository,
     private readonly largeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository,
+    private readonly systemSettingRepository: ISystemSettingRepository,
     private readonly eventBroker: IEventBroker,
     private readonly mastra: Mastra,
   ) {}
@@ -140,6 +142,21 @@ export class StartQaWorkflowService {
       runtimeContext.set("eventBroker", this.eventBroker);
       runtimeContext.set("userId", userId);
       runtimeContext.set("qaHistoryId", qaHistoryId.value);
+
+      // システム設定（管理者設定）をRuntimeContextに追加
+      const systemSetting = await this.systemSettingRepository.find();
+      if (systemSetting) {
+        const dto = systemSetting.toDto();
+        if (dto.apiKey) {
+          runtimeContext.set("systemApiKey", dto.apiKey);
+        }
+        if (dto.apiUrl) {
+          runtimeContext.set("systemApiUrl", dto.apiUrl);
+        }
+        if (dto.apiModel) {
+          runtimeContext.set("systemApiModel", dto.apiModel);
+        }
+      }
 
       // ワークフローを実行
       const run = await qaExecutionWorkflow.createRunAsync();

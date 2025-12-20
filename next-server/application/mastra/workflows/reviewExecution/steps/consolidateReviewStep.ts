@@ -135,6 +135,9 @@ export const consolidateReviewStep = createStep({
     const reviewTargetId = typedWorkflowRuntimeContext?.get("reviewTargetId");
     const onReviewResultSaved = typedWorkflowRuntimeContext?.get("onReviewResultSaved");
     const onIndividualResultsSaved = typedWorkflowRuntimeContext?.get("onIndividualResultsSaved");
+    const systemApiKey = typedWorkflowRuntimeContext?.get("systemApiKey");
+    const systemApiUrl = typedWorkflowRuntimeContext?.get("systemApiUrl");
+    const systemApiModel = typedWorkflowRuntimeContext?.get("systemApiModel");
 
     try {
       // 評価基準のラベル一覧を取得
@@ -221,7 +224,7 @@ ${targetChecklistItems.map((item, index) => `- ID: ${index + 1} - ${item.content
 
 Please provide a consolidated review that synthesizes all individual document reviews into a unified assessment for the entire document set.`;
 
-        // エージェント用のRuntimeContextを作成
+        // エージェント用のRuntimeContextを作成（システム設定も含める）
         const runtimeContext =
           createRuntimeContext<ConsolidateReviewAgentRuntimeContext>({
             checklistItems: targetChecklistItems,
@@ -230,6 +233,9 @@ Please provide a consolidated review that synthesizes all individual document re
             evaluationCriteria: evaluationCriteria ?? undefined,
             projectApiKey,
             employeeId,
+            systemApiKey,
+            systemApiUrl,
+            systemApiModel,
           });
 
         // エージェントを実行

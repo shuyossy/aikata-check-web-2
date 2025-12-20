@@ -6,6 +6,7 @@ import type { ICheckListItemRepository } from "@/application/shared/port/reposit
 import type { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import type { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
+import type { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
 import type { AiTaskDto } from "@/domain/aiTask";
 import { ReviewTarget } from "@/domain/reviewTarget";
 import { ReviewSpace } from "@/domain/reviewSpace";
@@ -117,6 +118,11 @@ describe("AiTaskExecutor", () => {
     getMaxTotalChunksForDocument: vi.fn(),
   };
 
+  const mockSystemSettingRepository: ISystemSettingRepository = {
+    find: vi.fn().mockResolvedValue(null),
+    save: vi.fn(),
+  };
+
   let executor: AiTaskExecutor;
 
   const now = new Date();
@@ -144,6 +150,7 @@ describe("AiTaskExecutor", () => {
       mockReviewDocumentCacheRepository,
       mockReviewSpaceRepository,
       mockLargeDocumentResultCacheRepository,
+      mockSystemSettingRepository,
     );
   });
 

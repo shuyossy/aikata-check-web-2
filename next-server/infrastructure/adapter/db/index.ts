@@ -11,4 +11,6 @@ export {
   AiTaskFileMetadataRepository,
   QaHistoryRepository,
   LargeDocumentResultCacheRepository,
+  SystemSettingRepository,
+  SystemNotificationRepository,
 } from "./drizzle/repository";

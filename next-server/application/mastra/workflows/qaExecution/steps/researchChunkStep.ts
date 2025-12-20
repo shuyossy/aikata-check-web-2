@@ -1,7 +1,8 @@
 import { createStep } from '@mastra/core/workflows';
+import type { RuntimeContext } from '@mastra/core/di';
 import { z } from 'zod';
 import { baseStepOutputSchema } from '../../schema';
-import { checklistResultWithIndividualSchema } from '../types';
+import { checklistResultWithIndividualSchema, type QaExecutionWorkflowRuntimeContext } from '../types';
 import { judgeReviewMode, buildResearchChecklistInfo } from '../lib';
 import type { QaResearchAgentRuntimeContext } from '@/application/mastra/agents/types';
 import { createRuntimeContext } from '@/application/mastra/lib/agentUtils';
@@ -63,7 +64,7 @@ export const researchChunkStep = createStep({
   description: 'チャンク単位でドキュメントを調査するステップ',
   inputSchema: researchChunkStepInputSchema,
   outputSchema: researchChunkStepOutputSchema,
-  execute: async ({ inputData, bail, mastra }) => {
+  execute: async ({ inputData, bail, mastra, runtimeContext: workflowRuntimeContext }) => {
     try {
       const {
         fileName,
@@ -81,7 +82,15 @@ export const researchChunkStep = createStep({
       // チェックリスト情報の文字列を生成
       const checklistInfo = buildResearchChecklistInfo(checklistResults);
 
-      // RuntimeContext作成
+      // ワークフローRuntimeContextからシステム設定を取得
+      const typedWorkflowRuntimeContext = workflowRuntimeContext as
+        | RuntimeContext<QaExecutionWorkflowRuntimeContext>
+        | undefined;
+      const systemApiKey = typedWorkflowRuntimeContext?.get('systemApiKey');
+      const systemApiUrl = typedWorkflowRuntimeContext?.get('systemApiUrl');
+      const systemApiModel = typedWorkflowRuntimeContext?.get('systemApiModel');
+
+      // RuntimeContext作成（システム設定も含める）
       const runtimeContext = createRuntimeContext<QaResearchAgentRuntimeContext>({
         researchContent,
         totalChunks,
@@ -90,6 +99,9 @@ export const researchChunkStep = createStep({
         checklistInfo,
         userQuestion: question,
         reviewMode,
+        systemApiKey,
+        systemApiUrl,
+        systemApiModel,
       });
 
       // メッセージを作成

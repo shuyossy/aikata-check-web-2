@@ -2,7 +2,7 @@ import { IReviewTargetRepository } from "@/application/shared/port/repository/IR
 import { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository, IReviewDocumentCacheRepository } from "@/application/shared/port/repository";
+import { IProjectRepository, IReviewDocumentCacheRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { getAiTaskBootstrap } from "@/application/aiTask";
 import { ReviewTargetId, ReviewType } from "@/domain/reviewTarget";
@@ -62,6 +62,7 @@ export class RetryReviewService {
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
     private readonly reviewDocumentCacheRepository: IReviewDocumentCacheRepository,
+    private readonly systemSettingRepository: ISystemSettingRepository,
     private readonly aiTaskQueueService: AiTaskQueueService,
   ) {}
 
@@ -172,9 +173,11 @@ export class RetryReviewService {
     // レビュー設定を決定（コマンドで指定がなければ前回の設定を使用）
     const effectiveSettings = reviewSettings ?? reviewTarget.reviewSettings?.toDto() ?? null;
 
-    // APIキーを取得
+    // APIキーを取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const decryptedApiKey = project.encryptedApiKey?.decrypt();
-    const apiKey = decryptedApiKey ?? process.env.AI_API_KEY;
+    const systemSetting = await this.systemSettingRepository.find();
+    const systemApiKey = systemSetting?.toDto().apiKey;
+    const apiKey = decryptedApiKey ?? systemApiKey ?? process.env.AI_API_KEY;
     if (!apiKey) {
       throw internalError({
         expose: true,

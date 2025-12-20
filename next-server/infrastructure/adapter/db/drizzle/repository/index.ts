@@ -9,3 +9,5 @@ export { AiTaskRepository } from "./AiTaskRepository";
 export { AiTaskFileMetadataRepository } from "./AiTaskFileMetadataRepository";
 export { QaHistoryRepository } from "./QaHistoryRepository";
 export { LargeDocumentResultCacheRepository } from "./LargeDocumentResultCacheRepository";
+export { SystemSettingRepository } from "./SystemSettingRepository";
+export { SystemNotificationRepository } from "./SystemNotificationRepository";

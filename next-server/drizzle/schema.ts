@@ -9,6 +9,7 @@ import {
   uniqueIndex,
   jsonb,
   integer,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -22,6 +23,8 @@ export const users = pgTable("users", {
   employeeId: varchar("employee_id", { length: 255 }).notNull().unique(),
   /** Keycloakのdisplay_name（表示名） */
   displayName: varchar("display_name", { length: 255 }).notNull(),
+  /** 管理者フラグ（デフォルトfalse） */
+  isAdmin: boolean("is_admin").notNull().default(false),
   /** レコード作成日時 */
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -554,3 +557,79 @@ export type LargeDocumentResultCacheDbEntity =
   typeof largeDocumentResultCaches.$inferSelect;
 export type NewLargeDocumentResultCacheDbEntity =
   typeof largeDocumentResultCaches.$inferInsert;
+
+/**
+ * system_settingsテーブル
+ * システム全体の設定を管理（シングルトン、常に1レコード）
+ */
+export const systemSettings = pgTable("system_settings", {
+  /**
+   * 設定ID（PK）
+   * シングルトンパターンのため常に1
+   */
+  id: integer("id").primaryKey().default(1),
+  /**
+   * AES-256で暗号化されたAPIキー
+   * 環境変数のAI_API_KEYを上書きする
+   */
+  encryptedApiKey: text("encrypted_api_key"),
+  /**
+   * AI APIのURL
+   * 環境変数のAI_API_URLを上書きする
+   */
+  apiUrl: text("api_url"),
+  /**
+   * AI APIのモデル名
+   * 環境変数のAI_API_MODELを上書きする
+   */
+  apiModel: varchar("api_model", { length: 255 }),
+  /** レコード更新日時 */
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
+ * システム設定テーブルの型定義
+ */
+export type SystemSettingDbEntity = typeof systemSettings.$inferSelect;
+export type NewSystemSettingDbEntity = typeof systemSettings.$inferInsert;
+
+/**
+ * system_notificationsテーブル
+ * 全画面に表示するシステム通知を管理
+ */
+export const systemNotifications = pgTable(
+  "system_notifications",
+  {
+    /** 通知ID（PK） */
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** 通知メッセージ */
+    message: text("message").notNull(),
+    /**
+     * 表示順序（小さいほど先に表示）
+     * 0が最も優先度が高い
+     */
+    displayOrder: integer("display_order").notNull().default(0),
+    /**
+     * 有効フラグ
+     * falseの場合は画面に表示されない
+     */
+    isActive: boolean("is_active").notNull().default(true),
+    /** レコード作成日時 */
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    /** レコード更新日時 */
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("idx_system_notifications_display_order").on(table.displayOrder)],
+);
+
+/**
+ * システム通知テーブルの型定義
+ */
+export type SystemNotificationDbEntity = typeof systemNotifications.$inferSelect;
+export type NewSystemNotificationDbEntity = typeof systemNotifications.$inferInsert;

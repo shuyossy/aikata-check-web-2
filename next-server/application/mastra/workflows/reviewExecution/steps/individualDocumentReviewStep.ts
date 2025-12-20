@@ -105,6 +105,9 @@ export const individualDocumentReviewStep = createStep({
       | undefined;
     const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
     const projectApiKey = typedWorkflowRuntimeContext?.get("projectApiKey");
+    const systemApiKey = typedWorkflowRuntimeContext?.get("systemApiKey");
+    const systemApiUrl = typedWorkflowRuntimeContext?.get("systemApiUrl");
+    const systemApiModel = typedWorkflowRuntimeContext?.get("systemApiModel");
 
     try {
       // 動的に出力スキーマを作成（チェックリストIDは1始まり連番）
@@ -164,7 +167,7 @@ Please provide a thorough review based on the document content provided above.`;
 
       // 最大リトライ回数までレビューを繰り返す
       while (attempt < MAX_RETRY_ATTEMPTS && targetChecklistItems.length > 0) {
-        // エージェント用のRuntimeContextを作成
+        // エージェント用のRuntimeContextを作成（システム設定も含める）
         const runtimeContext =
           createRuntimeContext<IndividualDocumentReviewAgentRuntimeContext>({
             checklistItems: targetChecklistItems,
@@ -172,6 +175,9 @@ Please provide a thorough review based on the document content provided above.`;
             commentFormat: commentFormat ?? undefined,
             projectApiKey,
             employeeId,
+            systemApiKey,
+            systemApiUrl,
+            systemApiModel,
           });
 
         // チェックリストリマインダーを追加

@@ -4,32 +4,40 @@ import type { BaseRuntimeContext } from "../types";
 
 /**
  * AIモデルを取得する
- * RuntimeContextからprojectApiKeyが取得できればそれを使用し、
- * なければ環境変数のAI_API_KEYをフォールバックとして使用
+ * 優先順位: プロジェクト設定 > 管理者設定（SystemSetting） > 環境変数
  *
  * @param runtimeContext - RuntimeContext（オプション）
  * @returns OpenAI互換のチャットモデル
  */
 export const getModel = (runtimeContext?: RuntimeContext<BaseRuntimeContext>) => {
-  // プロジェクトのAPIキーを優先、なければ環境変数をフォールバック
+  // APIキー: プロジェクト設定 > 管理者設定 > 環境変数
   const projectApiKey = runtimeContext?.get("projectApiKey");
-  const apiKey = projectApiKey || process.env.AI_API_KEY;
+  const systemApiKey = runtimeContext?.get("systemApiKey");
+  const apiKey = projectApiKey || systemApiKey || process.env.AI_API_KEY;
+
+  // API URL: 管理者設定 > 環境変数（プロジェクトレベルでは設定不可）
+  const systemApiUrl = runtimeContext?.get("systemApiUrl");
+  const apiUrl = systemApiUrl || process.env.AI_API_URL;
+
+  // APIモデル: 管理者設定 > 環境変数（プロジェクトレベルでは設定不可）
+  const systemApiModel = runtimeContext?.get("systemApiModel");
+  const apiModel = systemApiModel || process.env.AI_API_MODEL;
 
   if (!apiKey) {
     throw new Error('AI API Key is not configured');
   }
 
-  if (!process.env.AI_API_URL) {
+  if (!apiUrl) {
     throw new Error('AI_API_URL is not set');
   }
 
-  if (!process.env.AI_API_MODEL) {
+  if (!apiModel) {
     throw new Error('AI_API_MODEL is not set');
   }
 
   return createOpenAICompatible({
     name: 'openAICompatibleModel',
     apiKey,
-    baseURL: process.env.AI_API_URL,
-  }).chatModel(process.env.AI_API_MODEL);
+    baseURL: apiUrl,
+  }).chatModel(apiModel);
 };

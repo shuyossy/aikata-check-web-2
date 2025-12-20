@@ -81,6 +81,9 @@ export const smallDocumentReviewStep = createStep({
     const projectApiKey = typedWorkflowRuntimeContext?.get("projectApiKey");
     const reviewTargetId = typedWorkflowRuntimeContext?.get("reviewTargetId");
     const onReviewResultSaved = typedWorkflowRuntimeContext?.get("onReviewResultSaved");
+    const systemApiKey = typedWorkflowRuntimeContext?.get("systemApiKey");
+    const systemApiUrl = typedWorkflowRuntimeContext?.get("systemApiUrl");
+    const systemApiModel = typedWorkflowRuntimeContext?.get("systemApiModel");
 
     try {
 
@@ -142,7 +145,7 @@ Please review the document against the above checklist items.`;
 
       // 最大リトライ回数までレビューを繰り返す
       while (attempt < MAX_RETRY_ATTEMPTS && targetChecklistItems.length > 0) {
-        // エージェント用のRuntimeContextを作成
+        // エージェント用のRuntimeContextを作成（システム設定も含める）
         const runtimeContext =
           createRuntimeContext<ReviewExecuteAgentRuntimeContext>({
             checklistItems: targetChecklistItems,
@@ -151,6 +154,9 @@ Please review the document against the above checklist items.`;
             evaluationCriteria: evaluationCriteria ?? undefined,
             projectApiKey,
             employeeId,
+            systemApiKey,
+            systemApiUrl,
+            systemApiModel,
           });
 
         // チェックリストリマインダーを追加

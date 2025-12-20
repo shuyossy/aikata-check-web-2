@@ -22,8 +22,28 @@ describe("User", () => {
       expect(user.id).toBeDefined();
       expect(user.employeeId.value).toBe("EMP001");
       expect(user.displayName).toBe("山田太郎");
+      expect(user.isAdmin).toBe(false);
       expect(user.createdAt).toEqual(fixedDate);
       expect(user.updatedAt).toEqual(fixedDate);
+    });
+
+    it("isAdminをtrueで作成できる", () => {
+      const user = User.create({
+        employeeId: "EMP001",
+        displayName: "管理者",
+        isAdmin: true,
+      });
+
+      expect(user.isAdmin).toBe(true);
+    });
+
+    it("isAdminを指定しない場合はfalseになる", () => {
+      const user = User.create({
+        employeeId: "EMP001",
+        displayName: "一般ユーザ",
+      });
+
+      expect(user.isAdmin).toBe(false);
     });
 
     it("作成時にUserIdが自動生成される", () => {
@@ -50,6 +70,7 @@ describe("User", () => {
         id,
         employeeId: "EMP001",
         displayName: "山田太郎",
+        isAdmin: false,
         createdAt,
         updatedAt,
       });
@@ -57,8 +78,22 @@ describe("User", () => {
       expect(user.id.value).toBe(id);
       expect(user.employeeId.value).toBe("EMP001");
       expect(user.displayName).toBe("山田太郎");
+      expect(user.isAdmin).toBe(false);
       expect(user.createdAt).toEqual(createdAt);
       expect(user.updatedAt).toEqual(updatedAt);
+    });
+
+    it("管理者フラグをtrueで復元できる", () => {
+      const user = User.reconstruct({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        employeeId: "EMP001",
+        displayName: "管理者",
+        isAdmin: true,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(user.isAdmin).toBe(true);
     });
   });
 
@@ -157,10 +192,60 @@ describe("User", () => {
           id: "invalid-uuid",
           employeeId: "EMP001",
           displayName: "山田太郎",
+          isAdmin: false,
           createdAt: new Date(),
           updatedAt: new Date(),
         }),
       ).toThrow();
+    });
+  });
+
+  describe("updateAdminStatus", () => {
+    it("管理者フラグをtrueに更新できる", () => {
+      const user = User.create({
+        employeeId: "EMP001",
+        displayName: "一般ユーザ",
+        isAdmin: false,
+      });
+
+      // 時間を進める
+      const laterDate = new Date("2024-06-01T00:00:00.000Z");
+      vi.setSystemTime(laterDate);
+
+      const updatedUser = user.updateAdminStatus(true);
+
+      expect(updatedUser.isAdmin).toBe(true);
+      expect(updatedUser.updatedAt).toEqual(laterDate);
+      // その他のプロパティは変更されない
+      expect(updatedUser.id.value).toBe(user.id.value);
+      expect(updatedUser.employeeId.value).toBe(user.employeeId.value);
+      expect(updatedUser.displayName).toBe(user.displayName);
+      expect(updatedUser.createdAt).toEqual(user.createdAt);
+    });
+
+    it("管理者フラグをfalseに更新できる", () => {
+      const user = User.create({
+        employeeId: "EMP001",
+        displayName: "管理者",
+        isAdmin: true,
+      });
+
+      const updatedUser = user.updateAdminStatus(false);
+
+      expect(updatedUser.isAdmin).toBe(false);
+    });
+
+    it("元のUserインスタンスは不変である", () => {
+      const user = User.create({
+        employeeId: "EMP001",
+        displayName: "一般ユーザ",
+        isAdmin: false,
+      });
+
+      user.updateAdminStatus(true);
+
+      // 元のインスタンスは変更されていない
+      expect(user.isAdmin).toBe(false);
     });
   });
 
@@ -197,6 +282,24 @@ describe("User", () => {
         id: user.id.value,
         employeeId: "EMP001",
         displayName: "山田太郎",
+        isAdmin: false,
+      });
+    });
+
+    it("管理者のDTOに変換できる", () => {
+      const user = User.create({
+        employeeId: "EMP001",
+        displayName: "管理者",
+        isAdmin: true,
+      });
+
+      const dto = user.toDto();
+
+      expect(dto).toEqual({
+        id: user.id.value,
+        employeeId: "EMP001",
+        displayName: "管理者",
+        isAdmin: true,
       });
     });
   });

@@ -52,20 +52,26 @@ export const topicChecklistCreationStep = createStep({
     try {
       const { topic, checklistRequirements, files } = inputData;
 
-      // workflowのRuntimeContextからemployeeIdとprojectApiKeyを取得
+      // workflowのRuntimeContextからemployeeIdとprojectApiKey、システム設定を取得
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>
         | undefined;
       const employeeId = typedWorkflowRuntimeContext?.get('employeeId');
       const projectApiKey = typedWorkflowRuntimeContext?.get('projectApiKey');
+      const systemApiKey = typedWorkflowRuntimeContext?.get('systemApiKey');
+      const systemApiUrl = typedWorkflowRuntimeContext?.get('systemApiUrl');
+      const systemApiModel = typedWorkflowRuntimeContext?.get('systemApiModel');
 
-      // エージェント用のRuntimeContextを作成（employeeIdとprojectApiKeyを引き継ぐ）
+      // エージェント用のRuntimeContextを作成（employeeIdとprojectApiKey、システム設定を引き継ぐ）
       const runtimeContext =
         createRuntimeContext<TopicChecklistAgentRuntimeContext>({
           topic,
           checklistRequirements,
           projectApiKey,
           employeeId,
+          systemApiKey,
+          systemApiUrl,
+          systemApiModel,
         });
 
       // メッセージコンテンツを作成（ドキュメント + トピック情報）

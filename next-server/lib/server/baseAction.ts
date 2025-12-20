@@ -4,7 +4,12 @@ import {
 } from "next-safe-action";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/auth";
-import { normalizeUnknownError, toPayload, unauthorizedError } from "./error";
+import {
+  normalizeUnknownError,
+  toPayload,
+  unauthorizedError,
+  forbiddenError,
+} from "./error";
 import { createContextLogger, getLogger } from "./logger";
 import { runWithRequestContext } from "./requestContext";
 import { v4 as uuidv4 } from "uuid";
@@ -13,10 +18,14 @@ import { v4 as uuidv4 } from "uuid";
  * 認証済みユーザコンテキスト
  */
 export interface AuthContext {
+  /** DBのユーザーID（UUID） */
+  userId: string;
   /** Keycloakの社員ID */
   employeeId: string;
   /** 表示名 */
   displayName: string;
+  /** 管理者フラグ */
+  isAdmin: boolean;
   /** リクエストID */
   requestId: string;
 }
@@ -69,8 +78,10 @@ export const authenticatedAction = baseAction.use(async ({ next }) => {
 
   // 認証情報をコンテキストに追加
   const authContext: AuthContext = {
+    userId: session.user.id,
     employeeId: session.user.employeeId,
     displayName: session.user.displayName,
+    isAdmin: session.user.isAdmin ?? false,
     requestId,
   };
 
@@ -98,4 +109,19 @@ export const publicAction = baseAction.use(async ({ next }) => {
 
   // AsyncLocalStorageにリクエストコンテキストを設定して実行
   return runWithRequestContext({ requestId }, () => next());
+});
+
+/**
+ * 管理者専用アクション用の基底クラス
+ * - 認証に加えて、管理者フラグのチェックを実施
+ * - 管理者でない場合はForbiddenエラーをスロー
+ */
+export const adminAction = authenticatedAction.use(async ({ next }) => {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.isAdmin) {
+    throw forbiddenError();
+  }
+
+  return next();
 });

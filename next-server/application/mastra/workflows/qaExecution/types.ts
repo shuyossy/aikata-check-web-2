@@ -1,10 +1,11 @@
 import { z } from "zod";
 import type { IEventBroker } from "@/application/shared/port/push/IEventBroker";
+import type { BaseRuntimeContext } from "@/application/mastra/types";
 
 /**
  * Q&A実行ワークフローのRuntimeContext型定義
  */
-export type QaExecutionWorkflowRuntimeContext = {
+export type QaExecutionWorkflowRuntimeContext = BaseRuntimeContext & {
   /** SSEイベント発行用ブローカー */
   eventBroker: IEventBroker;
   /** ユーザーID */

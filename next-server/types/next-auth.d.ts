@@ -13,6 +13,8 @@ declare module "next-auth" {
     employeeId: string;
     /** Keycloakのdisplay_name（表示名） */
     displayName: string;
+    /** 管理者フラグ */
+    isAdmin: boolean;
   }
 
   /**
@@ -27,6 +29,8 @@ declare module "next-auth" {
       employeeId: string;
       /** Keycloakのdisplay_name（表示名） */
       displayName: string;
+      /** 管理者フラグ */
+      isAdmin: boolean;
       /** メールアドレス（オプション） */
       email?: string | null;
       /** ユーザ名（オプション） */
@@ -49,5 +53,7 @@ declare module "next-auth/jwt" {
     employeeId?: string;
     /** Keycloakのdisplay_name（表示名） */
     displayName?: string;
+    /** 管理者フラグ */
+    isAdmin?: boolean;
   }
 }

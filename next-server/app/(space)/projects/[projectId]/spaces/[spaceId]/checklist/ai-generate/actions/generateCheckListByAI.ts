@@ -17,6 +17,7 @@ import {
   UserRepository,
   AiTaskRepository,
   AiTaskFileMetadataRepository,
+  SystemSettingRepository,
 } from "@/infrastructure/adapter/db";
 import { EmployeeId } from "@/domain/user";
 import { fileUploadConfig } from "@/lib/server/fileUploadConfig";
@@ -191,9 +192,11 @@ export const generateCheckListByAIAction = authenticatedAction
     );
 
     // サービスを実行（キューに登録）
+    const systemSettingRepository = new SystemSettingRepository();
     const service = new GenerateCheckListByAIService(
       reviewSpaceRepository,
       projectRepository,
+      systemSettingRepository,
       aiTaskQueueService,
     );
 

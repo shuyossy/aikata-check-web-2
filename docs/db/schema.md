@@ -14,6 +14,7 @@
 | id | UUID | NOT NULL | gen_random_uuid() | システム内部ID（PK） |
 | employee_id | VARCHAR(255) | NOT NULL | - | Keycloakのpreferred_username（社員ID）。UNIQUE制約 |
 | display_name | VARCHAR(255) | NOT NULL | - | Keycloakのdisplay_name（表示名） |
+| is_admin | BOOLEAN | NOT NULL | false | 管理者フラグ |
 | created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
 | updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
 
@@ -25,6 +26,7 @@
 - **id**: UUIDを採用し、外部キーとして他テーブルから参照される想定。UUIDを使用することで分散環境でもIDの衝突を回避できる。
 - **employee_id**: Keycloakから取得する社員ID（preferred_username）。外部システムKeycloakへの依存を明確化。UNIQUE制約により社員IDの一意性を保証し、重複登録を防止する。
 - **display_name**: Keycloakから取得する表示名（display_name）。UIでユーザを識別する目的に使用（Keycloak側で変更された場合はログイン時に同期される）。
+- **is_admin**: システム管理者フラグ。trueの場合、管理者画面へのアクセス、全プロジェクトへのアクセス、システム設定の編集が可能になる。初期状態ではfalse。管理者権限の付与はDB直接操作または既存の管理者による操作で行う。
 - **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。タイムゾーン付きで国際化に対応する。
 
 ### 備考
@@ -482,3 +484,64 @@ Q&A履歴を管理するテーブル。レビュー対象に対するユーザ�
 - 一問一答形式のため、会話のスレッド構造は持たない。
 - Q&A処理はAIタスクキュー（ai_tasksテーブル）を経由せず、即時実行される。
 - SSEでリアルタイムに進捗を通知するため、idがイベントタイプのキーとして使用される。
+
+---
+
+## system_settings テーブル
+
+システム全体の設定を管理するテーブル。シングルトンパターンで常に1レコードのみ存在する。管理者が設定するAI API設定を保存する。
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|------|------|-----------|------|
+| id | INTEGER | NOT NULL | 1 | 設定ID（PK、常に1） |
+| encrypted_api_key | TEXT | NULL | - | AES-256で暗号化されたAPIキー |
+| api_url | TEXT | NULL | - | AI APIのURL |
+| api_model | VARCHAR(255) | NULL | - | AI APIのモデル名 |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
+
+### インデックス
+- PRIMARY KEY (id)
+
+### 設計思想
+- **id**: 常に1固定のシングルトンパターン。システム全体で1つの設定のみを持つ。
+- **encrypted_api_key**: 管理者が設定するAI APIキー。セキュリティのためAES-256で暗号化して保存。環境変数のAI_API_KEYを上書きする。NULLの場合は環境変数を使用。
+- **api_url**: AI APIのエンドポイントURL。環境変数のAI_API_URLを上書きする。NULLの場合は環境変数を使用。
+- **api_model**: AI APIで使用するモデル名。環境変数のAI_API_MODELを上書きする。NULLの場合は環境変数を使用。
+- **updated_at**: 設定の最終更新日時を記録。
+
+### 備考
+- システム設定が環境変数より優先される。設定が空（NULL）の場合のみ環境変数にフォールバックする。
+- 初回はレコードが存在しない状態から始まり、管理者が設定を保存すると作成される。
+- APIキーの暗号化キーは環境変数ENCRYPTION_KEYで管理。
+
+---
+
+## system_notifications テーブル
+
+全画面に表示するシステム通知を管理するテーブル。管理者が設定したお知らせメッセージを全ユーザに表示するために使用する。
+
+| カラム名 | 型 | NULL | デフォルト | 説明 |
+|---------|------|------|-----------|------|
+| id | UUID | NOT NULL | gen_random_uuid() | 通知ID（PK） |
+| message | TEXT | NOT NULL | - | 通知メッセージ |
+| display_order | INTEGER | NOT NULL | 0 | 表示順序（小さいほど先に表示） |
+| is_active | BOOLEAN | NOT NULL | true | 有効フラグ |
+| created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
+| updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
+
+### インデックス
+- PRIMARY KEY (id)
+- INDEX idx_system_notifications_display_order (display_order) - 表示順序でのソートを高速化
+
+### 設計思想
+- **id**: UUIDを採用し、通知を一意に識別する。
+- **message**: 通知メッセージの本文。HTML/Markdownは非対応（プレーンテキスト）。最大1000文字を推奨。
+- **display_order**: 複数の通知がある場合の表示順序。0が最も優先度が高い。同じ値の場合は作成日時順。
+- **is_active**: 通知の有効/無効を切り替える。無効にすると画面に表示されなくなるが、レコードは残る。
+- **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。
+
+### 備考
+- 全画面のページ上部にバナーとして表示される。
+- 複数の有効な通知がある場合は、display_order順に表示（ページネーションまたはスクロール）。
+- 通知の削除は物理削除。履歴を残したい場合はis_activeをfalseにして論理削除。
+- 長いメッセージは画面上でスクロール可能に表示される。

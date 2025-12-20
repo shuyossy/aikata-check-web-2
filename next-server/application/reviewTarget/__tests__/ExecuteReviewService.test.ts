@@ -6,7 +6,7 @@ import {
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository } from "@/application/shared/port/repository";
+import type { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
@@ -63,6 +63,11 @@ describe("ExecuteReviewService", () => {
     countByMemberId: vi.fn(),
     save: vi.fn(),
     delete: vi.fn(),
+  };
+
+  const mockSystemSettingRepository: ISystemSettingRepository = {
+    find: vi.fn(),
+    save: vi.fn(),
   };
 
   // モックAiTaskQueueService
@@ -162,11 +167,15 @@ describe("ExecuteReviewService", () => {
       apiKeyHash: testApiKeyHash,
     });
 
+    // システム設定はデフォルトでnullを返す（環境変数を使用）
+    vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(null);
+
     service = new ExecuteReviewService(
       mockReviewTargetRepository,
       mockCheckListItemRepository,
       mockReviewSpaceRepository,
       mockProjectRepository,
+      mockSystemSettingRepository,
       mockAiTaskQueueService as unknown as AiTaskQueueService,
     );
   });

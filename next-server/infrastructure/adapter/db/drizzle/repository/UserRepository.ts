@@ -1,7 +1,8 @@
-import { eq, or, ilike, inArray, sql } from "drizzle-orm";
+import { eq, or, ilike, inArray, sql, and } from "drizzle-orm";
 import {
   IUserRepository,
   SearchUsersOptions,
+  FindAllUsersOptions,
 } from "@/application/shared/port/repository";
 import { User, UserId, EmployeeId } from "@/domain/user";
 import { db } from "../index";
@@ -31,6 +32,7 @@ export class UserRepository implements IUserRepository {
       id: row.id,
       employeeId: row.employeeId,
       displayName: row.displayName,
+      isAdmin: row.isAdmin,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -55,6 +57,7 @@ export class UserRepository implements IUserRepository {
       id: row.id,
       employeeId: row.employeeId,
       displayName: row.displayName,
+      isAdmin: row.isAdmin,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -83,6 +86,7 @@ export class UserRepository implements IUserRepository {
         id: row.id,
         employeeId: row.employeeId,
         displayName: row.displayName,
+        isAdmin: row.isAdmin,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }),
@@ -116,6 +120,7 @@ export class UserRepository implements IUserRepository {
         id: row.id,
         employeeId: row.employeeId,
         displayName: row.displayName,
+        isAdmin: row.isAdmin,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }),
@@ -150,6 +155,7 @@ export class UserRepository implements IUserRepository {
         id: user.id.value,
         employeeId: user.employeeId.value,
         displayName: user.displayName,
+        isAdmin: user.isAdmin,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       })
@@ -157,8 +163,98 @@ export class UserRepository implements IUserRepository {
         target: users.employeeId,
         set: {
           displayName: user.displayName,
+          isAdmin: user.isAdmin,
           updatedAt: user.updatedAt,
         },
       });
+  }
+
+  /**
+   * 全ての管理者を取得
+   */
+  async findAllAdmins(): Promise<User[]> {
+    const result = await db
+      .select()
+      .from(users)
+      .where(eq(users.isAdmin, true))
+      .orderBy(users.displayName);
+
+    return result.map((row) =>
+      User.reconstruct({
+        id: row.id,
+        employeeId: row.employeeId,
+        displayName: row.displayName,
+        isAdmin: row.isAdmin,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      }),
+    );
+  }
+
+  /**
+   * 管理者の人数をカウント
+   */
+  async countAdmins(): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(users)
+      .where(eq(users.isAdmin, true));
+
+    return Number(result[0]?.count ?? 0);
+  }
+
+  /**
+   * 全ユーザを取得（検索・ページネーション対応）
+   */
+  async findAll(options?: FindAllUsersOptions): Promise<User[]> {
+    const { query, limit = 50, offset = 0 } = options ?? {};
+
+    let queryBuilder = db.select().from(users);
+
+    if (query) {
+      const searchPattern = `%${query}%`;
+      queryBuilder = queryBuilder.where(
+        or(
+          ilike(users.displayName, searchPattern),
+          ilike(users.employeeId, searchPattern),
+        ),
+      ) as typeof queryBuilder;
+    }
+
+    const result = await queryBuilder
+      .orderBy(users.displayName)
+      .limit(limit)
+      .offset(offset);
+
+    return result.map((row) =>
+      User.reconstruct({
+        id: row.id,
+        employeeId: row.employeeId,
+        displayName: row.displayName,
+        isAdmin: row.isAdmin,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+      }),
+    );
+  }
+
+  /**
+   * 全ユーザの件数をカウント
+   */
+  async countAll(query?: string): Promise<number> {
+    let queryBuilder = db.select({ count: sql<number>`count(*)` }).from(users);
+
+    if (query) {
+      const searchPattern = `%${query}%`;
+      queryBuilder = queryBuilder.where(
+        or(
+          ilike(users.displayName, searchPattern),
+          ilike(users.employeeId, searchPattern),
+        ),
+      ) as typeof queryBuilder;
+    }
+
+    const result = await queryBuilder;
+    return Number(result[0]?.count ?? 0);
   }
 }

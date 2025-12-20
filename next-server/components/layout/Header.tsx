@@ -1,4 +1,6 @@
+import Link from "next/link";
 import { UserMenu } from "./UserMenu";
+import { AdminLink } from "./AdminLink";
 
 /**
  * アプリケーションヘッダー
@@ -11,11 +13,16 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           {/* Left: Logo */}
           <div className="flex items-center">
-            <h1 className="text-xl font-bold text-primary-600">AIKATA</h1>
+            <Link href="/projects">
+              <h1 className="text-xl font-bold text-primary-600 hover:text-primary-700 transition-colors">
+                AIKATA
+              </h1>
+            </Link>
           </div>
 
           {/* Right: User Menu */}
           <div className="flex items-center gap-3">
+            <AdminLink />
             <UserMenu />
           </div>
         </div>

@@ -9,6 +9,7 @@ import { ProjectRepository } from "@/infrastructure/adapter/db/drizzle/repositor
 import { ReviewResultRepository } from "@/infrastructure/adapter/db/drizzle/repository/ReviewResultRepository";
 import { ReviewDocumentCacheRepository } from "@/infrastructure/adapter/db/drizzle/repository/ReviewDocumentCacheRepository";
 import { LargeDocumentResultCacheRepository } from "@/infrastructure/adapter/db/drizzle/repository/LargeDocumentResultCacheRepository";
+import { SystemSettingRepository } from "@/infrastructure/adapter/db/drizzle/repository/SystemSettingRepository";
 import { QaHistoryId } from "@/domain/qaHistory";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
@@ -117,6 +118,7 @@ export async function GET(
             new ReviewResultRepository(),
             new ReviewDocumentCacheRepository(),
             new LargeDocumentResultCacheRepository(),
+            new SystemSettingRepository(),
             eventBroker,
             mastra,
           );

@@ -38,6 +38,10 @@ vi.mock("@/infrastructure/adapter/db/drizzle/repository", () => {
     ReviewDocumentCacheRepository: vi.fn().mockImplementation(() => ({})),
     ReviewSpaceRepository: vi.fn().mockImplementation(() => ({})),
     LargeDocumentResultCacheRepository: vi.fn().mockImplementation(() => ({})),
+    SystemSettingRepository: vi.fn().mockImplementation(() => ({
+      find: vi.fn().mockResolvedValue(null),
+      save: vi.fn(),
+    })),
   };
 });
 

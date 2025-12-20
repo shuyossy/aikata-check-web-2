@@ -10,6 +10,8 @@ export interface DeleteProjectCommand {
   projectId: string;
   /** リクエストユーザID */
   userId: string;
+  /** 管理者フラグ（管理者の場合はメンバーチェックをスキップ） */
+  isAdmin?: boolean;
 }
 
 /**
@@ -25,7 +27,7 @@ export class DeleteProjectService {
    * @throws ドメインバリデーションエラー - プロジェクトが存在しない場合、またはアクセス権がない場合
    */
   async execute(command: DeleteProjectCommand): Promise<void> {
-    const { projectId, userId } = command;
+    const { projectId, userId, isAdmin } = command;
 
     const projectIdVo = ProjectId.reconstruct(projectId);
 
@@ -36,8 +38,8 @@ export class DeleteProjectService {
       throw domainValidationError("PROJECT_NOT_FOUND");
     }
 
-    // アクセス権の確認（メンバーのみ削除可能）
-    if (!project.hasMember(userId)) {
+    // アクセス権の確認（管理者またはメンバーのみ削除可能）
+    if (!isAdmin && !project.hasMember(userId)) {
       throw domainValidationError("PROJECT_ACCESS_DENIED");
     }
 

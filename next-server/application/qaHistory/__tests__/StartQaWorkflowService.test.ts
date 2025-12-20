@@ -15,6 +15,7 @@ import type { IReviewTargetRepository } from "@/application/shared/port/reposito
 import type { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import type { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import type { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
+import type { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
 import type { IEventBroker } from "@/application/shared/port/push/IEventBroker";
 import { ReviewTargetId, ReviewDocumentCacheId } from "@/domain/reviewTarget";
 import { QaStatus } from "@/domain/qaHistory";
@@ -61,6 +62,7 @@ describe("StartQaWorkflowService", () => {
   let mockReviewResultRepository: IReviewResultRepository;
   let mockReviewDocumentCacheRepository: IReviewDocumentCacheRepository;
   let mockLargeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository;
+  let mockSystemSettingRepository: ISystemSettingRepository;
   let mockEventBroker: IEventBroker;
   let mockMastra: any;
   let service: StartQaWorkflowService;
@@ -148,6 +150,11 @@ describe("StartQaWorkflowService", () => {
       deleteByReviewTargetId: vi.fn(),
     } as unknown as ILargeDocumentResultCacheRepository;
 
+    mockSystemSettingRepository = {
+      find: vi.fn().mockResolvedValue(null),
+      save: vi.fn(),
+    };
+
     mockEventBroker = {
       subscribe: vi.fn(),
       subscribeChannel: vi.fn(),
@@ -167,6 +174,7 @@ describe("StartQaWorkflowService", () => {
       mockReviewResultRepository,
       mockReviewDocumentCacheRepository,
       mockLargeDocumentResultCacheRepository,
+      mockSystemSettingRepository,
       mockEventBroker,
       mockMastra,
     );
