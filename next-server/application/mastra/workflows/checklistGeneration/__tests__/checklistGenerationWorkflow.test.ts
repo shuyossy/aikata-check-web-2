@@ -93,7 +93,6 @@ describe("checklistGenerationWorkflow", () => {
           textContent: "テストドキュメントの内容",
         },
       ],
-      checklistRequirements: testChecklistRequirements,
     });
   };
 
@@ -571,7 +570,6 @@ describe("checklistGenerationWorkflow", () => {
             imageData: ["base64encodedimage1", "base64encodedimage2"],
           },
         ],
-        checklistRequirements: testChecklistRequirements,
       });
 
       const imageFiles: RawUploadFileMeta[] = [
@@ -645,7 +643,6 @@ describe("checklistGenerationWorkflow", () => {
             imageData: ["base64encodedimage"],
           },
         ],
-        checklistRequirements: testChecklistRequirements,
       });
 
       const mixedFiles: RawUploadFileMeta[] = [

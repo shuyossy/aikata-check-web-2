@@ -17,11 +17,9 @@ import { getLogger } from "@/lib/server/logger";
 
 /**
  * ファイル処理ステップの入力スキーマ
- * checklistRequirementsはチェックリスト生成ワークフロー用（オプション）
  */
 export const fileProcessingInputSchema = z.object({
   files: z.array(rawUploadFileMetaSchema),
-  checklistRequirements: z.string().optional(),
 });
 
 /**
@@ -29,7 +27,6 @@ export const fileProcessingInputSchema = z.object({
  */
 export const fileProcessingOutputSchema = baseStepOutputSchema.extend({
   extractedFiles: z.array(extractedFileSchema).optional(),
-  checklistRequirements: z.string().optional(),
 });
 
 export type FileProcessingInput = z.infer<typeof fileProcessingInputSchema>;
@@ -64,7 +61,7 @@ export const fileProcessingStep = createStep({
     const fileTextExtractor = new FileTextExtractor();
 
     try {
-      const { files, checklistRequirements } = inputData;
+      const { files } = inputData;
 
       // RuntimeContextからファイルバッファを取得
       const typedRuntimeContext = workflowRuntimeContext as
@@ -141,7 +138,6 @@ export const fileProcessingStep = createStep({
       return {
         status: "success",
         extractedFiles,
-        checklistRequirements,
       };
     } catch (error) {
       const normalizedError = normalizeUnknownError(error);

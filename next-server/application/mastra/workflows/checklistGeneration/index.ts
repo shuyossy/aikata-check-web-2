@@ -37,8 +37,12 @@ export const checklistGenerationWorkflow = createWorkflow({
   inputSchema: triggerSchema,
   outputSchema: checklistGenerationOutputSchema,
 })
+  .map(async ({ inputData }) => {
+    // fileProcessingStepの入力形式に変換（filesのみ）
+    return { files: inputData.files };
+  })
   .then(fileProcessingStep)
-  .map(async ({ inputData, bail }) => {
+  .map(async ({ inputData, bail, getInitData }) => {
     // ファイル処理が失敗した場合は、bailで早期終了
     if (inputData.status === 'failed') {
       return bail({
@@ -56,10 +60,13 @@ export const checklistGenerationWorkflow = createWorkflow({
       });
     }
 
+    // 元のトリガー入力からchecklistRequirementsを取得
+    const initData = getInitData() as z.infer<typeof triggerSchema>;
+
     // topicExtractionStepの入力形式に変換
     return {
       files: inputData.extractedFiles,
-      checklistRequirements: inputData.checklistRequirements ?? '',
+      checklistRequirements: initData.checklistRequirements ?? '',
     };
   })
   .then(topicExtractionStep)
@@ -93,7 +100,7 @@ export const checklistGenerationWorkflow = createWorkflow({
     }));
   })
   .foreach(topicChecklistCreationStep)
-  .map(async ({ inputData, getStepResult, bail }) => {
+  .map(async ({ inputData, getInitData, bail }) => {
     // foreachの結果を統合してchecklistRefinementStepの入力形式に変換
     const allItems: string[] = [];
     let hasFailure = false;
@@ -128,8 +135,8 @@ export const checklistGenerationWorkflow = createWorkflow({
     }
 
     // トピック抽出結果からchecklistRequirementsを取得
-    const topicExtractionResult = getStepResult(topicExtractionStep);
-    const checklistRequirements = topicExtractionResult?.checklistRequirements;
+    const initData = getInitData() as z.infer<typeof triggerSchema>;
+    const checklistRequirements = initData.checklistRequirements;
 
     // checklistRefinementStepの入力形式に変換
     return {

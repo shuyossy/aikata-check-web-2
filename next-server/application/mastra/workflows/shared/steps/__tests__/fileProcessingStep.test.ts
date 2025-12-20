@@ -45,7 +45,6 @@ describe("fileProcessingStep", () => {
             processMode: "text" as const,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
@@ -62,7 +61,6 @@ describe("fileProcessingStep", () => {
       expect(result.extractedFiles).toHaveLength(1);
       expect(result.extractedFiles![0].processMode).toBe("text");
       expect(result.extractedFiles![0].textContent).toBe("抽出されたテキスト");
-      expect(result.checklistRequirements).toBe("テスト要件");
     });
 
     it("画像モードでBase64変換されること", async () => {
@@ -87,7 +85,6 @@ describe("fileProcessingStep", () => {
             convertedImageCount: 1,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
@@ -139,7 +136,6 @@ describe("fileProcessingStep", () => {
             processMode: "text" as const,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
@@ -188,7 +184,6 @@ describe("fileProcessingStep", () => {
             convertedImageCount: 1,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
@@ -231,7 +226,6 @@ describe("fileProcessingStep", () => {
             convertedImageCount: 3,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
@@ -264,7 +258,6 @@ describe("fileProcessingStep", () => {
             processMode: "text" as const,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
@@ -300,7 +293,6 @@ describe("fileProcessingStep", () => {
             processMode: "text" as const,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
@@ -328,7 +320,6 @@ describe("fileProcessingStep", () => {
             processMode: "text" as const,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
@@ -373,7 +364,6 @@ describe("fileProcessingStep", () => {
             processMode: "text" as const,
           },
         ],
-        checklistRequirements: "テスト要件",
       };
 
       const result = await fileProcessingStep.execute({
