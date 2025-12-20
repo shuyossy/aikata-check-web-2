@@ -7,6 +7,7 @@ import type { IReviewDocumentCacheRepository } from "@/application/shared/port/r
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import type { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
 import type { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
+import type { IWorkflowRunRegistry } from "../WorkflowRunRegistry";
 import type { AiTaskDto } from "@/domain/aiTask";
 import { ReviewTarget } from "@/domain/reviewTarget";
 import { ReviewSpace } from "@/domain/reviewSpace";
@@ -60,6 +61,16 @@ vi.mock("@/lib/server/logger", () => ({
 }));
 
 describe("AiTaskExecutor", () => {
+  // モックWorkflowRunRegistry
+  const mockWorkflowRunRegistry: IWorkflowRunRegistry = {
+    register: vi.fn(),
+    deregister: vi.fn(),
+    cancel: vi.fn(),
+    isRegistered: vi.fn(),
+    isCancelling: vi.fn(),
+    setCancelling: vi.fn(),
+  };
+
   // モックリポジトリ
   const mockReviewTargetRepository: IReviewTargetRepository = {
     findById: vi.fn(),
@@ -490,6 +501,239 @@ describe("AiTaskExecutor", () => {
 
       expect(result.success).toBe(false);
       expect(result.errorMessage).toBeDefined();
+    });
+  });
+
+  describe("WorkflowRunRegistry統合", () => {
+    let executorWithRegistry: AiTaskExecutor;
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      executorWithRegistry = new AiTaskExecutor(
+        mockReviewTargetRepository,
+        mockReviewResultRepository,
+        mockCheckListItemRepository,
+        mockReviewDocumentCacheRepository,
+        mockReviewSpaceRepository,
+        mockLargeDocumentResultCacheRepository,
+        mockSystemSettingRepository,
+        mockWorkflowRunRegistry,
+      );
+    });
+
+    const createReviewTask = (): AiTaskDto => ({
+      id: "test-task-id",
+      taskType: "small_review",
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewTargetId: testReviewTargetId,
+        reviewSpaceId: testReviewSpaceId,
+        userId: "test-user-id",
+        files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+        checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+        reviewSettings: {
+          additionalInstructions: null,
+          concurrentReviewItems: 5,
+          commentFormat: null,
+          evaluationCriteria: [{ label: "A", description: "問題なし" }],
+        },
+        reviewType: "small_review",
+      } as unknown as ReviewTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [
+        {
+          id: "file-meta-1",
+          taskId: "test-task-id",
+          fileName: "test.txt",
+          filePath: "/path/to/test.txt",
+          fileSize: 1024,
+          mimeType: "text/plain",
+          processMode: "text" as const,
+          convertedImageCount: 0,
+          createdAt: now,
+        },
+      ],
+    });
+
+    const createChecklistTask = (): AiTaskDto => ({
+      id: "test-checklist-task-id",
+      taskType: "checklist_generation",
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewSpaceId: testReviewSpaceId,
+        userId: "test-user-id",
+        files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
+        checklistRequirements: "テスト用のチェックリストを生成してください",
+      } as unknown as ChecklistGenerationTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [
+        {
+          id: "file-meta-1",
+          taskId: "test-checklist-task-id",
+          fileName: "document.txt",
+          filePath: "/path/to/document.txt",
+          fileSize: 2048,
+          mimeType: "text/plain",
+          processMode: "text" as const,
+          convertedImageCount: 0,
+          createdAt: now,
+        },
+      ],
+    });
+
+    it("レビュータスク実行時にワークフローが登録・解除されること", async () => {
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testReviewTarget,
+      );
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      mockWorkflowRun.start.mockResolvedValue({
+        status: "success",
+        result: {
+          status: "success",
+          reviewResults: [
+            {
+              checkListItemId: "item-1",
+              rating: "A",
+              comment: "問題ありません",
+            },
+          ],
+        },
+      });
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+      await executorWithRegistry.execute(task);
+
+      // ワークフローが登録されたことを確認
+      expect(mockWorkflowRunRegistry.register).toHaveBeenCalledWith(
+        "test-task-id",
+        expect.anything(),
+      );
+      // ワークフローが解除されたことを確認
+      expect(mockWorkflowRunRegistry.deregister).toHaveBeenCalledWith(
+        "test-task-id",
+      );
+    });
+
+    it("レビュータスク失敗時もワークフローが解除されること", async () => {
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testReviewTarget,
+      );
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      mockWorkflowRun.start.mockRejectedValue(new Error("ワークフローエラー"));
+
+      const task = createReviewTask();
+      await executorWithRegistry.execute(task);
+
+      // エラー時もワークフローが解除されることを確認
+      expect(mockWorkflowRunRegistry.register).toHaveBeenCalledWith(
+        "test-task-id",
+        expect.anything(),
+      );
+      expect(mockWorkflowRunRegistry.deregister).toHaveBeenCalledWith(
+        "test-task-id",
+      );
+    });
+
+    it("チェックリスト生成タスク実行時にワークフローが登録・解除されること", async () => {
+      mockWorkflowRun.start.mockResolvedValue({
+        status: "success",
+        result: {
+          status: "success",
+          generatedItems: ["チェック項目1", "チェック項目2"],
+        },
+      });
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(
+        undefined,
+      );
+      vi.mocked(
+        mockReviewSpaceRepository.updateChecklistGenerationError,
+      ).mockResolvedValue(undefined);
+
+      const task = createChecklistTask();
+      await executorWithRegistry.execute(task);
+
+      // ワークフローが登録されたことを確認
+      expect(mockWorkflowRunRegistry.register).toHaveBeenCalledWith(
+        "test-checklist-task-id",
+        expect.anything(),
+      );
+      // ワークフローが解除されたことを確認
+      expect(mockWorkflowRunRegistry.deregister).toHaveBeenCalledWith(
+        "test-checklist-task-id",
+      );
+    });
+
+    it("チェックリスト生成タスク失敗時もワークフローが解除されること", async () => {
+      mockWorkflowRun.start.mockRejectedValue(new Error("ワークフローエラー"));
+
+      const task = createChecklistTask();
+      await executorWithRegistry.execute(task);
+
+      // エラー時もワークフローが解除されることを確認
+      expect(mockWorkflowRunRegistry.register).toHaveBeenCalledWith(
+        "test-checklist-task-id",
+        expect.anything(),
+      );
+      expect(mockWorkflowRunRegistry.deregister).toHaveBeenCalledWith(
+        "test-checklist-task-id",
+      );
+    });
+
+    it("WorkflowRunRegistryが渡されていない場合は登録・解除が呼ばれないこと", async () => {
+      // WorkflowRunRegistryなしのexecutorを使用
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testReviewTarget,
+      );
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      mockWorkflowRun.start.mockResolvedValue({
+        status: "success",
+        result: {
+          status: "success",
+          reviewResults: [
+            {
+              checkListItemId: "item-1",
+              rating: "A",
+              comment: "問題ありません",
+            },
+          ],
+        },
+      });
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+      // mockWorkflowRunRegistryをクリア
+      vi.mocked(mockWorkflowRunRegistry.register).mockClear();
+      vi.mocked(mockWorkflowRunRegistry.deregister).mockClear();
+
+      await executor.execute(task);
+
+      // WorkflowRunRegistryなしのexecutorでは登録・解除が呼ばれない
+      expect(mockWorkflowRunRegistry.register).not.toHaveBeenCalled();
+      expect(mockWorkflowRunRegistry.deregister).not.toHaveBeenCalled();
     });
   });
 });

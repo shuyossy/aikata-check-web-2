@@ -1,5 +1,8 @@
-import { IProjectRepository } from "@/application/shared/port/repository";
+import { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
+import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
+import { type IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
+import { ReviewTargetCleanupHelper } from "@/application/shared/ReviewTargetCleanupHelper";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { domainValidationError } from "@/lib/server/error";
 
@@ -18,10 +21,24 @@ export interface DeleteReviewSpaceCommand {
  * レビュースペースを削除する
  */
 export class DeleteReviewSpaceService {
+  private readonly cleanupHelper?: ReviewTargetCleanupHelper;
+
   constructor(
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
-  ) {}
+    private readonly reviewTargetRepository?: IReviewTargetRepository,
+    private readonly aiTaskRepository?: IAiTaskRepository,
+    private readonly workflowRunRegistry?: IWorkflowRunRegistry,
+  ) {
+    // クリーンアップヘルパーの初期化
+    if (this.reviewTargetRepository && this.aiTaskRepository) {
+      this.cleanupHelper = new ReviewTargetCleanupHelper(
+        this.reviewTargetRepository,
+        this.aiTaskRepository,
+        this.workflowRunRegistry,
+      );
+    }
+  }
 
   /**
    * レビュースペース削除を実行
@@ -50,6 +67,12 @@ export class DeleteReviewSpaceService {
     // プロジェクトへのアクセス権確認
     if (!project.hasMember(userId)) {
       throw domainValidationError("PROJECT_ACCESS_DENIED");
+    }
+
+    // カスケードクリーンアップ処理（クリーンアップヘルパーが初期化されている場合のみ）
+    if (this.cleanupHelper) {
+      await this.cleanupHelper.cleanupReviewTargets(reviewSpaceId);
+      await this.cleanupHelper.cleanupChecklistGenerationTask(reviewSpaceId);
     }
 
     // 削除

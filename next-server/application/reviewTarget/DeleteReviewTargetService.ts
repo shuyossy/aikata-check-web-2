@@ -1,11 +1,16 @@
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
+import { type IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
 import { ReviewTargetId } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
 import { domainValidationError } from "@/lib/server/error";
 import { TaskFileHelper } from "@/lib/server/taskFileHelper";
+import { ReviewCacheHelper } from "@/lib/server/reviewCacheHelper";
+import { getLogger } from "@/lib/server/logger";
+
+const logger = getLogger();
 
 /**
  * レビュー対象削除コマンド（入力DTO）
@@ -26,6 +31,7 @@ export class DeleteReviewTargetService {
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
     private readonly aiTaskRepository: IAiTaskRepository,
+    private readonly workflowRunRegistry?: IWorkflowRunRegistry,
   ) {}
 
   /**
@@ -65,13 +71,57 @@ export class DeleteReviewTargetService {
       throw domainValidationError("REVIEW_TARGET_ACCESS_DENIED");
     }
 
-    // レビュー対象に紐づくAIタスクを検索し、関連ファイルを削除してからタスクを削除
+    // レビュー対象に紐づくAIタスクを検索し、ワークフローキャンセル・ファイル削除を行う
     const aiTask = await this.aiTaskRepository.findByReviewTargetId(reviewTargetId);
     if (aiTask) {
+      const taskId = aiTask.id.value;
+
+      // PROCESSING状態の場合、ワークフローをキャンセル
+      if (aiTask.status.value === "processing" && this.workflowRunRegistry) {
+        try {
+          // キャンセル中フラグを設定（新規タスクのデキューをブロック）
+          this.workflowRunRegistry.setCancelling(true);
+
+          logger.info({ taskId, reviewTargetId }, "ワークフローのキャンセルを開始します");
+
+          // ワークフローをキャンセル
+          const cancelled = await this.workflowRunRegistry.cancel(taskId);
+          if (cancelled) {
+            logger.info({ taskId, reviewTargetId }, "ワークフローのキャンセルが完了しました");
+          } else {
+            logger.warn(
+              { taskId, reviewTargetId },
+              "ワークフローのキャンセルに失敗しました（ワークフロー実行が見つからない可能性があります）",
+            );
+          }
+        } catch (error) {
+          // キャンセル失敗時は警告ログを記録して削除処理を続行
+          logger.warn(
+            { err: error, taskId, reviewTargetId },
+            "ワークフローのキャンセル中にエラーが発生しました（削除処理は続行します）",
+          );
+        } finally {
+          // キャンセル中フラグを解除
+          this.workflowRunRegistry.setCancelling(false);
+        }
+      }
+
       // タスクに紐づくファイルを削除
-      await TaskFileHelper.deleteTaskFiles(aiTask.id.value);
+      await TaskFileHelper.deleteTaskFiles(taskId);
       // AIタスクを削除
       await this.aiTaskRepository.deleteByReviewTargetId(reviewTargetId);
+    }
+
+    // キャッシュディレクトリを削除
+    try {
+      await ReviewCacheHelper.deleteCacheDirectory(reviewTargetId);
+      logger.debug({ reviewTargetId }, "キャッシュディレクトリを削除しました");
+    } catch (error) {
+      // キャッシュ削除失敗時は警告ログを記録して削除処理を続行
+      logger.warn(
+        { err: error, reviewTargetId },
+        "キャッシュディレクトリの削除中にエラーが発生しました（削除処理は続行します）",
+      );
     }
 
     // レビュー対象を削除（CASCADE設定によりレビュー結果も削除される）

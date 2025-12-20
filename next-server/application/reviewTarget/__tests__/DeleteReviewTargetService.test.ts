@@ -6,17 +6,36 @@ import {
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import type { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
+import type { IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
 import { ReviewTarget } from "@/domain/reviewTarget";
 import { AiTask } from "@/domain/aiTask";
 import { TaskFileHelper } from "@/lib/server/taskFileHelper";
+import { ReviewCacheHelper } from "@/lib/server/reviewCacheHelper";
 
 // TaskFileHelperのモック
 vi.mock("@/lib/server/taskFileHelper", () => ({
   TaskFileHelper: {
     deleteTaskFiles: vi.fn().mockResolvedValue(undefined),
   },
+}));
+
+// ReviewCacheHelperのモック
+vi.mock("@/lib/server/reviewCacheHelper", () => ({
+  ReviewCacheHelper: {
+    deleteCacheDirectory: vi.fn().mockResolvedValue(undefined),
+  },
+}));
+
+// ロガーのモック
+vi.mock("@/lib/server/logger", () => ({
+  getLogger: vi.fn().mockReturnValue({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
 }));
 
 describe("DeleteReviewTargetService", () => {
@@ -354,6 +373,192 @@ describe("DeleteReviewTargetService", () => {
       });
 
       expect(mockReviewTargetRepository.delete).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("WorkflowRunRegistry統合", () => {
+    // モックWorkflowRunRegistry
+    const mockWorkflowRunRegistry: IWorkflowRunRegistry = {
+      register: vi.fn(),
+      deregister: vi.fn(),
+      cancel: vi.fn(),
+      isRegistered: vi.fn(),
+      isCancelling: vi.fn(),
+      setCancelling: vi.fn(),
+    };
+
+    let serviceWithRegistry: DeleteReviewTargetService;
+
+    const createProcessingAiTask = () =>
+      AiTask.reconstruct({
+        id: testAiTaskId,
+        taskType: "small_review",
+        status: "processing",
+        apiKeyHash: "test-api-key-hash",
+        priority: 1,
+        payload: { reviewTargetId: testReviewTargetId },
+        errorMessage: null,
+        createdAt: now,
+        updatedAt: now,
+        startedAt: now,
+        completedAt: null,
+        fileMetadata: [],
+      });
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      serviceWithRegistry = new DeleteReviewTargetService(
+        mockReviewTargetRepository,
+        mockReviewSpaceRepository,
+        mockProjectRepository,
+        mockAiTaskRepository,
+        mockWorkflowRunRegistry,
+      );
+    });
+
+    it("PROCESSING状態のタスクがある場合、ワークフローがキャンセルされる", async () => {
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createTestReviewTarget("reviewing"),
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        createProcessingAiTask(),
+      );
+      vi.mocked(mockWorkflowRunRegistry.cancel).mockResolvedValue(true);
+
+      const command: DeleteReviewTargetCommand = {
+        reviewTargetId: testReviewTargetId,
+        userId: testUserId,
+      };
+
+      await expect(serviceWithRegistry.execute(command)).resolves.toBeUndefined();
+
+      // キャンセル中フラグが設定・解除されることを確認
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(1, true);
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(2, false);
+      // ワークフローがキャンセルされたことを確認
+      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(testAiTaskId);
+      // レビュー対象が削除されたことを確認
+      expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it("ワークフローキャンセルに失敗しても削除処理は続行される", async () => {
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createTestReviewTarget("reviewing"),
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        createProcessingAiTask(),
+      );
+      // キャンセルが失敗する
+      vi.mocked(mockWorkflowRunRegistry.cancel).mockRejectedValue(
+        new Error("キャンセル失敗"),
+      );
+
+      const command: DeleteReviewTargetCommand = {
+        reviewTargetId: testReviewTargetId,
+        userId: testUserId,
+      };
+
+      // エラーにならず削除処理が完了する
+      await expect(serviceWithRegistry.execute(command)).resolves.toBeUndefined();
+
+      // キャンセル中フラグが最終的に解除されることを確認
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(2, false);
+      // レビュー対象が削除されたことを確認
+      expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it("QUEUED状態のタスクの場合、ワークフローキャンセルは呼ばれない", async () => {
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createTestReviewTarget("queued"),
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        createTestAiTask(), // status: "queued"
+      );
+
+      const command: DeleteReviewTargetCommand = {
+        reviewTargetId: testReviewTargetId,
+        userId: testUserId,
+      };
+
+      await expect(serviceWithRegistry.execute(command)).resolves.toBeUndefined();
+
+      // QUEUED状態なのでワークフローキャンセルは呼ばれない
+      expect(mockWorkflowRunRegistry.cancel).not.toHaveBeenCalled();
+      expect(mockWorkflowRunRegistry.setCancelling).not.toHaveBeenCalled();
+      // ファイル・タスク削除は呼ばれる
+      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(testAiTaskId);
+      expect(mockAiTaskRepository.deleteByReviewTargetId).toHaveBeenCalledWith(
+        testReviewTargetId,
+      );
+      expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("キャッシュ削除", () => {
+    it("レビュー対象削除時にキャッシュディレクトリも削除される", async () => {
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createTestReviewTarget("completed"),
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        null,
+      );
+
+      const command: DeleteReviewTargetCommand = {
+        reviewTargetId: testReviewTargetId,
+        userId: testUserId,
+      };
+
+      await expect(service.execute(command)).resolves.toBeUndefined();
+
+      // キャッシュディレクトリが削除されたことを確認
+      expect(ReviewCacheHelper.deleteCacheDirectory).toHaveBeenCalledWith(
+        testReviewTargetId,
+      );
+      expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
+    });
+
+    it("キャッシュ削除に失敗しても削除処理は続行される", async () => {
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createTestReviewTarget("completed"),
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        null,
+      );
+      // キャッシュ削除が失敗する
+      vi.mocked(ReviewCacheHelper.deleteCacheDirectory).mockRejectedValue(
+        new Error("キャッシュ削除失敗"),
+      );
+
+      const command: DeleteReviewTargetCommand = {
+        reviewTargetId: testReviewTargetId,
+        userId: testUserId,
+      };
+
+      // エラーにならず削除処理が完了する
+      await expect(service.execute(command)).resolves.toBeUndefined();
+
+      // レビュー対象が削除されたことを確認
+      expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { AiTaskWorker } from "../AiTaskWorker";
 import type { AiTaskQueueService } from "../AiTaskQueueService";
 import type { AiTaskExecutor, TaskExecutionResult } from "../AiTaskExecutor";
+import type { IWorkflowRunRegistry } from "../WorkflowRunRegistry";
 import type { AiTaskDto } from "@/domain/aiTask";
 
 // ロガーのモック
@@ -254,5 +255,127 @@ describe("AiTaskWorker", () => {
       // 完了後はnull
       expect(worker.currentTaskId).toBeNull();
     }, 20000);
+  });
+
+  describe("WorkflowRunRegistry統合", () => {
+    // モックWorkflowRunRegistry
+    const mockWorkflowRunRegistry: IWorkflowRunRegistry = {
+      register: vi.fn(),
+      deregister: vi.fn(),
+      cancel: vi.fn(),
+      isRegistered: vi.fn(),
+      isCancelling: vi.fn(),
+      setCancelling: vi.fn(),
+    };
+
+    let workerWithRegistry: AiTaskWorker;
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+      workerWithRegistry = new AiTaskWorker(
+        testApiKeyHash,
+        mockQueueService,
+        mockExecutor,
+        testWorkerId,
+        mockWorkflowRunRegistry,
+      );
+    });
+
+    afterEach(async () => {
+      if (workerWithRegistry.isRunning) {
+        await workerWithRegistry.stop();
+      }
+    });
+
+    it("キャンセル中の場合はデキューをスキップする", async () => {
+      // isCancelling()が最初はtrue、一定時間後にfalseを返すようにする
+      let cancellingCalls = 0;
+      vi.mocked(mockWorkflowRunRegistry.isCancelling).mockImplementation(() => {
+        cancellingCalls++;
+        // 3回目以降はfalseを返す
+        return cancellingCalls < 3;
+      });
+
+      // キャンセル解除後にタスクを返し、その後停止
+      let taskReturned = false;
+      vi.mocked(mockQueueService.dequeueTask).mockImplementation(async () => {
+        if (!taskReturned) {
+          taskReturned = true;
+          return createTestTask();
+        }
+        return null;
+      });
+
+      const successResult: TaskExecutionResult = { success: true };
+      vi.mocked(mockExecutor.execute).mockResolvedValue(successResult);
+      vi.mocked(mockQueueService.completeTask).mockResolvedValue(undefined);
+
+      await workerWithRegistry.start();
+
+      await vi.waitFor(
+        () => {
+          expect(mockQueueService.completeTask).toHaveBeenCalled();
+        },
+        { timeout: 10000 },
+      );
+
+      await workerWithRegistry.stop();
+
+      // isCancellingが複数回呼ばれたことを確認（キャンセル中のチェック）
+      expect(mockWorkflowRunRegistry.isCancelling).toHaveBeenCalled();
+      // キャンセル中はデキューがスキップされ、後でタスクが処理されたことを確認
+      expect(mockQueueService.dequeueTask).toHaveBeenCalled();
+    }, 20000);
+
+    it("キャンセル中でない場合は通常通りデキューされる", async () => {
+      // isCancelling()が常にfalseを返す
+      vi.mocked(mockWorkflowRunRegistry.isCancelling).mockReturnValue(false);
+
+      let taskReturned = false;
+      vi.mocked(mockQueueService.dequeueTask).mockImplementation(async () => {
+        if (!taskReturned) {
+          taskReturned = true;
+          return createTestTask();
+        }
+        return null;
+      });
+
+      const successResult: TaskExecutionResult = { success: true };
+      vi.mocked(mockExecutor.execute).mockResolvedValue(successResult);
+      vi.mocked(mockQueueService.completeTask).mockResolvedValue(undefined);
+
+      await workerWithRegistry.start();
+
+      await vi.waitFor(
+        () => {
+          expect(mockQueueService.completeTask).toHaveBeenCalled();
+        },
+        { timeout: 5000 },
+      );
+
+      await workerWithRegistry.stop();
+
+      // isCancellingが呼ばれたことを確認
+      expect(mockWorkflowRunRegistry.isCancelling).toHaveBeenCalled();
+      // デキューが呼ばれたことを確認
+      expect(mockQueueService.dequeueTask).toHaveBeenCalled();
+      // タスクが実行されたことを確認
+      expect(mockExecutor.execute).toHaveBeenCalled();
+    }, 20000);
+
+    it("WorkflowRunRegistryが渡されていない場合はキャンセルチェックをスキップ", async () => {
+      // WorkflowRunRegistryなしのworkerを使用
+      vi.mocked(mockQueueService.dequeueTask).mockResolvedValue(null);
+
+      await worker.start();
+
+      // 少し待機
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      await worker.stop();
+
+      // WorkflowRunRegistryなしなのでisCancellingは呼ばれない
+      expect(mockWorkflowRunRegistry.isCancelling).not.toHaveBeenCalled();
+    }, 15000);
   });
 });

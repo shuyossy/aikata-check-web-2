@@ -1,5 +1,6 @@
 import { AiTaskQueueService } from "./AiTaskQueueService";
 import { AiTaskExecutor } from "./AiTaskExecutor";
+import { type IWorkflowRunRegistry } from "./WorkflowRunRegistry";
 import { getLogger } from "@/lib/server/logger";
 
 const logger = getLogger();
@@ -28,6 +29,7 @@ export class AiTaskWorker {
     private readonly queueService: AiTaskQueueService,
     private readonly executor: AiTaskExecutor,
     private readonly workerId: string,
+    private readonly workflowRunRegistry?: IWorkflowRunRegistry,
   ) {}
 
   /**
@@ -107,6 +109,16 @@ export class AiTaskWorker {
 
     while (!this._shouldStop) {
       try {
+        // キャンセル処理中の場合はデキューをスキップして待機
+        if (this.workflowRunRegistry?.isCancelling()) {
+          logger.debug(
+            { workerId: this.workerId, apiKeyHash: this.apiKeyHash },
+            "キャンセル処理中のためデキューをスキップします",
+          );
+          await this.sleep(pollingInterval);
+          continue;
+        }
+
         // キューからタスクを取得（処理中に遷移）
         const task = await this.queueService.dequeueTask(this.apiKeyHash);
 

@@ -8,6 +8,7 @@ import { IReviewDocumentCacheRepository } from "@/application/shared/port/reposi
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
 import { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
+import { IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
 import { ReviewTargetId, ReviewDocumentCache } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { CheckListItem } from "@/domain/checkListItem";
@@ -108,6 +109,7 @@ export class AiTaskExecutor {
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly largeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository,
     private readonly systemSettingRepository: ISystemSettingRepository,
+    private readonly workflowRunRegistry?: IWorkflowRunRegistry,
   ) {}
 
   /**
@@ -387,16 +389,29 @@ export class AiTaskExecutor {
       const workflow = mastra.getWorkflow("reviewExecutionWorkflow");
       const run = await workflow.createRunAsync();
 
-      const result = await run.start({
-        inputData: {
-          // リトライ時は空の配列（キャッシュモードではfileProcessingStepがスキップされる）
-          files: isRetry ? [] : payload.files,
-          checkListItems: payload.checkListItems,
-          reviewSettings: payload.reviewSettings,
-          reviewType: payload.reviewType,
-        },
-        runtimeContext,
-      });
+      // ワークフロー実行をレジストリに登録（キャンセル可能にするため）
+      if (this.workflowRunRegistry) {
+        this.workflowRunRegistry.register(task.id, run);
+      }
+
+      let result;
+      try {
+        result = await run.start({
+          inputData: {
+            // リトライ時は空の配列（キャッシュモードではfileProcessingStepがスキップされる）
+            files: isRetry ? [] : payload.files,
+            checkListItems: payload.checkListItems,
+            reviewSettings: payload.reviewSettings,
+            reviewType: payload.reviewType,
+          },
+          runtimeContext,
+        });
+      } finally {
+        // ワークフロー実行をレジストリから解除
+        if (this.workflowRunRegistry) {
+          this.workflowRunRegistry.deregister(task.id);
+        }
+      }
 
       // ワークフロー結果の検証
       const checkResult = checkWorkflowResult(result);
@@ -522,13 +537,26 @@ export class AiTaskExecutor {
     const workflow = mastra.getWorkflow("checklistGenerationWorkflow");
     const run = await workflow.createRunAsync();
 
-    const result = await run.start({
-      inputData: {
-        files: payload.files,
-        checklistRequirements: payload.checklistRequirements,
-      },
-      runtimeContext,
-    });
+    // ワークフロー実行をレジストリに登録（キャンセル可能にするため）
+    if (this.workflowRunRegistry) {
+      this.workflowRunRegistry.register(task.id, run);
+    }
+
+    let result;
+    try {
+      result = await run.start({
+        inputData: {
+          files: payload.files,
+          checklistRequirements: payload.checklistRequirements,
+        },
+        runtimeContext,
+      });
+    } finally {
+      // ワークフロー実行をレジストリから解除
+      if (this.workflowRunRegistry) {
+        this.workflowRunRegistry.deregister(task.id);
+      }
+    }
 
     // ワークフロー結果の検証
     const checkResult = checkWorkflowResult(result);

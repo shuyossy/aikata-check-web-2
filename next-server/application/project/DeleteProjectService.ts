@@ -1,4 +1,8 @@
-import { IProjectRepository } from "@/application/shared/port/repository";
+import { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
+import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
+import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
+import { type IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
+import { ReviewTargetCleanupHelper } from "@/application/shared/ReviewTargetCleanupHelper";
 import { ProjectId } from "@/domain/project";
 import { domainValidationError } from "@/lib/server/error";
 
@@ -19,7 +23,24 @@ export interface DeleteProjectCommand {
  * プロジェクトを削除する（メンバーであれば誰でも削除可能）
  */
 export class DeleteProjectService {
-  constructor(private readonly projectRepository: IProjectRepository) {}
+  private readonly cleanupHelper?: ReviewTargetCleanupHelper;
+
+  constructor(
+    private readonly projectRepository: IProjectRepository,
+    private readonly reviewSpaceRepository?: IReviewSpaceRepository,
+    private readonly reviewTargetRepository?: IReviewTargetRepository,
+    private readonly aiTaskRepository?: IAiTaskRepository,
+    private readonly workflowRunRegistry?: IWorkflowRunRegistry,
+  ) {
+    // クリーンアップヘルパーの初期化
+    if (this.reviewTargetRepository && this.aiTaskRepository) {
+      this.cleanupHelper = new ReviewTargetCleanupHelper(
+        this.reviewTargetRepository,
+        this.aiTaskRepository,
+        this.workflowRunRegistry,
+      );
+    }
+  }
 
   /**
    * プロジェクト削除を実行
@@ -43,7 +64,35 @@ export class DeleteProjectService {
       throw domainValidationError("PROJECT_ACCESS_DENIED");
     }
 
+    // カスケードクリーンアップ処理（クリーンアップヘルパーが初期化されている場合のみ）
+    if (this.reviewSpaceRepository && this.cleanupHelper) {
+      await this.cleanupProject(projectId);
+    }
+
     // 削除
     await this.projectRepository.delete(projectIdVo);
+  }
+
+  /**
+   * プロジェクト内の全レビュースペースをクリーンアップする
+   */
+  private async cleanupProject(projectId: string): Promise<void> {
+    if (!this.reviewSpaceRepository || !this.cleanupHelper) {
+      return;
+    }
+
+    const projectIdVo = ProjectId.reconstruct(projectId);
+    const reviewSpaces =
+      await this.reviewSpaceRepository.findByProjectId(projectIdVo);
+
+    for (const reviewSpace of reviewSpaces) {
+      const reviewSpaceId = reviewSpace.id.value;
+
+      // レビュースペース内の全レビュー対象をクリーンアップ
+      await this.cleanupHelper.cleanupReviewTargets(reviewSpaceId);
+
+      // チェックリスト生成タスクのクリーンアップ
+      await this.cleanupHelper.cleanupChecklistGenerationTask(reviewSpaceId);
+    }
   }
 }
