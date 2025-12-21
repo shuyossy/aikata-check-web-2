@@ -37,7 +37,7 @@ const formDataMetadataItemSchema = z.object({
  */
 const aiGenerationConfig = {
   /** 最大ファイル数 */
-  maxFiles: 10,
+  maxFiles: 100,
 };
 
 /**

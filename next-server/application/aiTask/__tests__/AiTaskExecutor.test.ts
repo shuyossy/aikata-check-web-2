@@ -9,7 +9,7 @@ import type { ILargeDocumentResultCacheRepository } from "@/application/shared/p
 import type { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
 import type { IWorkflowRunRegistry } from "../WorkflowRunRegistry";
 import type { AiTaskDto } from "@/domain/aiTask";
-import { ReviewTarget } from "@/domain/reviewTarget";
+import { ReviewTarget, ReviewDocumentCache } from "@/domain/reviewTarget";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { TaskFileHelper } from "@/lib/server/taskFileHelper";
 
@@ -734,6 +734,248 @@ describe("AiTaskExecutor", () => {
       // WorkflowRunRegistryなしのexecutorでは登録・解除が呼ばれない
       expect(mockWorkflowRunRegistry.register).not.toHaveBeenCalled();
       expect(mockWorkflowRunRegistry.deregister).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("execute - リトライレビュータスク", () => {
+    const testCacheId = "550e8400-e29b-41d4-a716-446655440010";
+    // UUID形式のレビュー結果ID
+    const testResultId1 = "550e8400-e29b-41d4-a716-446655440101";
+    const testResultId2 = "550e8400-e29b-41d4-a716-446655440102";
+    const testResultId3 = "550e8400-e29b-41d4-a716-446655440103";
+    const testResultId4 = "550e8400-e29b-41d4-a716-446655440104";
+    const testResultId5 = "550e8400-e29b-41d4-a716-446655440105";
+
+    const createRetryReviewTask = (): AiTaskDto => ({
+      id: "test-retry-task-id",
+      taskType: "small_review",
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewTargetId: testReviewTargetId,
+        reviewSpaceId: testReviewSpaceId,
+        userId: "test-user-id",
+        files: [], // リトライ時はファイルは空
+        checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+        reviewSettings: {
+          additionalInstructions: null,
+          concurrentReviewItems: 5,
+          commentFormat: null,
+          evaluationCriteria: [{ label: "A", description: "問題なし" }],
+        },
+        reviewType: "small_review",
+        isRetry: true,
+        retryScope: "failed",
+        resultsToDeleteIds: [testResultId1, testResultId2],
+      } as unknown as ReviewTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [], // リトライ時はファイルメタデータは空
+    });
+
+    const createTestDocumentCache = (): ReviewDocumentCache => {
+      return ReviewDocumentCache.reconstruct({
+        id: testCacheId,
+        reviewTargetId: testReviewTargetId,
+        fileName: "test.txt",
+        processMode: "text",
+        cachePath: "/cache/path/test.txt",
+        createdAt: now,
+      });
+    };
+
+    it("リトライ時に対象のレビュー結果が削除される", async () => {
+      // モックの設定
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testReviewTarget,
+      );
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        createTestDocumentCache(),
+      ]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      // ワークフロー結果のモック
+      mockWorkflowRun.start.mockResolvedValue({
+        status: "success",
+        result: {
+          status: "success",
+          reviewResults: [
+            {
+              checkListItemId: "item-1",
+              rating: "A",
+              comment: "問題ありません",
+            },
+          ],
+        },
+      });
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createRetryReviewTask();
+      const result = await executor.execute(task);
+
+      expect(result.success).toBe(true);
+      // レビュー結果が削除されたことを確認（2件）
+      expect(mockReviewResultRepository.delete).toHaveBeenCalledTimes(2);
+      expect(mockReviewResultRepository.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ value: testResultId1 }),
+      );
+      expect(mockReviewResultRepository.delete).toHaveBeenCalledWith(
+        expect.objectContaining({ value: testResultId2 }),
+      );
+    });
+
+    it("リトライ時にドキュメントキャッシュが参照される", async () => {
+      // モックの設定
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testReviewTarget,
+      );
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        createTestDocumentCache(),
+      ]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      // ワークフロー結果のモック
+      mockWorkflowRun.start.mockResolvedValue({
+        status: "success",
+        result: {
+          status: "success",
+          reviewResults: [
+            {
+              checkListItemId: "item-1",
+              rating: "A",
+              comment: "問題ありません",
+            },
+          ],
+        },
+      });
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createRetryReviewTask();
+      const result = await executor.execute(task);
+
+      expect(result.success).toBe(true);
+      // ドキュメントキャッシュリポジトリが呼ばれたことを確認
+      expect(mockReviewDocumentCacheRepository.findByReviewTargetId).toHaveBeenCalledWith(
+        expect.objectContaining({ value: testReviewTargetId }),
+      );
+    });
+
+    it("リトライ時にドキュメントキャッシュがない場合はエラーになる", async () => {
+      // モックの設定
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testReviewTarget,
+      );
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      // キャッシュが空を返す
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      const task = createRetryReviewTask();
+      const result = await executor.execute(task);
+
+      expect(result.success).toBe(false);
+      expect(result.errorMessage).toBe("ドキュメントキャッシュが見つかりません");
+    });
+
+    it("リトライ時にresultsToDeleteIdsが空の場合は削除処理がスキップされる", async () => {
+      // モックの設定
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testReviewTarget,
+      );
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        createTestDocumentCache(),
+      ]);
+
+      // ワークフロー結果のモック
+      mockWorkflowRun.start.mockResolvedValue({
+        status: "success",
+        result: {
+          status: "success",
+          reviewResults: [
+            {
+              checkListItemId: "item-1",
+              rating: "A",
+              comment: "問題ありません",
+            },
+          ],
+        },
+      });
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      // resultsToDeleteIdsを空にしたタスク
+      const task = createRetryReviewTask();
+      (task.payload as unknown as ReviewTaskPayload).resultsToDeleteIds = [];
+
+      const result = await executor.execute(task);
+
+      expect(result.success).toBe(true);
+      // 削除処理が呼ばれないことを確認
+      expect(mockReviewResultRepository.delete).not.toHaveBeenCalled();
+    });
+
+    it("全項目リトライ時に全てのレビュー結果が削除される", async () => {
+      // モックの設定
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testReviewTarget,
+      );
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        createTestDocumentCache(),
+      ]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      // ワークフロー結果のモック
+      mockWorkflowRun.start.mockResolvedValue({
+        status: "success",
+        result: {
+          status: "success",
+          reviewResults: [
+            {
+              checkListItemId: "item-1",
+              rating: "A",
+              comment: "問題ありません",
+            },
+            {
+              checkListItemId: "item-2",
+              rating: "B",
+              comment: "軽微な問題あり",
+            },
+          ],
+        },
+      });
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      // 全項目リトライ用のタスク（5件のレビュー結果を削除）
+      const task = createRetryReviewTask();
+      (task.payload as unknown as ReviewTaskPayload).retryScope = "all";
+      (task.payload as unknown as ReviewTaskPayload).resultsToDeleteIds = [
+        testResultId1,
+        testResultId2,
+        testResultId3,
+        testResultId4,
+        testResultId5,
+      ];
+
+      const result = await executor.execute(task);
+
+      expect(result.success).toBe(true);
+      // 全てのレビュー結果が削除されたことを確認（5件）
+      expect(mockReviewResultRepository.delete).toHaveBeenCalledTimes(5);
     });
   });
 });
