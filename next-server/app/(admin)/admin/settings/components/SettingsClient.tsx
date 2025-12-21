@@ -7,7 +7,7 @@ import { GetSystemSettingResultDto } from "@/application/system-setting";
 import { SystemSettingsForm } from "./SystemSettingsForm";
 import { updateSystemSettingAction } from "../actions";
 import { useServerActionError } from "@/hooks";
-import { showSuccess } from "@/lib/client/toast";
+import { showSuccess, getMessage } from "@/lib/client";
 
 interface SettingsClientProps {
   initialSettings: GetSystemSettingResultDto | null;
@@ -29,7 +29,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
       onSuccess: ({ data }) => {
         if (data) {
           setSettings(data);
-          showSuccess("設定を保存しました");
+          showSuccess(getMessage("SUCCESS_SETTINGS_SAVED"));
           clearError();
         }
       },

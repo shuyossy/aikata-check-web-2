@@ -24,7 +24,7 @@ import {
   deleteNotificationAction,
 } from "../actions";
 import { useServerActionError } from "@/hooks";
-import { showSuccess } from "@/lib/client/toast";
+import { showSuccess, getMessage } from "@/lib/client";
 
 interface NotificationsClientProps {
   initialNotifications: SystemNotificationDto[];
@@ -66,7 +66,7 @@ export function NotificationsClient({
         if (data) {
           setIsFormOpen(false);
           loadNotifications({ page: 1, limit: 100 });
-          showSuccess("通知を作成しました");
+          showSuccess(getMessage("SUCCESS_NOTIFICATION_CREATED"));
           clearError();
         }
       },
@@ -82,7 +82,7 @@ export function NotificationsClient({
     {
       onSuccess: () => {
         loadNotifications({ page: 1, limit: 100 });
-        showSuccess("通知を更新しました");
+        showSuccess(getMessage("SUCCESS_NOTIFICATION_UPDATED"));
         clearError();
       },
       onError: ({ error: actionError }) => {
@@ -98,7 +98,7 @@ export function NotificationsClient({
       onSuccess: () => {
         setDeleteTargetId(null);
         loadNotifications({ page: 1, limit: 100 });
-        showSuccess("通知を削除しました");
+        showSuccess(getMessage("SUCCESS_NOTIFICATION_DELETED"));
         clearError();
       },
       onError: ({ error: actionError }) => {

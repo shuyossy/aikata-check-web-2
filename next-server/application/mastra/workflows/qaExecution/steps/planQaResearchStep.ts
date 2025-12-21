@@ -11,7 +11,8 @@ import {
 import { judgeReviewMode, buildPlanningChecklistInfo } from '../lib';
 import type { QaPlanningAgentRuntimeContext } from '@/application/mastra/agents/types';
 import { createRuntimeContext } from '@/application/mastra/lib/agentUtils';
-import { normalizeUnknownError } from '@/lib/server/error';
+import { normalizeUnknownError, workflowError } from '@/lib/server/error';
+import { formatMessage } from '@/lib/server/messages';
 import { getLogger } from '@/lib/server/logger';
 
 const logger = getLogger();
@@ -98,7 +99,7 @@ export const planQaResearchStep = createStep({
       // Mastraエージェント経由でAI呼び出し（構造化出力）
       const planningAgent = mastra?.getAgent('qaPlanningAgent');
       if (!planningAgent) {
-        throw new Error('qaPlanningAgent not found');
+        throw workflowError("WORKFLOW_AGENT_NOT_FOUND");
       }
 
       const result = await planningAgent.generateLegacy(question, {
@@ -116,7 +117,7 @@ export const planQaResearchStep = createStep({
       if (researchTasks.length === 0) {
         return bail({
           status: 'failed' as const,
-          errorMessage: '調査対象ドキュメントが特定できませんでした',
+          errorMessage: formatMessage("WORKFLOW_QA_DOCUMENT_NOT_FOUND"),
         });
       }
 

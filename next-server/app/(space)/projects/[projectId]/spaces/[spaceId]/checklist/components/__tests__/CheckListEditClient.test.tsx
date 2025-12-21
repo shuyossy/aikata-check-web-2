@@ -90,6 +90,8 @@ vi.mock("sonner", () => ({
 vi.mock("@/lib/client", () => ({
   showSuccess: vi.fn(),
   showError: vi.fn(),
+  getMessage: vi.fn((code: string) => code),
+  formatClientMessage: vi.fn((code: string) => code),
 }));
 
 describe("CheckListEditClient", () => {

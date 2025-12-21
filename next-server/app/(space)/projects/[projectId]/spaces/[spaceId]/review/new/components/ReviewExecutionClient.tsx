@@ -35,6 +35,7 @@ import {
   showError,
   showSuccess,
   validateEvaluationCriteria,
+  getMessage,
 } from "@/lib/client";
 import { executeReviewAction } from "../actions";
 import { extractServerErrorMessage } from "@/hooks";
@@ -124,7 +125,7 @@ export function ReviewExecutionClient({
     executeReviewAction,
     {
       onSuccess: (result) => {
-        showSuccess("レビューを開始しました");
+        showSuccess(getMessage("SUCCESS_REVIEW_STARTED"));
         // レビュー結果画面に遷移
         router.push(
           `/projects/${projectId}/spaces/${spaceId}/review/${result.data?.reviewTargetId}`
@@ -372,12 +373,12 @@ export function ReviewExecutionClient({
         });
 
         if (result.success) {
-          showSuccess("外部APIレビューが完了しました");
+          showSuccess(getMessage("SUCCESS_API_REVIEW_COMPLETED"));
           router.push(
             `/projects/${projectId}/spaces/${spaceId}/review/${result.reviewTargetId}`
           );
         } else {
-          showError(result.errorMessage || "外部APIレビューに失敗しました");
+          showError(result.errorMessage || getMessage("ERROR_API_REVIEW_FAILED"));
         }
       } else {
         // 通常のレビュー（small/large）
@@ -393,7 +394,7 @@ export function ReviewExecutionClient({
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "PDF変換に失敗しました";
+        error instanceof Error ? error.message : getMessage("ERROR_PDF_CONVERSION_FAILED");
       showError(errorMessage);
       setIsConverting(false);
     }

@@ -17,6 +17,7 @@ import {
   validateExternalReviewResponse,
 } from "@/types/shared/externalReviewApi";
 import { extractServerErrorMessage } from "@/hooks";
+import { getMessage } from "@/lib/client";
 
 /**
  * 外部APIレビューの進捗状態
@@ -244,7 +245,7 @@ export function useApiReview() {
         } catch (error) {
           // チャンク全体のAPI呼び出し失敗時は、そのチャンク内の全項目をエラーとカウント
           totalErrorCount += chunk.items.length;
-          lastErrorMessage = error instanceof Error ? error.message : "不明なエラーが発生しました";
+          lastErrorMessage = error instanceof Error ? error.message : getMessage("ERROR_UNKNOWN");
           console.error(`Chunk ${i} failed:`, error);
         }
 
@@ -296,7 +297,7 @@ export function useApiReview() {
         errorMessage: hasError ? lastErrorMessage : undefined,
       };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "不明なエラーが発生しました";
+      const errorMessage = error instanceof Error ? error.message : getMessage("ERROR_UNKNOWN");
       setProgress((prev) => ({
         ...prev,
         status: "error",

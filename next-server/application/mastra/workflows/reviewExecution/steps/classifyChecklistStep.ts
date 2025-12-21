@@ -8,7 +8,7 @@ import {
   checklistCategoryOutputSchema,
 } from "../../../agents";
 import { createRuntimeContext } from "../../../lib/agentUtils";
-import { normalizeUnknownError, extractAIAPISafeError } from "@/lib/server/error";
+import { normalizeUnknownError, extractAIAPISafeError, workflowError } from "@/lib/server/error";
 import type { ChecklistCategoryAgentRuntimeContext } from "../../../agents";
 import {
   checkListItemSchema,
@@ -40,7 +40,7 @@ export type ClassifyChecklistOutput = z.infer<typeof classifyChecklistOutputSche
  */
 function splitChecklistEqually<T>(items: T[], maxSize: number): T[][] {
   if (maxSize < 1) {
-    throw new Error("maxSize must be at least 1");
+    throw workflowError("WORKFLOW_CHECKLIST_INVALID_SIZE");
   }
   if (items.length === 0) {
     return [];
@@ -187,7 +187,7 @@ async function classifyWithAI(
 
     // 分類結果が空の場合はエラー（フォールバックへ）
     if (!rawCategories || rawCategories.length === 0) {
-      throw new Error("AI classification returned empty categories");
+      throw workflowError("WORKFLOW_AI_CLASSIFICATION_EMPTY");
     }
 
     // 全ショートIDのセットを作成（1始まりの連番）

@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { importCheckListFromFileAction } from "../actions/importCheckListFromFile";
 import { extractServerErrorMessage } from "@/hooks";
-import { showError, showSuccess } from "@/lib/client";
+import { showError, showSuccess, getMessage, formatClientMessage } from "@/lib/client";
 
 interface CheckListImportModalProps {
   open: boolean;
@@ -51,7 +51,7 @@ export function CheckListImportModal({
   const { execute, isExecuting } = useAction(importCheckListFromFileAction, {
     onSuccess: (result) => {
       showSuccess(
-        `${result.data?.importedCount}件のチェック項目をインポートしました`,
+        formatClientMessage("SUCCESS_CHECKLIST_IMPORTED", { count: result.data?.importedCount ?? 0 }),
       );
       handleClose();
       onImportSuccess();
@@ -76,9 +76,7 @@ export function CheckListImportModal({
   const validateFile = useCallback((file: File): boolean => {
     const extension = "." + file.name.split(".").pop()?.toLowerCase();
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      showError(
-        "サポートされていないファイル形式です。csv, xlsx, xlsファイルを選択してください。",
-      );
+      showError(getMessage("ERROR_UNSUPPORTED_FILE_FORMAT_CHECKLIST"));
       return false;
     }
     return true;
@@ -138,7 +136,7 @@ export function CheckListImportModal({
 
       execute(formData);
     } catch {
-      showError("ファイルの読み込みに失敗しました");
+      showError(getMessage("ERROR_FILE_READ_FAILED"));
     }
   }, [file, execute, reviewSpaceId, skipHeaderRow]);
 

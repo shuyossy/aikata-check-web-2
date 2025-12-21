@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { FileUploadArea, UploadedFile, isPdfFile } from "@/components/upload";
-import { convertPdfFileToFiles, showError, showSuccess } from "@/lib/client";
+import { convertPdfFileToFiles, showError, showSuccess, getMessage } from "@/lib/client";
 import { generateCheckListByAIAction } from "../actions";
 import { extractServerErrorMessage } from "@/hooks";
 
@@ -61,9 +61,9 @@ export function AIChecklistGenerateClient({
       onSuccess: (result) => {
         // キュー登録が成功した場合
         if (result.data?.status === "queued") {
-          showSuccess("チェックリスト生成タスクが実行待ちリストに登録されました。処理完了後にチェックリスト画面に反映されます。");
+          showSuccess(getMessage("SUCCESS_CHECKLIST_GENERATION_QUEUED"));
         } else {
-          showSuccess("チェックリスト生成を受け付けました。");
+          showSuccess(getMessage("SUCCESS_CHECKLIST_GENERATION_ACCEPTED"));
         }
         // チェックリスト編集画面に遷移（ポーリングで新規項目を確認）
         router.push(`/projects/${projectId}/spaces/${spaceId}/checklist`);
@@ -241,7 +241,7 @@ export function AIChecklistGenerateClient({
       executeGenerate(formData);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : "PDF変換に失敗しました";
+        error instanceof Error ? error.message : getMessage("ERROR_PDF_CONVERSION_FAILED");
       showError(errorMessage);
       setIsConverting(false);
     }

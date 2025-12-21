@@ -1,6 +1,7 @@
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
 import type { RuntimeContext } from "@mastra/core/di";
 import type { BaseRuntimeContext } from "../types";
+import { aiConfigError } from "@/lib/server/error";
 
 /**
  * AIモデルを取得する
@@ -24,15 +25,15 @@ export const getModel = (runtimeContext?: RuntimeContext<BaseRuntimeContext>) =>
   const apiModel = systemApiModel || process.env.AI_API_MODEL;
 
   if (!apiKey) {
-    throw new Error('AI API Key is not configured');
+    throw aiConfigError("AI_CONFIG_API_KEY_MISSING");
   }
 
   if (!apiUrl) {
-    throw new Error('AI_API_URL is not set');
+    throw aiConfigError("AI_CONFIG_API_URL_MISSING");
   }
 
   if (!apiModel) {
-    throw new Error('AI_API_MODEL is not set');
+    throw aiConfigError("AI_CONFIG_API_MODEL_MISSING");
   }
 
   return createOpenAICompatible({

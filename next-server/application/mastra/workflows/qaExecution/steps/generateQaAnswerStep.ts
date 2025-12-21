@@ -12,7 +12,7 @@ import type { QaAnswerAgentRuntimeContext } from '@/application/mastra/agents/ty
 import { createRuntimeContext } from '@/application/mastra/lib/agentUtils';
 import type { IEventBroker } from '@/application/shared/port/push/IEventBroker';
 import type { QaAnswerChunkEvent } from '@/application/shared/port/push/QaSseEventTypes';
-import { normalizeUnknownError } from '@/lib/server/error';
+import { normalizeUnknownError, workflowError } from '@/lib/server/error';
 import { getLogger } from '@/lib/server/logger';
 
 const logger = getLogger();
@@ -100,7 +100,7 @@ export const generateQaAnswerStep = createStep({
       // Mastraエージェント経由でAI呼び出し
       const answerAgent = mastra?.getAgent('qaAnswerAgent');
       if (!answerAgent) {
-        throw new Error('qaAnswerAgent not found');
+        throw workflowError("WORKFLOW_AGENT_NOT_FOUND");
       }
 
       // ストリーミング対応でAI呼び出し

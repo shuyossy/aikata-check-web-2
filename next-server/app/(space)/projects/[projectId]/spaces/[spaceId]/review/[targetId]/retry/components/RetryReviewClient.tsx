@@ -29,7 +29,7 @@ import {
   DEFAULT_EVALUATION_CRITERIA,
   DEFAULT_COMMENT_FORMAT,
 } from "@/domain/reviewSpace";
-import { showError, showSuccess, validateEvaluationCriteria } from "@/lib/client";
+import { showError, showSuccess, validateEvaluationCriteria, getMessage } from "@/lib/client";
 import { retryReviewAction } from "../actions";
 import { extractServerErrorMessage } from "@/hooks";
 
@@ -123,7 +123,7 @@ export function RetryReviewClient({
   // リトライ実行アクション
   const { execute: executeRetry, isExecuting } = useAction(retryReviewAction, {
     onSuccess: () => {
-      showSuccess("リトライを開始しました");
+      showSuccess(getMessage("SUCCESS_RETRY_STARTED"));
       // レビュー結果画面に遷移
       router.push(`/projects/${projectId}/spaces/${spaceId}/review/${targetId}`);
     },

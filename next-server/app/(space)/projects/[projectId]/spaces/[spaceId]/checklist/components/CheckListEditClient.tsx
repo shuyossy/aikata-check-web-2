@@ -31,7 +31,7 @@ import {
 import { CheckListItemListItemDto } from "@/domain/checkListItem";
 import type { ChecklistGenerationTaskStatusDto } from "@/application/checkListItem";
 import { extractServerErrorMessage } from "@/hooks";
-import { showError, showSuccess } from "@/lib/client";
+import { showError, showSuccess, getMessage, formatClientMessage } from "@/lib/client";
 import { CheckListImportModal } from "./CheckListImportModal";
 import { useChecklistTaskPolling } from "../hooks/useChecklistTaskPolling";
 
@@ -149,7 +149,7 @@ export function CheckListEditClient({
     bulkSaveCheckListItemsAction,
     {
       onSuccess: () => {
-        showSuccess("チェックリストを保存しました");
+        showSuccess(getMessage("SUCCESS_CHECKLIST_SAVED"));
         setHasChanges(false);
         // 削除予定と空アイテムを除外し、新規フラグをクリア
         setItems((prev) =>
@@ -191,7 +191,7 @@ export function CheckListEditClient({
           URL.revokeObjectURL(url);
 
           showSuccess(
-            `${result.data.exportedCount}件のチェック項目をエクスポートしました`,
+            formatClientMessage("SUCCESS_CHECKLIST_EXPORTED", { count: result.data.exportedCount }),
           );
         }
       },
@@ -210,7 +210,7 @@ export function CheckListEditClient({
     cancelChecklistGenerationTaskAction,
     {
       onSuccess: () => {
-        showSuccess("チェックリスト生成タスクをキャンセルしました");
+        showSuccess(getMessage("SUCCESS_CHECKLIST_TASK_CANCELLED"));
         router.refresh();
       },
       onError: ({ error: actionError }) => {

@@ -17,7 +17,7 @@ import {
 } from "@/domain/reviewSpace";
 import { ReviewSpaceForm, ReviewSpaceFormData } from "@/components/reviewSpace";
 import { useServerActionError } from "@/hooks";
-import { showSuccess } from "@/lib/client/toast";
+import { showSuccess, getMessage } from "@/lib/client";
 import { Loader2 } from "lucide-react";
 
 interface Props {
@@ -48,7 +48,7 @@ export function ReviewSpaceSettingsClient({
         if (data) {
           setReviewSpace(data);
           clearError();
-          showSuccess("レビュースペースを更新しました");
+          showSuccess(getMessage("SUCCESS_REVIEW_SPACE_UPDATED"));
           router.push(`/projects/${projectId}/spaces/${spaceId}`);
         }
       },
@@ -62,7 +62,7 @@ export function ReviewSpaceSettingsClient({
     deleteReviewSpaceAction,
     {
       onSuccess: () => {
-        showSuccess("レビュースペースを削除しました");
+        showSuccess(getMessage("SUCCESS_REVIEW_SPACE_DELETED"));
         router.push(`/projects/${projectId}/spaces`);
       },
       onError: ({ error: actionError }) => {

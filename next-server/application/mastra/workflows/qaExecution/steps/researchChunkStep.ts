@@ -7,7 +7,8 @@ import { judgeReviewMode, buildResearchChecklistInfo } from '../lib';
 import type { QaResearchAgentRuntimeContext } from '@/application/mastra/agents/types';
 import { createRuntimeContext } from '@/application/mastra/lib/agentUtils';
 import { judgeErrorIsContentLengthError } from '@/application/mastra/lib/util';
-import { normalizeUnknownError } from '@/lib/server/error';
+import { normalizeUnknownError, workflowError } from '@/lib/server/error';
+import { formatMessage } from '@/lib/server/messages';
 import { getLogger } from '@/lib/server/logger';
 
 const logger = getLogger();
@@ -132,7 +133,7 @@ export const researchChunkStep = createStep({
       } else {
         return bail({
           status: 'failed' as const,
-          errorMessage: 'チャンクのコンテンツが見つかりませんでした',
+          errorMessage: formatMessage("WORKFLOW_QA_CHUNK_CONTENT_EMPTY"),
           finishReason: 'error' as const,
         });
       }
@@ -140,7 +141,7 @@ export const researchChunkStep = createStep({
       // Mastraエージェント経由でAI呼び出し
       const researchAgent = mastra?.getAgent('qaResearchAgent');
       if (!researchAgent) {
-        throw new Error('qaResearchAgent not found');
+        throw workflowError("WORKFLOW_AGENT_NOT_FOUND");
       }
 
       const result = await researchAgent.generateLegacy(

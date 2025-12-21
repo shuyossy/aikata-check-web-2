@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ReviewSettingsDto } from "@/domain/reviewSpace";
 import { deleteReviewTargetAction } from "../review/actions";
-import { showError, showSuccess } from "@/lib/client";
+import { showError, showSuccess, getMessage } from "@/lib/client";
 import { extractServerErrorMessage } from "@/hooks";
 
 /**
@@ -120,7 +120,7 @@ export function ReviewTargetListClient({
     deleteReviewTargetAction,
     {
       onSuccess: () => {
-        showSuccess("レビュー対象を削除しました");
+        showSuccess(getMessage("SUCCESS_REVIEW_TARGET_DELETED"));
         setDeletingId(null);
         router.refresh();
       },

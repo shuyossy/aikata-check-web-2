@@ -4,7 +4,7 @@ import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAction } from "next-safe-action/hooks";
 import { exportReviewResultsToCsvAction } from "../actions/exportReviewResultsToCsv";
-import { showSuccess, showError } from "@/lib/client";
+import { showSuccess, showError, formatClientMessage } from "@/lib/client";
 import { extractServerErrorMessage } from "@/hooks";
 import {
   MessageCircle,
@@ -225,7 +225,7 @@ export function ReviewResultsClient({
           URL.revokeObjectURL(url);
 
           showSuccess(
-            `${result.data.exportedCount}件のレビュー結果をエクスポートしました`,
+            formatClientMessage("SUCCESS_REVIEW_RESULT_EXPORTED", { count: result.data.exportedCount }),
           );
         }
       },

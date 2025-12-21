@@ -20,7 +20,7 @@ import { AdminUserList } from "./AdminUserList";
 import { AdminUserSearchDialog } from "./AdminUserSearchDialog";
 import { listAdminsAction, grantAdminAction, revokeAdminAction } from "../actions";
 import { useServerActionError } from "@/hooks";
-import { showSuccess } from "@/lib/client/toast";
+import { showSuccess, getMessage } from "@/lib/client";
 
 interface UsersClientProps {
   initialAdmins: UserDto[];
@@ -63,7 +63,7 @@ export function UsersClient({ initialAdmins }: UsersClientProps) {
         if (data) {
           setIsDialogOpen(false);
           loadAdmins();
-          showSuccess("管理者権限を付与しました");
+          showSuccess(getMessage("SUCCESS_ADMIN_GRANTED"));
           clearError();
         }
       },
@@ -80,7 +80,7 @@ export function UsersClient({ initialAdmins }: UsersClientProps) {
       onSuccess: () => {
         setRevokeTargetId(null);
         loadAdmins();
-        showSuccess("管理者権限を削除しました");
+        showSuccess(getMessage("SUCCESS_ADMIN_REVOKED"));
         clearError();
       },
       onError: ({ error: actionError }) => {

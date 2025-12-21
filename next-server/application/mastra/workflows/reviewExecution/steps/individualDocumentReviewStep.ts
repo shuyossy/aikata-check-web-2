@@ -10,7 +10,7 @@ import { extractedFileSchema } from "../../shared";
 import { createCombinedMessage } from "../../lib";
 import { createRuntimeContext, judgeFinishReason } from "../../../lib/agentUtils";
 import { judgeErrorIsContentLengthError } from "../../../lib/util";
-import { normalizeUnknownError } from "@/lib/server/error";
+import { normalizeUnknownError, workflowError } from "@/lib/server/error";
 import { formatMessage } from "@/lib/server/messages";
 import type { IndividualDocumentReviewAgentRuntimeContext } from "../../../agents";
 import {
@@ -211,10 +211,10 @@ Please provide a thorough review based on the document content provided above.`;
         }
 
         // finishReasonを確認（その他のエラーを検知）
-        const { success: finishSuccess, reason: finishReasonMsg } =
+        const { success: finishSuccess } =
           judgeFinishReason(result.finishReason);
         if (!finishSuccess) {
-          throw new Error(`AI APIエラー: ${finishReasonMsg}`);
+          throw workflowError("WORKFLOW_AI_API_ERROR");
         }
 
         // 構造化出力を取得

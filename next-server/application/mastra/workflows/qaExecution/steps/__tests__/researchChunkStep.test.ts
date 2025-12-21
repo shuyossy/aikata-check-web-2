@@ -336,7 +336,7 @@ describe("researchChunkStep", () => {
       expect(bailMock).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-          errorMessage: "チャンクのコンテンツが見つかりませんでした",
+          errorMessage: "調査対象のコンテンツが見つかりませんでした。",
           finishReason: "error",
         })
       );
@@ -488,7 +488,7 @@ describe("researchChunkStep", () => {
       expect(bailMock).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-          errorMessage: "チャンクのコンテンツが見つかりませんでした",
+          errorMessage: "調査対象のコンテンツが見つかりませんでした。",
         })
       );
     });

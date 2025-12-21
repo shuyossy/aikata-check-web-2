@@ -8,7 +8,7 @@ import {
 import { baseStepOutputSchema } from "../../schema";
 import type { ChecklistGenerationWorkflowRuntimeContext } from "../types";
 import { createRuntimeContext } from "../../../lib/agentUtils";
-import { normalizeUnknownError } from "@/lib/server/error";
+import { normalizeUnknownError, workflowError } from "@/lib/server/error";
 import type { ChecklistRefinementAgentRuntimeContext } from "../../../agents";
 import { getLogger } from "@/lib/server/logger";
 
@@ -143,9 +143,9 @@ Please continue refining the remaining items, avoiding duplicates with already r
                   { err: error },
                   "チェックリストブラッシュアップの修正に失敗しました"
                 );
-                throw new Error(
-                  "AIの大量出力の補正に失敗しました。チェックリスト数が多い場合は分割を検討してください。"
-                );
+                  throw workflowError(
+                    "WORKFLOW_CHECKLIST_REFINEMENT_FAILED"
+                  );
               }
               return repairedText;
             },
@@ -166,8 +166,8 @@ Please continue refining the remaining items, avoiding duplicates with already r
 
         attempts++;
         if (attempts >= MAX_ATTEMPTS) {
-          throw new Error(
-            "AIの大量出力の補正に失敗しました。チェックリスト数が多い場合は分割を検討してください。"
+          throw workflowError(
+            "WORKFLOW_CHECKLIST_REFINEMENT_FAILED"
           );
         }
       }

@@ -106,6 +106,27 @@ export const domainValidationError = (messageCode: MessageCode) =>
   });
 
 /**
+ * ワークフローエラー
+ * Mastraワークフローステップ内でのエラー時に使用
+ */
+export const workflowError = (messageCode: MessageCode, cause?: unknown) =>
+  new AppError("INTERNAL", {
+    expose: true,
+    messageCode,
+    cause,
+  });
+
+/**
+ * AI設定エラー
+ * AI APIの設定が不足している場合に使用
+ */
+export const aiConfigError = (messageCode: MessageCode) =>
+  new AppError("VALIDATION", {
+    expose: true,
+    messageCode,
+  });
+
+/**
  * Zod のエラー → クライアントに安全に出せる形へ
  */
 export function zodToAppError(e: ZodError) {

@@ -9,6 +9,13 @@ export {
 
 export { showError, showInfo, showSuccess, showWarning } from "./toast";
 
+export {
+  formatClientMessage,
+  getMessage,
+  type ClientMessageCode,
+  type MessageParams,
+} from "./messages";
+
 export { validateEvaluationCriteria } from "./reviewValidation";
 
 export { POLLING_INTERVALS } from "./constants";

@@ -4,7 +4,7 @@ import type { RuntimeContext } from "@mastra/core/di";
 import { consolidateReviewAgent } from "../../../agents";
 import { baseStepOutputSchema } from "../../schema";
 import { createRuntimeContext, judgeFinishReason } from "../../../lib/agentUtils";
-import { normalizeUnknownError } from "@/lib/server/error";
+import { normalizeUnknownError, workflowError } from "@/lib/server/error";
 import { formatMessage } from "@/lib/server/messages";
 import type { ConsolidateReviewAgentRuntimeContext } from "../../../agents";
 import {
@@ -251,10 +251,10 @@ Please provide a consolidated review that synthesizes all individual document re
         );
 
         // finishReasonを確認
-        const { success: finishSuccess, reason: finishReasonMsg } =
+        const { success: finishSuccess } =
           judgeFinishReason(result.finishReason);
         if (!finishSuccess) {
-          throw new Error(`AI APIエラー: ${finishReasonMsg}`);
+          throw workflowError("WORKFLOW_AI_API_ERROR");
         }
 
         // 構造化出力を取得

@@ -6,9 +6,6 @@ export const template = {
   UNAUTHORIZED_ERROR: `認証されていません。ログインが必要です。`,
   AI_MESSAGE_TOO_LARGE: `AIへの入力データが大きすぎます。入力データを減らしてください。`,
   AI_API_ERROR: `AIのAPIと通信中にエラーが発生しました\n{detail}`,
-  ANALYSIS_DUPLICATE_COMMIT_IN_PROGRESS: `同じコミットの分析が進行中のため処理を終了しました`,
-  // URL関連
-  INVALID_URL_FORMAT: `無効なURL形式です`,
   // ユーザ管理ドメインバリデーションエラー
   USER_ID_INVALID_FORMAT: `ユーザIDの形式が不正です。有効なUUID形式である必要があります。`,
   EMPLOYEE_ID_EMPTY: `社員IDは必須です。`,
@@ -109,10 +106,6 @@ export const template = {
   // レビュータイプエラー
   REVIEW_TYPE_INVALID: `レビュー種別が不正です。small、large、apiのいずれかである必要があります。`,
   // 外部APIレビューエラー
-  REVIEW_API_CALL_FAILED: `外部APIの呼び出しに失敗しました。{detail}`,
-  REVIEW_API_RESPONSE_INVALID: `外部APIのレスポンス形式が不正です。{detail}`,
-  REVIEW_API_ENDPOINT_REQUIRED: `外部APIエンドポイントは必須です。`,
-  REVIEW_API_CANNOT_RETRY: `外部APIレビューはリトライできません。新規レビューを実行してください。`,
   REVIEW_API_NO_RESULTS: `保存するレビュー結果がありません。`,
   // レビューステータスエラー
   REVIEW_STATUS_NOT_REVIEWING: `レビュー実行中ではありません。`,
@@ -164,4 +157,47 @@ export const template = {
   // レビュー結果CSV出力エラー
   REVIEW_RESULT_EXPORT_NO_ITEMS: `レビュー結果がありません。出力するにはレビューを実行してください。`,
   REVIEW_RESULT_EXPORT_TOO_MANY_ITEMS: `レビュー結果数が上限（{maxItems}件）を超えています。`,
+  // ワークフローステップ関連エラー
+  WORKFLOW_AI_API_ERROR: `AIとの通信中に問題が発生しました。しばらく待ってから再度お試しください。`,
+  WORKFLOW_REVIEW_RESULTS_MISSING: `レビュー結果の生成に失敗しました。再度実行してください。`,
+  WORKFLOW_REVIEW_ALL_FAILED: `全てのチェック項目のレビューに失敗しました。入力データを確認してください。`,
+  WORKFLOW_CHECKLIST_INVALID_SIZE: `チェックリストの分割サイズが不正です。`,
+  WORKFLOW_AI_CLASSIFICATION_EMPTY: `AIによるカテゴリ分類に失敗しました。`,
+  WORKFLOW_AGENT_NOT_FOUND: `システム内部エラーが発生しました。管理者に連絡してください。`,
+  WORKFLOW_QA_DOCUMENT_NOT_FOUND: `調査対象のドキュメントが見つかりませんでした。`,
+  WORKFLOW_QA_CHUNK_CONTENT_EMPTY: `調査対象のコンテンツが見つかりませんでした。`,
+  WORKFLOW_CHECKLIST_REFINEMENT_FAILED: `チェックリストの整理に失敗しました。項目数を減らして再度お試しください。`,
+  // AI設定関連エラー
+  AI_CONFIG_API_KEY_MISSING: `AI APIキーが設定されていません。システム設定またはプロジェクト設定を確認してください。`,
+  AI_CONFIG_API_URL_MISSING: `AI API URLが設定されていません。システム設定を確認してください。`,
+  AI_CONFIG_API_MODEL_MISSING: `AI APIモデルが設定されていません。システム設定を確認してください。`,
+  // 成功メッセージ
+  SUCCESS_CHECKLIST_GENERATION_QUEUED: `チェックリスト生成タスクが実行待ちリストに登録されました。処理完了後にチェックリスト画面に反映されます。`,
+  SUCCESS_CHECKLIST_GENERATION_ACCEPTED: `チェックリスト生成を受け付けました。`,
+  SUCCESS_REVIEW_STARTED: `レビューを開始しました`,
+  SUCCESS_API_REVIEW_COMPLETED: `外部APIレビューが完了しました`,
+  SUCCESS_RETRY_STARTED: `リトライを開始しました`,
+  SUCCESS_REVIEW_SPACE_UPDATED: `レビュースペースを更新しました`,
+  SUCCESS_REVIEW_SPACE_DELETED: `レビュースペースを削除しました`,
+  SUCCESS_REVIEW_TARGET_DELETED: `レビュー対象を削除しました`,
+  SUCCESS_CHECKLIST_SAVED: `チェックリストを保存しました`,
+  SUCCESS_CHECKLIST_ITEMS_GENERATED: `{count}件のチェック項目を生成しました。確認後、保存してください。`,
+  SUCCESS_CHECKLIST_TASK_CANCELLED: `チェックリスト生成タスクをキャンセルしました`,
+  SUCCESS_CHECKLIST_IMPORTED: `{count}件のチェック項目をインポートしました`,
+  SUCCESS_CHECKLIST_EXPORTED: `{count}件のチェック項目をエクスポートしました`,
+  SUCCESS_REVIEW_RESULT_EXPORTED: `{count}件のレビュー結果をエクスポートしました`,
+  SUCCESS_SETTINGS_SAVED: `設定を保存しました`,
+  SUCCESS_ADMIN_GRANTED: `管理者権限を付与しました`,
+  SUCCESS_ADMIN_REVOKED: `管理者権限を削除しました`,
+  SUCCESS_NOTIFICATION_CREATED: `通知を作成しました`,
+  SUCCESS_NOTIFICATION_UPDATED: `通知を更新しました`,
+  SUCCESS_NOTIFICATION_DELETED: `通知を削除しました`,
+  // クライアントサイドエラーメッセージ
+  ERROR_PDF_CONVERSION_FAILED: `PDFの画像変換に失敗しました`,
+  ERROR_API_REVIEW_FAILED: `外部APIレビューに失敗しました`,
+  ERROR_EXTERNAL_API_CALL_FAILED: `外部APIの呼び出しに失敗しました。エンドポイントURLと接続状態を確認してください。`,
+  ERROR_EXTERNAL_API_RESPONSE_INVALID: `外部APIのレスポンス形式が正しくありません。API仕様を確認してください。`,
+  ERROR_FILE_READ_FAILED: `ファイルの読み込みに失敗しました`,
+  ERROR_UNSUPPORTED_FILE_FORMAT_CHECKLIST: `サポートされていないファイル形式です。csv, xlsx, xlsファイルを選択してください。`,
+  ERROR_UNKNOWN: `不明なエラーが発生しました`,
 } as const;
