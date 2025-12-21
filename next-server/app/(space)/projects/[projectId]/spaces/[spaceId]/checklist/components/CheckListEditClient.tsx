@@ -17,6 +17,7 @@ import {
   Loader2,
   X,
   AlertCircle,
+  Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -24,7 +25,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import {
   bulkSaveCheckListItemsAction,
-  bulkDeleteCheckListItemsAction,
   exportCheckListToCsvAction,
   cancelChecklistGenerationTaskAction,
 } from "../actions";
@@ -50,6 +50,7 @@ interface EditableItem {
   id: string;
   content: string;
   isNew?: boolean;
+  isPendingDelete?: boolean;
 }
 
 /**
@@ -109,7 +110,6 @@ export function CheckListEditClient({
   // タスク状態に基づくボタン無効化フラグ
   const isTaskQueued = taskStatus.status === "queued";
   const isTaskProcessing = taskStatus.status === "processing";
-  const hasActiveTask = taskStatus.hasTask;
 
   // 編集中のアイテムリスト
   const [items, setItems] = useState<EditableItem[]>(
@@ -132,6 +132,7 @@ export function CheckListEditClient({
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // initialItemsが変更されたときにitemsを更新（インポート成功後のrouter.refresh()で反映）
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => {
     setItems(
       initialItems.map((item) => ({
@@ -150,10 +151,10 @@ export function CheckListEditClient({
       onSuccess: () => {
         showSuccess("チェックリストを保存しました");
         setHasChanges(false);
-        // 空アイテムを除外し、新規フラグをクリア
+        // 削除予定と空アイテムを除外し、新規フラグをクリア
         setItems((prev) =>
           prev
-            .filter((item) => item.content.trim().length > 0)
+            .filter((item) => !item.isPendingDelete && item.content.trim().length > 0)
             .map((item) => ({ ...item, isNew: false })),
         );
       },
@@ -163,37 +164,6 @@ export function CheckListEditClient({
           "保存に失敗しました",
         );
         showError(message);
-      },
-    },
-  );
-
-  // 削除対象のIDを保持するref（onSuccess時に参照するため）
-  const deletingItemIds = useRef<string[]>([]);
-
-  // 一括削除アクション
-  const { execute: executeBulkDelete, isExecuting: isDeleting } = useAction(
-    bulkDeleteCheckListItemsAction,
-    {
-      onSuccess: (result) => {
-        showSuccess(`${result.data?.deletedCount}件のチェック項目を削除しました`);
-        // 削除したアイテムを除去（refから削除対象IDを取得）
-        const deletedIds = new Set(deletingItemIds.current);
-        setItems((prev) => prev.filter((item) => !deletedIds.has(item.id)));
-        setSelectedIds((prev) => {
-          const next = new Set(prev);
-          deletingItemIds.current.forEach((id) => next.delete(id));
-          return next;
-        });
-        setHasChanges(true);
-        deletingItemIds.current = [];
-      },
-      onError: ({ error: actionError }) => {
-        const message = extractServerErrorMessage(
-          actionError,
-          "削除に失敗しました",
-        );
-        showError(message);
-        deletingItemIds.current = [];
       },
     },
   );
@@ -274,12 +244,32 @@ export function CheckListEditClient({
 
   // アイテム削除（単体）
   const handleDeleteItem = useCallback((id: string) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+    if (id.startsWith("new-")) {
+      // 新規アイテムは即座に削除
+      setItems((prev) => prev.filter((item) => item.id !== id));
+    } else {
+      // 既存アイテムは削除予定としてマーク
+      setItems((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, isPendingDelete: true } : item
+        )
+      );
+    }
     setSelectedIds((prev) => {
       const next = new Set(prev);
       next.delete(id);
       return next;
     });
+    setHasChanges(true);
+  }, []);
+
+  // アイテム復元（削除予定を取り消し）
+  const handleRestoreItem = useCallback((id: string) => {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, isPendingDelete: false } : item
+      )
+    );
     setHasChanges(true);
   }, []);
 
@@ -313,51 +303,48 @@ export function CheckListEditClient({
     [items],
   );
 
+  // 選択可能なアイテム（削除予定でないアイテム）
+  const selectableItems = useMemo(
+    () => items.filter((item) => !item.isPendingDelete),
+    [items]
+  );
+
   // 全選択/解除
   const handleSelectAll = useCallback(() => {
-    if (selectedIds.size === items.length) {
+    if (selectedIds.size === selectableItems.length && selectableItems.length > 0) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(items.map((item) => item.id)));
+      setSelectedIds(new Set(selectableItems.map((item) => item.id)));
     }
-  }, [items, selectedIds.size]);
+  }, [selectableItems, selectedIds.size]);
 
   // 選択した項目を一括削除
   const handleBulkDelete = useCallback(() => {
-    // 新規作成されたアイテム（DBに存在しない）をローカルで削除
-    const newItemIds = Array.from(selectedIds).filter((id) =>
-      id.startsWith("new-"),
-    );
-    if (newItemIds.length > 0) {
-      setItems((prev) => prev.filter((item) => !newItemIds.includes(item.id)));
-      setSelectedIds((prev) => {
-        const next = new Set(prev);
-        newItemIds.forEach((id) => next.delete(id));
-        return next;
-      });
-    }
+    const selectedList = Array.from(selectedIds);
+    const newItemIds = selectedList.filter((id) => id.startsWith("new-"));
+    const existingItemIds = selectedList.filter((id) => !id.startsWith("new-"));
 
-    // 既存アイテムをDB削除
-    const existingItemIds = Array.from(selectedIds).filter(
-      (id) => !id.startsWith("new-"),
+    setItems((prev) =>
+      prev
+        // 新規アイテムは即座に削除
+        .filter((item) => !newItemIds.includes(item.id))
+        // 既存アイテムは削除予定としてマーク
+        .map((item) =>
+          existingItemIds.includes(item.id)
+            ? { ...item, isPendingDelete: true }
+            : item
+        )
     );
-    if (existingItemIds.length > 0) {
-      // 削除対象IDをrefに保持（onSuccess時に参照するため）
-      deletingItemIds.current = existingItemIds;
-      executeBulkDelete({
-        reviewSpaceId: spaceId,
-        checkListItemIds: existingItemIds,
-      });
-    } else if (newItemIds.length > 0) {
-      showSuccess(`${newItemIds.length}件のチェック項目を削除しました`);
-      setHasChanges(true);
-    }
-  }, [selectedIds, spaceId, executeBulkDelete]);
+
+    setSelectedIds(new Set());
+    setHasChanges(true);
+  }, [selectedIds]);
 
   // 保存
   const handleSave = useCallback(() => {
-    // 空のアイテムを除外
+    // 削除予定と空のアイテムを除外
     const validContents = items
+      .filter((item) => !item.isPendingDelete)
       .map((item) => item.content.trim())
       .filter((content) => content.length > 0);
 
@@ -367,12 +354,12 @@ export function CheckListEditClient({
     });
   }, [items, spaceId, executeBulkSave]);
 
-  const isAllSelected = items.length > 0 && selectedIds.size === items.length;
+  const isAllSelected = selectableItems.length > 0 && selectedIds.size === selectableItems.length;
   const hasSelected = selectedIds.size > 0;
 
-  // 空のアイテムが存在するか確認
+  // 空のアイテムが存在するか確認（削除予定アイテムは除外）
   const hasEmptyItems = useMemo(() => {
-    return items.some((item) => !item.content.trim());
+    return items.some((item) => !item.isPendingDelete && !item.content.trim());
   }, [items]);
 
   // インポート成功時のハンドラー
@@ -551,7 +538,7 @@ export function CheckListEditClient({
                 variant="ghost"
                 size="sm"
                 className="text-gray-700 hover:bg-gray-100"
-                disabled={!hasSelected || isDeleting}
+                disabled={!hasSelected}
                 onClick={handleBulkDelete}
               >
                 <Trash2 className="w-4 h-4 mr-1" />
@@ -607,38 +594,63 @@ export function CheckListEditClient({
                   items.map((item, index) => (
                     <tr
                       key={item.id}
-                      className="hover:bg-gray-50 transition duration-150 group"
+                      className={`transition duration-150 group ${
+                        item.isPendingDelete
+                          ? "bg-gray-100 opacity-60"
+                          : "hover:bg-gray-50"
+                      }`}
                     >
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Checkbox
                           checked={selectedIds.has(item.id)}
+                          disabled={item.isPendingDelete}
                           onCheckedChange={() => {}}
                           onClick={(e) => {
+                            if (item.isPendingDelete) return;
                             e.preventDefault();
                             handleSelect(item.id, index, e.shiftKey);
                           }}
                         />
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-900">
-                        <Textarea
-                          value={item.content}
-                          onChange={(e) =>
-                            handleContentChange(item.id, e.target.value)
-                          }
-                          placeholder="チェック項目を入力..."
-                          className="flex-1 border-transparent hover:border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary resize-none min-h-[38px] max-h-[120px] overflow-y-auto"
-                          rows={1}
-                        />
+                      <td className={`px-6 py-4 text-sm ${
+                        item.isPendingDelete
+                          ? "text-gray-400"
+                          : "text-gray-900"
+                      }`}>
+                        {item.isPendingDelete ? (
+                          <span className="line-through">{item.content}</span>
+                        ) : (
+                          <Textarea
+                            value={item.content}
+                            onChange={(e) =>
+                              handleContentChange(item.id, e.target.value)
+                            }
+                            placeholder="チェック項目を入力..."
+                            className="flex-1 border-transparent hover:border-gray-300 focus:border-primary focus:ring-1 focus:ring-primary resize-none min-h-[38px] max-h-[120px] overflow-y-auto"
+                            rows={1}
+                          />
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-600 hover:text-red-900 opacity-0 group-hover:opacity-100 transition duration-150"
-                          onClick={() => handleDeleteItem(item.id)}
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </Button>
+                        {item.isPendingDelete ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-blue-600 hover:text-blue-900"
+                            onClick={() => handleRestoreItem(item.id)}
+                          >
+                            <Undo2 className="w-5 h-5" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-600 hover:text-red-900 opacity-0 group-hover:opacity-100 transition duration-150"
+                            onClick={() => handleDeleteItem(item.id)}
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))
