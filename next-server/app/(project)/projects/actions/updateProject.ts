@@ -2,10 +2,8 @@
 
 import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
-import { internalError } from "@/lib/server/error";
 import { UpdateProjectService } from "@/application/project";
 import { ProjectRepository, UserRepository } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 
 const updateProjectSchema = z.object({
   projectId: z.string().uuid(),
@@ -23,19 +21,10 @@ export const updateProjectAction = authenticatedAction
     const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
 
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId),
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
-
     const service = new UpdateProjectService(projectRepository, userRepository);
     return service.execute({
       projectId: parsedInput.projectId,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
       isAdmin: ctx.auth.isAdmin,
       name: parsedInput.name,
       description: parsedInput.description,

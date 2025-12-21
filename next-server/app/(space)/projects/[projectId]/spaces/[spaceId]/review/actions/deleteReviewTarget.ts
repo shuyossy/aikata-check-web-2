@@ -7,12 +7,9 @@ import { DeleteReviewTargetService } from "@/application/reviewTarget";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
-  UserRepository,
   ReviewTargetRepository,
   AiTaskRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
-import { internalError } from "@/lib/server/error";
 
 /**
  * レビュー対象を削除するサーバーアクション
@@ -29,20 +26,10 @@ export const deleteReviewTargetAction = authenticatedAction
     const { reviewTargetId, projectId, spaceId } = parsedInput;
 
     // リポジトリの初期化
-    const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
     const reviewTargetRepository = new ReviewTargetRepository();
     const aiTaskRepository = new AiTaskRepository();
-
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId)
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
 
     // サービスを実行
     const service = new DeleteReviewTargetService(
@@ -54,7 +41,7 @@ export const deleteReviewTargetAction = authenticatedAction
 
     await service.execute({
       reviewTargetId,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
     });
 
     // キャッシュを無効化

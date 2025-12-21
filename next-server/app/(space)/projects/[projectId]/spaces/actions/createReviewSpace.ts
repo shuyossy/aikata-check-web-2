@@ -2,14 +2,11 @@
 
 import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
-import { internalError } from "@/lib/server/error";
 import { CreateReviewSpaceService } from "@/application/reviewSpace";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
-  UserRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 
 /**
  * 評定項目のスキーマ
@@ -45,18 +42,8 @@ const createReviewSpaceSchema = z.object({
 export const createReviewSpaceAction = authenticatedAction
   .schema(createReviewSpaceSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
-
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId),
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
 
     const service = new CreateReviewSpaceService(
       reviewSpaceRepository,
@@ -67,7 +54,7 @@ export const createReviewSpaceAction = authenticatedAction
       projectId: parsedInput.projectId,
       name: parsedInput.name,
       description: parsedInput.description,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
       defaultReviewSettings: parsedInput.defaultReviewSettings,
     });
   });

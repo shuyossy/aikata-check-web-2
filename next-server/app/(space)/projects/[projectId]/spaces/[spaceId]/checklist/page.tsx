@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth";
-import { redirect, notFound } from "next/navigation";
-import { authOptions } from "@/auth";
+import { notFound } from "next/navigation";
 import { GetProjectService } from "@/application/project";
 import { GetReviewSpaceService } from "@/application/reviewSpace";
 import {
@@ -14,7 +12,7 @@ import {
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
 import { AiTaskRepository } from "@/infrastructure/adapter/db/drizzle/repository/AiTaskRepository";
-import { EmployeeId } from "@/domain/user";
+import { getAuthenticatedUser } from "@/lib/server/auth";
 import { CheckListEditClient } from "./components/CheckListEditClient";
 
 export const dynamic = "force-dynamic";
@@ -31,10 +29,7 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
   const { projectId, spaceId } = await params;
 
   // 認証チェック
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.employeeId) {
-    redirect("/auth/signin");
-  }
+  const authUser = await getAuthenticatedUser();
 
   // リポジトリの初期化
   const userRepository = new UserRepository();
@@ -43,15 +38,6 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
   const checkListItemRepository = new CheckListItemRepository();
   const aiTaskRepository = new AiTaskRepository();
 
-  // ユーザー情報を取得
-  const user = await userRepository.findByEmployeeId(
-    EmployeeId.create(session.user.employeeId),
-  );
-
-  if (!user) {
-    throw new Error("ユーザ情報の取得に失敗しました");
-  }
-
   // プロジェクト情報を取得
   const getProjectService = new GetProjectService(
     projectRepository,
@@ -59,7 +45,7 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
   );
   const project = await getProjectService.execute({
     projectId,
-    userId: user.id.value,
+    userId: authUser.userId,
   });
 
   if (!project) {
@@ -73,7 +59,7 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
   );
   const reviewSpace = await getReviewSpaceService.execute({
     reviewSpaceId: spaceId,
-    userId: user.id.value,
+    userId: authUser.userId,
   });
 
   if (!reviewSpace) {
@@ -89,7 +75,7 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
 
   const initialData = await listCheckListItemsService.execute({
     reviewSpaceId: spaceId,
-    userId: user.id.value,
+    userId: authUser.userId,
     page: 1,
     limit: 1000,
   });
@@ -103,7 +89,7 @@ export default async function CheckListPage({ params }: CheckListPageProps) {
 
   const taskStatus = await getTaskStatusService.execute({
     reviewSpaceId: spaceId,
-    userId: user.id.value,
+    userId: authUser.userId,
   });
 
   return (

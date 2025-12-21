@@ -116,10 +116,9 @@ export const publicAction = baseAction.use(async ({ next }) => {
  * - 認証に加えて、管理者フラグのチェックを実施
  * - 管理者でない場合はForbiddenエラーをスロー
  */
-export const adminAction = authenticatedAction.use(async ({ next }) => {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.isAdmin) {
+export const adminAction = authenticatedAction.use(async ({ next, ctx }) => {
+  // authenticatedActionで既に取得済みのctx.authを使用
+  if (!ctx.auth.isAdmin) {
     throw forbiddenError();
   }
 

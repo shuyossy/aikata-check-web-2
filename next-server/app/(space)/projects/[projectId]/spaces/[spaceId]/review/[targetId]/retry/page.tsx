@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth";
-import { redirect, notFound } from "next/navigation";
-import { authOptions } from "@/auth";
+import { notFound } from "next/navigation";
 import { GetProjectService } from "@/application/project";
 import { GetReviewSpaceService } from "@/application/reviewSpace";
 import { GetReviewTargetService, GetRetryInfoService } from "@/application/reviewTarget";
@@ -13,7 +11,7 @@ import {
   CheckListItemRepository,
   ReviewDocumentCacheRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
+import { getAuthenticatedUser } from "@/lib/server/auth";
 import { RetryReviewClient } from "./components/RetryReviewClient";
 
 export const dynamic = "force-dynamic";
@@ -29,10 +27,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   const { projectId, spaceId, targetId } = await params;
 
   // 認証チェック
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.employeeId) {
-    redirect("/auth/signin");
-  }
+  const authUser = await getAuthenticatedUser();
 
   // リポジトリの初期化
   const userRepository = new UserRepository();
@@ -43,15 +38,6 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   const checkListItemRepository = new CheckListItemRepository();
   const reviewDocumentCacheRepository = new ReviewDocumentCacheRepository();
 
-  // ユーザー情報を取得
-  const user = await userRepository.findByEmployeeId(
-    EmployeeId.create(session.user.employeeId)
-  );
-
-  if (!user) {
-    throw new Error("ユーザ情報の取得に失敗しました");
-  }
-
   // プロジェクト情報を取得
   const getProjectService = new GetProjectService(
     projectRepository,
@@ -59,7 +45,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   );
   const project = await getProjectService.execute({
     projectId,
-    userId: user.id.value,
+    userId: authUser.userId,
   });
 
   if (!project) {
@@ -73,7 +59,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   );
   const reviewSpace = await getReviewSpaceService.execute({
     reviewSpaceId: spaceId,
-    userId: user.id.value,
+    userId: authUser.userId,
   });
 
   if (!reviewSpace) {
@@ -92,7 +78,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   try {
     reviewTargetData = await getReviewTargetService.execute({
       reviewTargetId: targetId,
-      userId: user.id.value,
+      userId: authUser.userId,
     });
   } catch {
     notFound();
@@ -112,7 +98,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   try {
     retryInfo = await getRetryInfoService.execute({
       reviewTargetId: targetId,
-      userId: user.id.value,
+      userId: authUser.userId,
     });
   } catch {
     // リトライ情報取得に失敗した場合はリトライ不可として扱う

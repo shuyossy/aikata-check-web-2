@@ -1,7 +1,5 @@
-import { getServerSession } from "next-auth";
-import { redirect, notFound } from "next/navigation";
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { authOptions } from "@/auth";
 import { GetProjectService } from "@/application/project";
 import { GetReviewSpaceService } from "@/application/reviewSpace";
 import {
@@ -9,7 +7,7 @@ import {
   ReviewSpaceRepository,
   UserRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
+import { getAuthenticatedUser } from "@/lib/server/auth";
 import { ApiSpecClient } from "./components/ApiSpecClient";
 
 export const dynamic = "force-dynamic";
@@ -25,24 +23,12 @@ export default async function ApiSpecPage({ params }: ApiSpecPageProps) {
   const { projectId, spaceId } = await params;
 
   // 認証チェック
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.employeeId) {
-    redirect("/auth/signin");
-  }
+  const authUser = await getAuthenticatedUser();
 
   // リポジトリの初期化
   const userRepository = new UserRepository();
   const projectRepository = new ProjectRepository();
   const reviewSpaceRepository = new ReviewSpaceRepository();
-
-  // ユーザー情報を取得
-  const user = await userRepository.findByEmployeeId(
-    EmployeeId.create(session.user.employeeId)
-  );
-
-  if (!user) {
-    throw new Error("ユーザ情報の取得に失敗しました");
-  }
 
   // プロジェクト情報を取得
   const getProjectService = new GetProjectService(
@@ -51,7 +37,7 @@ export default async function ApiSpecPage({ params }: ApiSpecPageProps) {
   );
   const project = await getProjectService.execute({
     projectId,
-    userId: user.id.value,
+    userId: authUser.userId,
   });
 
   if (!project) {
@@ -67,7 +53,7 @@ export default async function ApiSpecPage({ params }: ApiSpecPageProps) {
   try {
     const reviewSpace = await getReviewSpaceService.execute({
       reviewSpaceId: spaceId,
-      userId: user.id.value,
+      userId: authUser.userId,
     });
 
     return (

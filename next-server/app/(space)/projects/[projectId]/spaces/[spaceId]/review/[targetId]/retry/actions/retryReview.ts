@@ -2,13 +2,11 @@
 
 import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
-import { internalError } from "@/lib/server/error";
 import { RetryReviewService } from "@/application/reviewTarget";
 import { AiTaskQueueService } from "@/application/aiTask";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
-  UserRepository,
   ReviewTargetRepository,
   ReviewResultRepository,
   CheckListItemRepository,
@@ -17,7 +15,6 @@ import {
   AiTaskFileMetadataRepository,
   SystemSettingRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 
 /**
  * リトライレビュー実行アクションの入力スキーマ
@@ -60,7 +57,6 @@ export const retryReviewAction = authenticatedAction
     } = parsedInput;
 
     // リポジトリの初期化
-    const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
     const reviewTargetRepository = new ReviewTargetRepository();
@@ -69,15 +65,6 @@ export const retryReviewAction = authenticatedAction
     const reviewDocumentCacheRepository = new ReviewDocumentCacheRepository();
     const aiTaskRepository = new AiTaskRepository();
     const aiTaskFileMetadataRepository = new AiTaskFileMetadataRepository();
-
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId)
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
 
     // キューサービスを作成
     const aiTaskQueueService = new AiTaskQueueService(
@@ -100,7 +87,7 @@ export const retryReviewAction = authenticatedAction
 
     const result = await service.execute({
       reviewTargetId,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
       retryScope,
       useLatestChecklist,
       reviewType,

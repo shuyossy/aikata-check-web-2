@@ -2,14 +2,11 @@
 
 import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
-import { internalError } from "@/lib/server/error";
 import { ListProjectReviewSpacesService } from "@/application/reviewSpace";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
-  UserRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 
 const listProjectReviewSpacesSchema = z.object({
   projectId: z.string().uuid(),
@@ -24,18 +21,8 @@ const listProjectReviewSpacesSchema = z.object({
 export const listProjectReviewSpacesAction = authenticatedAction
   .schema(listProjectReviewSpacesSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
-
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId),
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
 
     const service = new ListProjectReviewSpacesService(
       reviewSpaceRepository,
@@ -44,7 +31,7 @@ export const listProjectReviewSpacesAction = authenticatedAction
 
     return service.execute({
       projectId: parsedInput.projectId,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
       search: parsedInput.search,
       page: parsedInput.page,
       limit: parsedInput.limit,

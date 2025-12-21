@@ -1,6 +1,4 @@
-import { getServerSession } from "next-auth";
-import { redirect, notFound } from "next/navigation";
-import { authOptions } from "@/auth";
+import { notFound } from "next/navigation";
 import { GetProjectService } from "@/application/project";
 import { ListProjectReviewSpacesService } from "@/application/reviewSpace";
 import {
@@ -8,7 +6,7 @@ import {
   ReviewSpaceRepository,
   UserRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
+import { getAuthenticatedUser } from "@/lib/server/auth";
 import { ReviewSpaceListClient } from "./components/ReviewSpaceListClient";
 
 export const dynamic = "force-dynamic";
@@ -25,24 +23,12 @@ export default async function SpacesPage({ params }: SpacesPageProps) {
   const { projectId } = await params;
 
   // 認証チェック
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.employeeId) {
-    redirect("/auth/signin");
-  }
+  const authUser = await getAuthenticatedUser();
 
   // リポジトリの初期化
   const userRepository = new UserRepository();
   const projectRepository = new ProjectRepository();
   const reviewSpaceRepository = new ReviewSpaceRepository();
-
-  // ユーザー情報を取得
-  const user = await userRepository.findByEmployeeId(
-    EmployeeId.create(session.user.employeeId),
-  );
-
-  if (!user) {
-    throw new Error("ユーザ情報の取得に失敗しました");
-  }
 
   // プロジェクト情報を取得
   const getProjectService = new GetProjectService(
@@ -51,7 +37,7 @@ export default async function SpacesPage({ params }: SpacesPageProps) {
   );
   const project = await getProjectService.execute({
     projectId,
-    userId: user.id.value,
+    userId: authUser.userId,
   });
 
   if (!project) {
@@ -66,7 +52,7 @@ export default async function SpacesPage({ params }: SpacesPageProps) {
 
   const initialData = await listReviewSpacesService.execute({
     projectId,
-    userId: user.id.value,
+    userId: authUser.userId,
     page: 1,
     limit: 12,
   });

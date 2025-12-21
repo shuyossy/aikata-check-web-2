@@ -2,16 +2,13 @@
 
 import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
-import { internalError } from "@/lib/server/error";
 import { StartApiReviewService } from "@/application/reviewTarget";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
-  UserRepository,
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
 import { ReviewTargetRepository } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 
 /**
  * レビュー設定のスキーマ
@@ -45,20 +42,10 @@ export const startApiReviewAction = authenticatedAction
     const { reviewSpaceId, name, reviewSettings } = parsedInput;
 
     // リポジトリの初期化
-    const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
     const checkListItemRepository = new CheckListItemRepository();
     const reviewTargetRepository = new ReviewTargetRepository();
-
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId),
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
 
     // サービスを実行
     const service = new StartApiReviewService(
@@ -71,7 +58,7 @@ export const startApiReviewAction = authenticatedAction
     const result = await service.execute({
       reviewSpaceId,
       name,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
       reviewSettings,
     });
 

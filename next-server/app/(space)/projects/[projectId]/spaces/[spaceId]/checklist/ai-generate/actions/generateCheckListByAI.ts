@@ -14,12 +14,10 @@ import {
 import {
   ProjectRepository,
   ReviewSpaceRepository,
-  UserRepository,
   AiTaskRepository,
   AiTaskFileMetadataRepository,
   SystemSettingRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 import { fileUploadConfig } from "@/lib/server/fileUploadConfig";
 
 /**
@@ -170,20 +168,10 @@ export const generateCheckListByAIAction = authenticatedAction
       await parseFormData(parsedInput);
 
     // リポジトリの初期化
-    const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
     const aiTaskRepository = new AiTaskRepository();
     const aiTaskFileMetadataRepository = new AiTaskFileMetadataRepository();
-
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId),
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
 
     // キューサービスを作成
     const aiTaskQueueService = new AiTaskQueueService(
@@ -202,7 +190,7 @@ export const generateCheckListByAIAction = authenticatedAction
 
     const result = await service.execute({
       reviewSpaceId,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
       files,
       fileBuffers,
       checklistRequirements,

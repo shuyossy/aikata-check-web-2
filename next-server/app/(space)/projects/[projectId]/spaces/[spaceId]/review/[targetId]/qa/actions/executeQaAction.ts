@@ -8,9 +8,7 @@ import {
   ReviewTargetRepository,
   ReviewSpaceRepository,
   ProjectRepository,
-  UserRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 
 /**
  * Q&A実行アクションの入力スキーマ
@@ -32,17 +30,6 @@ export const executeQaAction = authenticatedAction
   .schema(executeQaSchema)
   .action(async ({ parsedInput, ctx }) => {
     const { reviewTargetId, question, checklistItemContents } = parsedInput;
-    const { auth } = ctx;
-
-    // ユーザーIDを取得
-    const userRepository = new UserRepository();
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(auth.employeeId)
-    );
-
-    if (!user) {
-      throw new Error("ユーザー情報の取得に失敗しました");
-    }
 
     // サービスを初期化
     // 注意: ExecuteQaServiceはQ&A履歴の作成のみを行う
@@ -59,7 +46,7 @@ export const executeQaAction = authenticatedAction
       reviewTargetId,
       question,
       checklistItemContents,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
     });
 
     return {

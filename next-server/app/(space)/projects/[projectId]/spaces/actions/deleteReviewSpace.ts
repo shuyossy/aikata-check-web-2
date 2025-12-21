@@ -2,14 +2,11 @@
 
 import { z } from "zod";
 import { authenticatedAction } from "@/lib/server/baseAction";
-import { internalError } from "@/lib/server/error";
 import { DeleteReviewSpaceService } from "@/application/reviewSpace";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
-  UserRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 
 const deleteReviewSpaceSchema = z.object({
   reviewSpaceId: z.string().uuid(),
@@ -21,18 +18,8 @@ const deleteReviewSpaceSchema = z.object({
 export const deleteReviewSpaceAction = authenticatedAction
   .schema(deleteReviewSpaceSchema)
   .action(async ({ parsedInput, ctx }) => {
-    const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
-
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId),
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
 
     const service = new DeleteReviewSpaceService(
       reviewSpaceRepository,
@@ -41,7 +28,7 @@ export const deleteReviewSpaceAction = authenticatedAction
 
     await service.execute({
       reviewSpaceId: parsedInput.reviewSpaceId,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
     });
 
     return { success: true };

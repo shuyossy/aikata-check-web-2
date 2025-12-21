@@ -8,9 +8,7 @@ import {
   ReviewTargetRepository,
   ReviewSpaceRepository,
   ProjectRepository,
-  UserRepository,
 } from "@/infrastructure/adapter/db";
-import { EmployeeId } from "@/domain/user";
 
 /**
  * Q&A履歴一覧取得アクションの入力スキーマ
@@ -31,17 +29,6 @@ export const listQaHistoriesAction = authenticatedAction
   .schema(listQaHistoriesSchema)
   .action(async ({ parsedInput, ctx }) => {
     const { reviewTargetId, limit, offset } = parsedInput;
-    const { auth } = ctx;
-
-    // ユーザーIDを取得
-    const userRepository = new UserRepository();
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(auth.employeeId)
-    );
-
-    if (!user) {
-      throw new Error("ユーザー情報の取得に失敗しました");
-    }
 
     // サービスを初期化
     const listQaHistoriesService = new ListQaHistoriesService(
@@ -54,7 +41,7 @@ export const listQaHistoriesAction = authenticatedAction
     // Q&A履歴一覧を取得
     const result = await listQaHistoriesService.execute({
       reviewTargetId,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
       limit,
       offset,
     });

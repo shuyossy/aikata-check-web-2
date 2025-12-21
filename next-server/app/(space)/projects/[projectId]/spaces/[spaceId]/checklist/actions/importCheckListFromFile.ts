@@ -7,11 +7,9 @@ import { ImportCheckListFromFileService } from "@/application/checkListItem";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
-  UserRepository,
 } from "@/infrastructure/adapter/db";
 import { CheckListItemRepository } from "@/infrastructure/adapter/db/drizzle/repository/CheckListItemRepository";
 import { FileTextExtractor } from "@/infrastructure/adapter/textExtractor";
-import { EmployeeId } from "@/domain/user";
 import { fileUploadConfig } from "@/lib/server/fileUploadConfig";
 
 /**
@@ -77,20 +75,10 @@ export const importCheckListFromFileAction = authenticatedAction
       });
     }
 
-    const userRepository = new UserRepository();
     const projectRepository = new ProjectRepository();
     const reviewSpaceRepository = new ReviewSpaceRepository();
     const checkListItemRepository = new CheckListItemRepository();
     const fileTextExtractor = new FileTextExtractor();
-
-    // employeeIdからuserIdを取得
-    const user = await userRepository.findByEmployeeId(
-      EmployeeId.create(ctx.auth.employeeId),
-    );
-
-    if (!user) {
-      throw internalError({ expose: true, messageCode: "USER_SYNC_FAILED" });
-    }
 
     const service = new ImportCheckListFromFileService(
       fileTextExtractor,
@@ -101,7 +89,7 @@ export const importCheckListFromFileAction = authenticatedAction
 
     const result = await service.execute({
       reviewSpaceId: validatedParams.reviewSpaceId,
-      userId: user.id.value,
+      userId: ctx.auth.userId,
       fileBuffer: validatedParams.fileBuffer,
       fileName: validatedParams.fileName,
       options: {
