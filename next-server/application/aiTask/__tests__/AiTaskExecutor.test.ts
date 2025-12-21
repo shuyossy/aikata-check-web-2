@@ -60,6 +60,76 @@ vi.mock("@/lib/server/logger", () => ({
   }),
 }));
 
+// ========================================
+// workflow.start()の引数をキャプチャするための型定義とヘルパー
+// ========================================
+
+/**
+ * workflow.start()に渡される引数の型
+ */
+interface CapturedStartArgs {
+  inputData: unknown;
+  runtimeContext: {
+    get: (key: string) => unknown;
+  };
+}
+
+/**
+ * RuntimeContext検証用のオプション型
+ */
+interface RuntimeContextExpectations {
+  /** 存在すべきキー */
+  shouldExist?: string[];
+  /** 存在すべきでないキー */
+  shouldNotExist?: string[];
+  /** 厳密に一致すべき値 */
+  exactValues?: Record<string, unknown>;
+  /** 関数であるべきキー */
+  shouldBeFunction?: string[];
+  /** Mapインスタンスであるべきキー */
+  shouldBeMap?: string[];
+}
+
+/**
+ * RuntimeContextの内容を検証するヘルパー関数
+ */
+const assertRuntimeContext = (
+  runtimeContext: { get: (key: string) => unknown } | null,
+  expectations: RuntimeContextExpectations,
+): void => {
+  expect(runtimeContext).not.toBeNull();
+
+  if (expectations.shouldExist) {
+    for (const key of expectations.shouldExist) {
+      expect(runtimeContext!.get(key)).toBeDefined();
+    }
+  }
+
+  if (expectations.shouldNotExist) {
+    for (const key of expectations.shouldNotExist) {
+      expect(runtimeContext!.get(key)).toBeUndefined();
+    }
+  }
+
+  if (expectations.exactValues) {
+    for (const [key, value] of Object.entries(expectations.exactValues)) {
+      expect(runtimeContext!.get(key)).toEqual(value);
+    }
+  }
+
+  if (expectations.shouldBeFunction) {
+    for (const key of expectations.shouldBeFunction) {
+      expect(typeof runtimeContext!.get(key)).toBe("function");
+    }
+  }
+
+  if (expectations.shouldBeMap) {
+    for (const key of expectations.shouldBeMap) {
+      expect(runtimeContext!.get(key)).toBeInstanceOf(Map);
+    }
+  }
+};
+
 describe("AiTaskExecutor", () => {
   // モックWorkflowRunRegistry
   const mockWorkflowRunRegistry: IWorkflowRunRegistry = {
@@ -976,6 +1046,1006 @@ describe("AiTaskExecutor", () => {
       expect(result.success).toBe(true);
       // 全てのレビュー結果が削除されたことを確認（5件）
       expect(mockReviewResultRepository.delete).toHaveBeenCalledTimes(5);
+    });
+  });
+
+  // ========================================
+  // workflow.start()の引数検証テスト
+  // ========================================
+
+  describe("execute - レビュータスク - inputData検証", () => {
+    // キャプチャ用変数
+    let capturedStartArgs: CapturedStartArgs | null = null;
+
+    const createReviewTask = (taskType: string = "small_review"): AiTaskDto => ({
+      id: "test-task-id",
+      taskType,
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewTargetId: testReviewTargetId,
+        reviewSpaceId: testReviewSpaceId,
+        userId: "test-user-id",
+        files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+        checkListItems: [
+          { id: "item-1", content: "チェック項目1" },
+          { id: "item-2", content: "チェック項目2" },
+        ],
+        reviewSettings: {
+          additionalInstructions: "追加指示",
+          concurrentReviewItems: 3,
+          commentFormat: "箇条書き",
+          evaluationCriteria: [
+            { label: "A", description: "問題なし" },
+            { label: "B", description: "軽微な問題あり" },
+          ],
+        },
+        reviewType: "small_review",
+      } as unknown as ReviewTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [
+        {
+          id: "file-meta-1",
+          taskId: "test-task-id",
+          fileName: "test.txt",
+          filePath: "/path/to/test.txt",
+          fileSize: 1024,
+          mimeType: "text/plain",
+          processMode: "text" as const,
+          convertedImageCount: 0,
+          createdAt: now,
+        },
+      ],
+    });
+
+    beforeEach(() => {
+      capturedStartArgs = null;
+      // start引数をキャプチャするモック設定
+      mockWorkflowRun.start = vi.fn().mockImplementation((args) => {
+        capturedStartArgs = args;
+        return Promise.resolve({
+          status: "success",
+          result: {
+            status: "success",
+            reviewResults: [
+              { checkListItemId: "item-1", rating: "A", comment: "OK" },
+              { checkListItemId: "item-2", rating: "A", comment: "OK" },
+            ],
+          },
+        });
+      });
+    });
+
+    it("通常レビュー実行時にinputDataが正しく渡されること", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(mockWorkflowRun.start).toHaveBeenCalledTimes(1);
+      expect(capturedStartArgs).not.toBeNull();
+
+      const inputData = capturedStartArgs!.inputData as {
+        files: unknown[];
+        checkListItems: unknown[];
+        reviewSettings: unknown;
+        reviewType: string;
+      };
+
+      // filesが正しく渡されていること
+      expect(inputData.files).toEqual([
+        expect.objectContaining({ id: "file-1", name: "test.txt", type: "text/plain" }),
+      ]);
+
+      // checkListItemsが正しく渡されていること
+      expect(inputData.checkListItems).toEqual([
+        expect.objectContaining({ id: "item-1", content: "チェック項目1" }),
+        expect.objectContaining({ id: "item-2", content: "チェック項目2" }),
+      ]);
+
+      // reviewSettingsが正しく渡されていること
+      expect(inputData.reviewSettings).toEqual(
+        expect.objectContaining({
+          additionalInstructions: "追加指示",
+          concurrentReviewItems: 3,
+          commentFormat: "箇条書き",
+          evaluationCriteria: [
+            { label: "A", description: "問題なし" },
+            { label: "B", description: "軽微な問題あり" },
+          ],
+        }),
+      );
+
+      // reviewTypeが正しく渡されていること
+      expect(inputData.reviewType).toBe("small_review");
+    });
+
+    it("大量レビュー実行時にreviewTypeがlarge_reviewで渡されること", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask("large_review");
+      (task.payload as unknown as ReviewTaskPayload).reviewType = "large_review";
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      const inputData = capturedStartArgs!.inputData as { reviewType: string };
+      expect(inputData.reviewType).toBe("large_review");
+    });
+
+    it("リトライ実行時にfilesが空配列で渡されること", async () => {
+      // Arrange
+      const testCacheId = "550e8400-e29b-41d4-a716-446655440010";
+      const createTestDocumentCache = (): ReviewDocumentCache => {
+        return ReviewDocumentCache.reconstruct({
+          id: testCacheId,
+          reviewTargetId: testReviewTargetId,
+          fileName: "test.txt",
+          processMode: "text",
+          cachePath: "/cache/path/test.txt",
+          createdAt: now,
+        });
+      };
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        createTestDocumentCache(),
+      ]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      // リトライタスクを作成
+      const task = createReviewTask();
+      (task.payload as unknown as ReviewTaskPayload).isRetry = true;
+      (task.payload as unknown as ReviewTaskPayload).retryScope = "failed";
+      (task.payload as unknown as ReviewTaskPayload).resultsToDeleteIds = [];
+      task.fileMetadata = [];
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      const inputData = capturedStartArgs!.inputData as { files: unknown[] };
+      // リトライ時はfilesが空配列であること
+      expect(inputData.files).toEqual([]);
+    });
+
+    it("reviewSettingsがundefinedの場合もinputDataに含まれること", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+      (task.payload as unknown as ReviewTaskPayload).reviewSettings = undefined;
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      const inputData = capturedStartArgs!.inputData as { reviewSettings: unknown };
+      expect(inputData.reviewSettings).toBeUndefined();
+    });
+  });
+
+  describe("execute - レビュータスク - RuntimeContext検証", () => {
+    let capturedStartArgs: CapturedStartArgs | null = null;
+
+    const createReviewTask = (overrides?: Partial<ReviewTaskPayload>): AiTaskDto => ({
+      id: "test-task-id",
+      taskType: "small_review",
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewTargetId: testReviewTargetId,
+        reviewSpaceId: testReviewSpaceId,
+        userId: "test-user-id",
+        files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+        checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+        reviewSettings: {
+          additionalInstructions: null,
+          concurrentReviewItems: 5,
+          commentFormat: null,
+          evaluationCriteria: [{ label: "A", description: "問題なし" }],
+        },
+        reviewType: "small_review",
+        ...overrides,
+      } as unknown as ReviewTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [
+        {
+          id: "file-meta-1",
+          taskId: "test-task-id",
+          fileName: "test.txt",
+          filePath: "/path/to/test.txt",
+          fileSize: 1024,
+          mimeType: "text/plain",
+          processMode: "text" as const,
+          convertedImageCount: 0,
+          createdAt: now,
+        },
+      ],
+    });
+
+    beforeEach(() => {
+      capturedStartArgs = null;
+      mockWorkflowRun.start = vi.fn().mockImplementation((args) => {
+        capturedStartArgs = args;
+        return Promise.resolve({
+          status: "success",
+          result: {
+            status: "success",
+            reviewResults: [
+              { checkListItemId: "item-1", rating: "A", comment: "OK" },
+            ],
+          },
+        });
+      });
+    });
+
+    it("RuntimeContextにemployeeIdが設定されること", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("employeeId")).toBe("test-user-id");
+    });
+
+    it("RuntimeContextにreviewTargetIdが設定されること", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("reviewTargetId")).toBe(testReviewTargetId);
+    });
+
+    it("RuntimeContextにprojectApiKeyが設定されること（存在する場合）", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask({ decryptedApiKey: "decrypted-api-key-123" });
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("projectApiKey")).toBe("decrypted-api-key-123");
+    });
+
+    it("RuntimeContextにfileBuffersが設定されること（通常モード）", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      const fileBuffers = capturedStartArgs!.runtimeContext.get("fileBuffers");
+      expect(fileBuffers).toBeInstanceOf(Map);
+    });
+
+    it("RuntimeContextにonReviewResultSavedコールバックが設定されること", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      assertRuntimeContext(capturedStartArgs!.runtimeContext, {
+        shouldBeFunction: ["onReviewResultSaved"],
+      });
+    });
+
+    it("RuntimeContextにonExtractedFilesCachedコールバックが設定されること（通常モード）", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      assertRuntimeContext(capturedStartArgs!.runtimeContext, {
+        shouldBeFunction: ["onExtractedFilesCached"],
+      });
+    });
+
+    it("RuntimeContextにonIndividualResultsSavedコールバックが設定されること", async () => {
+      // Arrange
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      assertRuntimeContext(capturedStartArgs!.runtimeContext, {
+        shouldBeFunction: ["onIndividualResultsSaved"],
+      });
+    });
+
+    it("リトライ時にuseCachedDocumentsがtrueで設定されること", async () => {
+      // Arrange
+      const testCacheId = "550e8400-e29b-41d4-a716-446655440010";
+      const testDocumentCache = ReviewDocumentCache.reconstruct({
+        id: testCacheId,
+        reviewTargetId: testReviewTargetId,
+        fileName: "test.txt",
+        processMode: "text",
+        cachePath: "/cache/path/test.txt",
+        createdAt: now,
+      });
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        testDocumentCache,
+      ]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask({
+        isRetry: true,
+        retryScope: "failed",
+        resultsToDeleteIds: [],
+      });
+      task.fileMetadata = [];
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("useCachedDocuments")).toBe(true);
+    });
+
+    it("リトライ時にcachedDocumentsが設定されること", async () => {
+      // Arrange
+      const testCacheId = "550e8400-e29b-41d4-a716-446655440010";
+      const testDocumentCache = ReviewDocumentCache.reconstruct({
+        id: testCacheId,
+        reviewTargetId: testReviewTargetId,
+        fileName: "test.txt",
+        processMode: "text",
+        cachePath: "/cache/path/test.txt",
+        createdAt: now,
+      });
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        testDocumentCache,
+      ]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask({
+        isRetry: true,
+        retryScope: "failed",
+        resultsToDeleteIds: [],
+      });
+      task.fileMetadata = [];
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      const cachedDocuments = capturedStartArgs!.runtimeContext.get("cachedDocuments");
+      expect(Array.isArray(cachedDocuments)).toBe(true);
+      expect((cachedDocuments as unknown[]).length).toBeGreaterThan(0);
+      expect((cachedDocuments as { name: string }[])[0]).toEqual(
+        expect.objectContaining({
+          name: "test.txt",
+          processMode: "text",
+        }),
+      );
+    });
+
+    it("リトライ時にfileBuffersが設定されないこと", async () => {
+      // Arrange
+      const testCacheId = "550e8400-e29b-41d4-a716-446655440010";
+      const testDocumentCache = ReviewDocumentCache.reconstruct({
+        id: testCacheId,
+        reviewTargetId: testReviewTargetId,
+        fileName: "test.txt",
+        processMode: "text",
+        cachePath: "/cache/path/test.txt",
+        createdAt: now,
+      });
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        testDocumentCache,
+      ]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask({
+        isRetry: true,
+        retryScope: "failed",
+        resultsToDeleteIds: [],
+      });
+      task.fileMetadata = [];
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      // リトライ時はfileBuffersが設定されない（通常モードのみ設定される）
+      assertRuntimeContext(capturedStartArgs!.runtimeContext, {
+        shouldNotExist: ["fileBuffers"],
+      });
+    });
+
+    it("リトライ時にonExtractedFilesCachedが設定されないこと", async () => {
+      // Arrange
+      const testCacheId = "550e8400-e29b-41d4-a716-446655440010";
+      const testDocumentCache = ReviewDocumentCache.reconstruct({
+        id: testCacheId,
+        reviewTargetId: testReviewTargetId,
+        fileName: "test.txt",
+        processMode: "text",
+        cachePath: "/cache/path/test.txt",
+        createdAt: now,
+      });
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
+        testDocumentCache,
+      ]);
+      vi.mocked(mockReviewResultRepository.delete).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask({
+        isRetry: true,
+        retryScope: "failed",
+        resultsToDeleteIds: [],
+      });
+      task.fileMetadata = [];
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      // リトライ時はonExtractedFilesCachedが設定されない（初回実行のみ）
+      assertRuntimeContext(capturedStartArgs!.runtimeContext, {
+        shouldNotExist: ["onExtractedFilesCached"],
+      });
+    });
+  });
+
+  describe("execute - チェックリスト生成タスク - inputData検証", () => {
+    let capturedStartArgs: CapturedStartArgs | null = null;
+
+    const createChecklistTask = (): AiTaskDto => ({
+      id: "test-task-id",
+      taskType: "checklist_generation",
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewSpaceId: testReviewSpaceId,
+        userId: "test-user-id",
+        files: [
+          { id: "file-1", name: "document.txt", type: "text/plain" },
+          { id: "file-2", name: "document2.pdf", type: "application/pdf" },
+        ],
+        checklistRequirements: "セキュリティ観点でチェックリストを生成してください",
+      } as unknown as ChecklistGenerationTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [
+        {
+          id: "file-meta-1",
+          taskId: "test-task-id",
+          fileName: "document.txt",
+          filePath: "/path/to/document.txt",
+          fileSize: 2048,
+          mimeType: "text/plain",
+          processMode: "text" as const,
+          convertedImageCount: 0,
+          createdAt: now,
+        },
+        {
+          id: "file-meta-2",
+          taskId: "test-task-id",
+          fileName: "document2.pdf",
+          filePath: "/path/to/document2.pdf",
+          fileSize: 4096,
+          mimeType: "application/pdf",
+          processMode: "image" as const,
+          convertedImageCount: 3,
+          createdAt: now,
+        },
+      ],
+    });
+
+    beforeEach(() => {
+      capturedStartArgs = null;
+      mockWorkflowRun.start = vi.fn().mockImplementation((args) => {
+        capturedStartArgs = args;
+        return Promise.resolve({
+          status: "success",
+          result: {
+            status: "success",
+            generatedItems: ["チェック項目1", "チェック項目2"],
+          },
+        });
+      });
+    });
+
+    it("チェックリスト生成時にfilesが正しく渡されること", async () => {
+      // Arrange
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+      vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
+      vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
+
+      const task = createChecklistTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(mockWorkflowRun.start).toHaveBeenCalledTimes(1);
+      expect(capturedStartArgs).not.toBeNull();
+
+      const inputData = capturedStartArgs!.inputData as {
+        files: unknown[];
+        checklistRequirements: string;
+      };
+
+      // filesが正しく渡されていること
+      expect(inputData.files).toEqual([
+        expect.objectContaining({ id: "file-1", name: "document.txt", type: "text/plain" }),
+        expect.objectContaining({ id: "file-2", name: "document2.pdf", type: "application/pdf" }),
+      ]);
+    });
+
+    it("チェックリスト生成時にchecklistRequirementsが正しく渡されること", async () => {
+      // Arrange
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+      vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
+      vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
+
+      const task = createChecklistTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+
+      const inputData = capturedStartArgs!.inputData as {
+        checklistRequirements: string;
+      };
+
+      expect(inputData.checklistRequirements).toBe("セキュリティ観点でチェックリストを生成してください");
+    });
+  });
+
+  describe("execute - チェックリスト生成タスク - RuntimeContext検証", () => {
+    let capturedStartArgs: CapturedStartArgs | null = null;
+
+    const createChecklistTask = (overrides?: Partial<ChecklistGenerationTaskPayload>): AiTaskDto => ({
+      id: "test-task-id",
+      taskType: "checklist_generation",
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewSpaceId: testReviewSpaceId,
+        userId: "checklist-user-id",
+        files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
+        checklistRequirements: "チェックリスト生成要件",
+        ...overrides,
+      } as unknown as ChecklistGenerationTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [
+        {
+          id: "file-meta-1",
+          taskId: "test-task-id",
+          fileName: "document.txt",
+          filePath: "/path/to/document.txt",
+          fileSize: 2048,
+          mimeType: "text/plain",
+          processMode: "text" as const,
+          convertedImageCount: 0,
+          createdAt: now,
+        },
+      ],
+    });
+
+    beforeEach(() => {
+      capturedStartArgs = null;
+      mockWorkflowRun.start = vi.fn().mockImplementation((args) => {
+        capturedStartArgs = args;
+        return Promise.resolve({
+          status: "success",
+          result: {
+            status: "success",
+            generatedItems: ["チェック項目1"],
+          },
+        });
+      });
+    });
+
+    it("RuntimeContextにemployeeIdが設定されること", async () => {
+      // Arrange
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+      vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
+      vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
+
+      const task = createChecklistTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("employeeId")).toBe("checklist-user-id");
+    });
+
+    it("RuntimeContextにprojectApiKeyが設定されること（存在する場合）", async () => {
+      // Arrange
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+      vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
+      vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
+
+      const task = createChecklistTask({ decryptedApiKey: "checklist-api-key" });
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("projectApiKey")).toBe("checklist-api-key");
+    });
+
+    it("RuntimeContextにfileBuffersが設定されること", async () => {
+      // Arrange
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+      vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
+      vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
+
+      const task = createChecklistTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      const fileBuffers = capturedStartArgs!.runtimeContext.get("fileBuffers");
+      expect(fileBuffers).toBeInstanceOf(Map);
+    });
+  });
+
+  describe("execute - システム設定のRuntimeContext伝播", () => {
+    let capturedStartArgs: CapturedStartArgs | null = null;
+
+    const createReviewTask = (): AiTaskDto => ({
+      id: "test-task-id",
+      taskType: "small_review",
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewTargetId: testReviewTargetId,
+        reviewSpaceId: testReviewSpaceId,
+        userId: "test-user-id",
+        files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+        checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+        reviewSettings: {
+          additionalInstructions: null,
+          concurrentReviewItems: 5,
+          commentFormat: null,
+          evaluationCriteria: [{ label: "A", description: "問題なし" }],
+        },
+        reviewType: "small_review",
+      } as unknown as ReviewTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [
+        {
+          id: "file-meta-1",
+          taskId: "test-task-id",
+          fileName: "test.txt",
+          filePath: "/path/to/test.txt",
+          fileSize: 1024,
+          mimeType: "text/plain",
+          processMode: "text" as const,
+          convertedImageCount: 0,
+          createdAt: now,
+        },
+      ],
+    });
+
+    const createChecklistTask = (): AiTaskDto => ({
+      id: "test-task-id",
+      taskType: "checklist_generation",
+      status: "processing",
+      apiKeyHash: "test-api-key-hash",
+      priority: 5,
+      payload: {
+        reviewSpaceId: testReviewSpaceId,
+        userId: "test-user-id",
+        files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
+        checklistRequirements: "チェックリスト生成要件",
+      } as unknown as ChecklistGenerationTaskPayload,
+      errorMessage: null,
+      createdAt: now,
+      updatedAt: now,
+      startedAt: now,
+      completedAt: null,
+      fileMetadata: [
+        {
+          id: "file-meta-1",
+          taskId: "test-task-id",
+          fileName: "document.txt",
+          filePath: "/path/to/document.txt",
+          fileSize: 2048,
+          mimeType: "text/plain",
+          processMode: "text" as const,
+          convertedImageCount: 0,
+          createdAt: now,
+        },
+      ],
+    });
+
+    beforeEach(() => {
+      capturedStartArgs = null;
+      mockWorkflowRun.start = vi.fn().mockImplementation((args) => {
+        capturedStartArgs = args;
+        return Promise.resolve({
+          status: "success",
+          result: {
+            status: "success",
+            reviewResults: [
+              { checkListItemId: "item-1", rating: "A", comment: "OK" },
+            ],
+            generatedItems: ["チェック項目1"],
+          },
+        });
+      });
+    });
+
+    it("システム設定が存在する場合にsystemApiKeyがRuntimeContextに設定されること", async () => {
+      // Arrange
+      const mockSystemSetting = {
+        toDto: () => ({
+          apiKey: "system-api-key-123",
+          apiUrl: "https://api.example.com",
+          apiModel: "gpt-4",
+        }),
+      };
+      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(mockSystemSetting as never);
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("systemApiKey")).toBe("system-api-key-123");
+    });
+
+    it("システム設定が存在する場合にsystemApiUrlがRuntimeContextに設定されること", async () => {
+      // Arrange
+      const mockSystemSetting = {
+        toDto: () => ({
+          apiKey: "system-api-key-123",
+          apiUrl: "https://api.example.com",
+          apiModel: "gpt-4",
+        }),
+      };
+      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(mockSystemSetting as never);
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("systemApiUrl")).toBe("https://api.example.com");
+    });
+
+    it("システム設定が存在する場合にsystemApiModelがRuntimeContextに設定されること", async () => {
+      // Arrange
+      const mockSystemSetting = {
+        toDto: () => ({
+          apiKey: "system-api-key-123",
+          apiUrl: "https://api.example.com",
+          apiModel: "gpt-4",
+        }),
+      };
+      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(mockSystemSetting as never);
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("systemApiModel")).toBe("gpt-4");
+    });
+
+    it("システム設定が存在しない場合にシステム設定キーがRuntimeContextに設定されないこと", async () => {
+      // Arrange
+      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(null);
+
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
+      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+
+      const task = createReviewTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      assertRuntimeContext(capturedStartArgs!.runtimeContext, {
+        shouldNotExist: ["systemApiKey", "systemApiUrl", "systemApiModel"],
+      });
+    });
+
+    it("チェックリスト生成タスクでもシステム設定が伝播されること", async () => {
+      // Arrange
+      const mockSystemSetting = {
+        toDto: () => ({
+          apiKey: "checklist-system-api-key",
+          apiUrl: "https://checklist-api.example.com",
+          apiModel: "gpt-4-turbo",
+        }),
+      };
+      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(mockSystemSetting as never);
+
+      const { checkWorkflowResult } = await import("@/application/mastra");
+      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
+      vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
+      vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
+
+      const task = createChecklistTask();
+
+      // Act
+      await executor.execute(task);
+
+      // Assert
+      expect(capturedStartArgs).not.toBeNull();
+      expect(capturedStartArgs!.runtimeContext.get("systemApiKey")).toBe("checklist-system-api-key");
+      expect(capturedStartArgs!.runtimeContext.get("systemApiUrl")).toBe("https://checklist-api.example.com");
+      expect(capturedStartArgs!.runtimeContext.get("systemApiModel")).toBe("gpt-4-turbo");
     });
   });
 });
