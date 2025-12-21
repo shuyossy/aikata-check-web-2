@@ -11,6 +11,21 @@ import { Project } from "@/domain/project";
 import { AI_TASK_TYPE } from "@/domain/aiTask";
 import type { RawUploadFileMeta, FileBuffersMap } from "@/application/mastra";
 
+// vi.hoisted()でモック関数を定義（テスト間の分離のため）
+const { mockResolveAiApiConfig } = vi.hoisted(() => {
+  const mockResolveAiApiConfig = vi.fn().mockReturnValue({
+    apiKey: "test-api-key",
+    apiUrl: "https://api.example.com",
+    apiModel: "test-model",
+  });
+  return { mockResolveAiApiConfig };
+});
+
+// resolveAiApiConfigのモック
+vi.mock("@/application/shared/lib/resolveAiApiConfig", () => ({
+  resolveAiApiConfig: mockResolveAiApiConfig,
+}));
+
 // AiTaskQueueServiceのモック
 vi.mock("@/application/aiTask/AiTaskQueueService", () => ({
   AiTaskQueueService: vi.fn(),
@@ -111,8 +126,12 @@ describe("GenerateCheckListByAIService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // 環境変数を設定
-    process.env.AI_API_KEY = "test-api-key";
+    // resolveAiApiConfigのモックをデフォルト値にリセット
+    mockResolveAiApiConfig.mockReturnValue({
+      apiKey: "test-api-key",
+      apiUrl: "https://api.example.com",
+      apiModel: "test-model",
+    });
 
     // モックの設定
     mockEnqueueTask.mockResolvedValue({

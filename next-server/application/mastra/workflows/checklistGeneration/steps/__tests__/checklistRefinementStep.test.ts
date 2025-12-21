@@ -38,7 +38,7 @@ describe("checklistRefinementStep", () => {
   const createTestRuntimeContext = () => {
     const runtimeContext = new RuntimeContext();
     runtimeContext.set("employeeId", "test-user-id");
-    runtimeContext.set("projectApiKey", "test-api-key");
+    runtimeContext.set("aiApiKey", "test-api-key");
     return runtimeContext;
   };
 
@@ -161,7 +161,7 @@ describe("checklistRefinementStep", () => {
       expect(message.content).toContain("3. チェック項目3");
     });
 
-    it("employeeIdとprojectApiKeyがRuntimeContextから継承される", async () => {
+    it("employeeIdとaiApiKeyがRuntimeContextから継承される", async () => {
       // Arrange
       mockGenerateLegacy.mockResolvedValue({
         object: {
@@ -187,7 +187,7 @@ describe("checklistRefinementStep", () => {
       const callArgs = mockGenerateLegacy.mock.calls[0];
       const options = callArgs[1];
       expect(options.runtimeContext.get("employeeId")).toBe("test-user-id");
-      expect(options.runtimeContext.get("projectApiKey")).toBe("test-api-key");
+      expect(options.runtimeContext.get("aiApiKey")).toBe("test-api-key");
     });
 
     it("checklistRequirementsがoptionalの場合も正常に動作する", async () => {
@@ -266,11 +266,11 @@ describe("checklistRefinementStep", () => {
 
       // Assert
       expect(result.status).toBe("success");
-      // employeeIdとprojectApiKeyはundefinedになる
+      // employeeIdとaiApiKeyはundefinedになる
       const callArgs = mockGenerateLegacy.mock.calls[0];
       const options = callArgs[1];
       expect(options.runtimeContext.get("employeeId")).toBeUndefined();
-      expect(options.runtimeContext.get("projectApiKey")).toBeUndefined();
+      expect(options.runtimeContext.get("aiApiKey")).toBeUndefined();
     });
 
     it("refinedChecklistsがundefinedの場合も正常に動作する", async () => {

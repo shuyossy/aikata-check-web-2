@@ -6,7 +6,6 @@ import type { ICheckListItemRepository } from "@/application/shared/port/reposit
 import type { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import type { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
-import type { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
 import type { IWorkflowRunRegistry } from "../WorkflowRunRegistry";
 import type { AiTaskDto } from "@/domain/aiTask";
 import { ReviewTarget, ReviewDocumentCache } from "@/domain/reviewTarget";
@@ -199,11 +198,6 @@ describe("AiTaskExecutor", () => {
     getMaxTotalChunksForDocument: vi.fn(),
   };
 
-  const mockSystemSettingRepository: ISystemSettingRepository = {
-    find: vi.fn().mockResolvedValue(null),
-    save: vi.fn(),
-  };
-
   let executor: AiTaskExecutor;
 
   const now = new Date();
@@ -231,7 +225,6 @@ describe("AiTaskExecutor", () => {
       mockReviewDocumentCacheRepository,
       mockReviewSpaceRepository,
       mockLargeDocumentResultCacheRepository,
-      mockSystemSettingRepository,
     );
   });
 
@@ -254,7 +247,12 @@ describe("AiTaskExecutor", () => {
           commentFormat: null,
           evaluationCriteria: [{ label: "A", description: "問題なし" }],
         },
-        reviewType: "small_review",
+        reviewType: taskType === "small_review" ? "small" : "large",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
       } as unknown as ReviewTaskPayload,
       errorMessage: null,
       createdAt: now,
@@ -383,6 +381,11 @@ describe("AiTaskExecutor", () => {
         userId: "test-user-id",
         files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
         checklistRequirements: "テスト用のチェックリストを生成してください",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
       } as unknown as ChecklistGenerationTaskPayload,
       errorMessage: null,
       createdAt: now,
@@ -545,7 +548,12 @@ describe("AiTaskExecutor", () => {
             commentFormat: null,
             evaluationCriteria: [{ label: "A", description: "問題なし" }],
           },
-          reviewType: "small_review",
+          reviewType: "small",
+          aiApiConfig: {
+            apiKey: "test-api-key",
+            apiUrl: "http://test-api-url",
+            apiModel: "test-model",
+          },
         },
         errorMessage: null,
         createdAt: now,
@@ -586,7 +594,6 @@ describe("AiTaskExecutor", () => {
         mockReviewDocumentCacheRepository,
         mockReviewSpaceRepository,
         mockLargeDocumentResultCacheRepository,
-        mockSystemSettingRepository,
         mockWorkflowRunRegistry,
       );
     });
@@ -609,7 +616,12 @@ describe("AiTaskExecutor", () => {
           commentFormat: null,
           evaluationCriteria: [{ label: "A", description: "問題なし" }],
         },
-        reviewType: "small_review",
+        reviewType: "small",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
       } as unknown as ReviewTaskPayload,
       errorMessage: null,
       createdAt: now,
@@ -642,6 +654,11 @@ describe("AiTaskExecutor", () => {
         userId: "test-user-id",
         files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
         checklistRequirements: "テスト用のチェックリストを生成してください",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
       } as unknown as ChecklistGenerationTaskPayload,
       errorMessage: null,
       createdAt: now,
@@ -834,7 +851,12 @@ describe("AiTaskExecutor", () => {
           commentFormat: null,
           evaluationCriteria: [{ label: "A", description: "問題なし" }],
         },
-        reviewType: "small_review",
+        reviewType: "small",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
         isRetry: true,
         retryScope: "failed",
         resultsToDeleteIds: [testResultId1, testResultId2],
@@ -1081,7 +1103,12 @@ describe("AiTaskExecutor", () => {
             { label: "B", description: "軽微な問題あり" },
           ],
         },
-        reviewType: "small_review",
+        reviewType: taskType === "small_review" ? "small" : "large",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
       } as unknown as ReviewTaskPayload,
       errorMessage: null,
       createdAt: now,
@@ -1170,10 +1197,10 @@ describe("AiTaskExecutor", () => {
       );
 
       // reviewTypeが正しく渡されていること
-      expect(inputData.reviewType).toBe("small_review");
+      expect(inputData.reviewType).toBe("small");
     });
 
-    it("大量レビュー実行時にreviewTypeがlarge_reviewで渡されること", async () => {
+    it("大量レビュー実行時にreviewTypeがlargeで渡されること", async () => {
       // Arrange
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
       vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
@@ -1182,7 +1209,6 @@ describe("AiTaskExecutor", () => {
       vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
 
       const task = createReviewTask("large_review");
-      (task.payload as unknown as ReviewTaskPayload).reviewType = "large_review";
 
       // Act
       await executor.execute(task);
@@ -1190,7 +1216,7 @@ describe("AiTaskExecutor", () => {
       // Assert
       expect(capturedStartArgs).not.toBeNull();
       const inputData = capturedStartArgs!.inputData as { reviewType: string };
-      expect(inputData.reviewType).toBe("large_review");
+      expect(inputData.reviewType).toBe("large");
     });
 
     it("リトライ実行時にfilesが空配列で渡されること", async () => {
@@ -1276,7 +1302,12 @@ describe("AiTaskExecutor", () => {
           commentFormat: null,
           evaluationCriteria: [{ label: "A", description: "問題なし" }],
         },
-        reviewType: "small_review",
+        reviewType: "small",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
         ...overrides,
       } as unknown as ReviewTaskPayload,
       errorMessage: null,
@@ -1351,7 +1382,7 @@ describe("AiTaskExecutor", () => {
       expect(capturedStartArgs!.runtimeContext.get("reviewTargetId")).toBe(testReviewTargetId);
     });
 
-    it("RuntimeContextにprojectApiKeyが設定されること（存在する場合）", async () => {
+    it("RuntimeContextにaiApiKey/aiApiUrl/aiApiModelが設定されること", async () => {
       // Arrange
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
       vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
@@ -1359,14 +1390,16 @@ describe("AiTaskExecutor", () => {
       const { checkWorkflowResult } = await import("@/application/mastra");
       vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
 
-      const task = createReviewTask({ decryptedApiKey: "decrypted-api-key-123" });
+      const task = createReviewTask();
 
       // Act
       await executor.execute(task);
 
       // Assert
       expect(capturedStartArgs).not.toBeNull();
-      expect(capturedStartArgs!.runtimeContext.get("projectApiKey")).toBe("decrypted-api-key-123");
+      expect(capturedStartArgs!.runtimeContext.get("aiApiKey")).toBe("test-api-key");
+      expect(capturedStartArgs!.runtimeContext.get("aiApiUrl")).toBe("http://test-api-url");
+      expect(capturedStartArgs!.runtimeContext.get("aiApiModel")).toBe("test-model");
     });
 
     it("RuntimeContextにfileBuffersが設定されること（通常モード）", async () => {
@@ -1625,6 +1658,11 @@ describe("AiTaskExecutor", () => {
           { id: "file-2", name: "document2.pdf", type: "application/pdf" },
         ],
         checklistRequirements: "セキュリティ観点でチェックリストを生成してください",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
       } as unknown as ChecklistGenerationTaskPayload,
       errorMessage: null,
       createdAt: now,
@@ -1736,6 +1774,11 @@ describe("AiTaskExecutor", () => {
         userId: "checklist-user-id",
         files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
         checklistRequirements: "チェックリスト生成要件",
+        aiApiConfig: {
+          apiKey: "test-api-key",
+          apiUrl: "http://test-api-url",
+          apiModel: "test-model",
+        },
         ...overrides,
       } as unknown as ChecklistGenerationTaskPayload,
       errorMessage: null,
@@ -1789,21 +1832,23 @@ describe("AiTaskExecutor", () => {
       expect(capturedStartArgs!.runtimeContext.get("employeeId")).toBe("checklist-user-id");
     });
 
-    it("RuntimeContextにprojectApiKeyが設定されること（存在する場合）", async () => {
+    it("RuntimeContextにaiApiKey/aiApiUrl/aiApiModelが設定されること", async () => {
       // Arrange
       const { checkWorkflowResult } = await import("@/application/mastra");
       vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
       vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
       vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
 
-      const task = createChecklistTask({ decryptedApiKey: "checklist-api-key" });
+      const task = createChecklistTask();
 
       // Act
       await executor.execute(task);
 
       // Assert
       expect(capturedStartArgs).not.toBeNull();
-      expect(capturedStartArgs!.runtimeContext.get("projectApiKey")).toBe("checklist-api-key");
+      expect(capturedStartArgs!.runtimeContext.get("aiApiKey")).toBe("test-api-key");
+      expect(capturedStartArgs!.runtimeContext.get("aiApiUrl")).toBe("http://test-api-url");
+      expect(capturedStartArgs!.runtimeContext.get("aiApiModel")).toBe("test-model");
     });
 
     it("RuntimeContextにfileBuffersが設定されること", async () => {
@@ -1825,227 +1870,4 @@ describe("AiTaskExecutor", () => {
     });
   });
 
-  describe("execute - システム設定のRuntimeContext伝播", () => {
-    let capturedStartArgs: CapturedStartArgs | null = null;
-
-    const createReviewTask = (): AiTaskDto => ({
-      id: "test-task-id",
-      taskType: "small_review",
-      status: "processing",
-      apiKeyHash: "test-api-key-hash",
-      priority: 5,
-      payload: {
-        reviewTargetId: testReviewTargetId,
-        reviewSpaceId: testReviewSpaceId,
-        userId: "test-user-id",
-        files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
-        checkListItems: [{ id: "item-1", content: "チェック項目1" }],
-        reviewSettings: {
-          additionalInstructions: null,
-          concurrentReviewItems: 5,
-          commentFormat: null,
-          evaluationCriteria: [{ label: "A", description: "問題なし" }],
-        },
-        reviewType: "small_review",
-      } as unknown as ReviewTaskPayload,
-      errorMessage: null,
-      createdAt: now,
-      updatedAt: now,
-      startedAt: now,
-      completedAt: null,
-      fileMetadata: [
-        {
-          id: "file-meta-1",
-          taskId: "test-task-id",
-          fileName: "test.txt",
-          filePath: "/path/to/test.txt",
-          fileSize: 1024,
-          mimeType: "text/plain",
-          processMode: "text" as const,
-          convertedImageCount: 0,
-          createdAt: now,
-        },
-      ],
-    });
-
-    const createChecklistTask = (): AiTaskDto => ({
-      id: "test-task-id",
-      taskType: "checklist_generation",
-      status: "processing",
-      apiKeyHash: "test-api-key-hash",
-      priority: 5,
-      payload: {
-        reviewSpaceId: testReviewSpaceId,
-        userId: "test-user-id",
-        files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
-        checklistRequirements: "チェックリスト生成要件",
-      } as unknown as ChecklistGenerationTaskPayload,
-      errorMessage: null,
-      createdAt: now,
-      updatedAt: now,
-      startedAt: now,
-      completedAt: null,
-      fileMetadata: [
-        {
-          id: "file-meta-1",
-          taskId: "test-task-id",
-          fileName: "document.txt",
-          filePath: "/path/to/document.txt",
-          fileSize: 2048,
-          mimeType: "text/plain",
-          processMode: "text" as const,
-          convertedImageCount: 0,
-          createdAt: now,
-        },
-      ],
-    });
-
-    beforeEach(() => {
-      capturedStartArgs = null;
-      mockWorkflowRun.start = vi.fn().mockImplementation((args) => {
-        capturedStartArgs = args;
-        return Promise.resolve({
-          status: "success",
-          result: {
-            status: "success",
-            reviewResults: [
-              { checkListItemId: "item-1", rating: "A", comment: "OK" },
-            ],
-            generatedItems: ["チェック項目1"],
-          },
-        });
-      });
-    });
-
-    it("システム設定が存在する場合にsystemApiKeyがRuntimeContextに設定されること", async () => {
-      // Arrange
-      const mockSystemSetting = {
-        toDto: () => ({
-          apiKey: "system-api-key-123",
-          apiUrl: "https://api.example.com",
-          apiModel: "gpt-4",
-        }),
-      };
-      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(mockSystemSetting as never);
-
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
-      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
-
-      const { checkWorkflowResult } = await import("@/application/mastra");
-      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
-
-      const task = createReviewTask();
-
-      // Act
-      await executor.execute(task);
-
-      // Assert
-      expect(capturedStartArgs).not.toBeNull();
-      expect(capturedStartArgs!.runtimeContext.get("systemApiKey")).toBe("system-api-key-123");
-    });
-
-    it("システム設定が存在する場合にsystemApiUrlがRuntimeContextに設定されること", async () => {
-      // Arrange
-      const mockSystemSetting = {
-        toDto: () => ({
-          apiKey: "system-api-key-123",
-          apiUrl: "https://api.example.com",
-          apiModel: "gpt-4",
-        }),
-      };
-      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(mockSystemSetting as never);
-
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
-      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
-
-      const { checkWorkflowResult } = await import("@/application/mastra");
-      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
-
-      const task = createReviewTask();
-
-      // Act
-      await executor.execute(task);
-
-      // Assert
-      expect(capturedStartArgs).not.toBeNull();
-      expect(capturedStartArgs!.runtimeContext.get("systemApiUrl")).toBe("https://api.example.com");
-    });
-
-    it("システム設定が存在する場合にsystemApiModelがRuntimeContextに設定されること", async () => {
-      // Arrange
-      const mockSystemSetting = {
-        toDto: () => ({
-          apiKey: "system-api-key-123",
-          apiUrl: "https://api.example.com",
-          apiModel: "gpt-4",
-        }),
-      };
-      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(mockSystemSetting as never);
-
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
-      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
-
-      const { checkWorkflowResult } = await import("@/application/mastra");
-      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
-
-      const task = createReviewTask();
-
-      // Act
-      await executor.execute(task);
-
-      // Assert
-      expect(capturedStartArgs).not.toBeNull();
-      expect(capturedStartArgs!.runtimeContext.get("systemApiModel")).toBe("gpt-4");
-    });
-
-    it("システム設定が存在しない場合にシステム設定キーがRuntimeContextに設定されないこと", async () => {
-      // Arrange
-      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(null);
-
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
-      vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
-
-      const { checkWorkflowResult } = await import("@/application/mastra");
-      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
-
-      const task = createReviewTask();
-
-      // Act
-      await executor.execute(task);
-
-      // Assert
-      expect(capturedStartArgs).not.toBeNull();
-      assertRuntimeContext(capturedStartArgs!.runtimeContext, {
-        shouldNotExist: ["systemApiKey", "systemApiUrl", "systemApiModel"],
-      });
-    });
-
-    it("チェックリスト生成タスクでもシステム設定が伝播されること", async () => {
-      // Arrange
-      const mockSystemSetting = {
-        toDto: () => ({
-          apiKey: "checklist-system-api-key",
-          apiUrl: "https://checklist-api.example.com",
-          apiModel: "gpt-4-turbo",
-        }),
-      };
-      vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(mockSystemSetting as never);
-
-      const { checkWorkflowResult } = await import("@/application/mastra");
-      vi.mocked(checkWorkflowResult).mockReturnValue({ status: "success" });
-      vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
-      vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
-
-      const task = createChecklistTask();
-
-      // Act
-      await executor.execute(task);
-
-      // Assert
-      expect(capturedStartArgs).not.toBeNull();
-      expect(capturedStartArgs!.runtimeContext.get("systemApiKey")).toBe("checklist-system-api-key");
-      expect(capturedStartArgs!.runtimeContext.get("systemApiUrl")).toBe("https://checklist-api.example.com");
-      expect(capturedStartArgs!.runtimeContext.get("systemApiModel")).toBe("gpt-4-turbo");
-    });
-  });
 });

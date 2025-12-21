@@ -12,6 +12,7 @@ import { domainValidationError, internalError } from "@/lib/server/error";
 import type { ReviewSettingsCommand } from "./ExecuteReviewService";
 import type { ReviewTaskPayload } from "@/application/aiTask/AiTaskExecutor";
 import type { ReviewType as WorkflowReviewType } from "@/application/mastra";
+import { resolveAiApiConfig } from "@/application/shared/lib/resolveAiApiConfig";
 
 /**
  * リトライ範囲
@@ -173,17 +174,9 @@ export class RetryReviewService {
     // レビュー設定を決定（コマンドで指定がなければ前回の設定を使用）
     const effectiveSettings = reviewSettings ?? reviewTarget.reviewSettings?.toDto() ?? null;
 
-    // APIキーを取得（プロジェクト設定 > 管理者設定 > 環境変数）
-    const decryptedApiKey = project.encryptedApiKey?.decrypt();
+    // API設定を取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const systemSetting = await this.systemSettingRepository.find();
-    const systemApiKey = systemSetting?.toDto().apiKey;
-    const apiKey = decryptedApiKey ?? systemApiKey ?? process.env.AI_API_KEY;
-    if (!apiKey) {
-      throw internalError({
-        expose: true,
-        messageCode: "AI_TASK_NO_API_KEY",
-      });
-    }
+    const aiApiConfig = resolveAiApiConfig(project.encryptedApiKey, systemSetting);
 
     // ステータスをqueuedに更新
     let updatedTarget = reviewTarget.prepareForRetry();
@@ -230,7 +223,7 @@ export class RetryReviewService {
           }
         : undefined,
       reviewType: effectiveReviewType as "small" | "large",
-      decryptedApiKey: decryptedApiKey ?? undefined,
+      aiApiConfig,
       // リトライ用フラグ
       isRetry: true,
       retryScope,
@@ -240,7 +233,7 @@ export class RetryReviewService {
     // キューに登録（ファイルは不要）
     const enqueueResult = await this.aiTaskQueueService.enqueueTask({
       taskType,
-      apiKey,
+      apiKey: aiApiConfig.apiKey,
       payload: payload as unknown as Record<string, unknown>,
       files: [], // リトライ時はファイルアップロード不要
     });

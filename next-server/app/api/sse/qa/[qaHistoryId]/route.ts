@@ -119,6 +119,8 @@ export async function GET(
             new ReviewDocumentCacheRepository(),
             new LargeDocumentResultCacheRepository(),
             new SystemSettingRepository(),
+            new ReviewSpaceRepository(),
+            new ProjectRepository(),
             eventBroker,
             mastra,
           );

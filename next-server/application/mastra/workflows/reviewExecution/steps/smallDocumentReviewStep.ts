@@ -79,12 +79,11 @@ export const smallDocumentReviewStep = createStep({
       | RuntimeContext<ReviewExecutionWorkflowRuntimeContext>
       | undefined;
     const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
-    const projectApiKey = typedWorkflowRuntimeContext?.get("projectApiKey");
+    const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+    const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+    const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
     const reviewTargetId = typedWorkflowRuntimeContext?.get("reviewTargetId");
     const onReviewResultSaved = typedWorkflowRuntimeContext?.get("onReviewResultSaved");
-    const systemApiKey = typedWorkflowRuntimeContext?.get("systemApiKey");
-    const systemApiUrl = typedWorkflowRuntimeContext?.get("systemApiUrl");
-    const systemApiModel = typedWorkflowRuntimeContext?.get("systemApiModel");
 
     try {
 
@@ -146,18 +145,17 @@ Please review the document against the above checklist items.`;
 
       // 最大リトライ回数までレビューを繰り返す
       while (attempt < MAX_RETRY_ATTEMPTS && targetChecklistItems.length > 0) {
-        // エージェント用のRuntimeContextを作成（システム設定も含める）
+        // エージェント用のRuntimeContextを作成
         const runtimeContext =
           createRuntimeContext<ReviewExecuteAgentRuntimeContext>({
             checklistItems: targetChecklistItems,
             additionalInstructions: additionalInstructions ?? undefined,
             commentFormat: commentFormat ?? undefined,
             evaluationCriteria: evaluationCriteria ?? undefined,
-            projectApiKey,
             employeeId,
-            systemApiKey,
-            systemApiUrl,
-            systemApiModel,
+            aiApiKey,
+            aiApiUrl,
+            aiApiModel,
           });
 
         // チェックリストリマインダーを追加

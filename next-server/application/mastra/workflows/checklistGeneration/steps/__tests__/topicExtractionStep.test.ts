@@ -43,7 +43,7 @@ describe("topicExtractionStep", () => {
   const createTestRuntimeContext = () => {
     const runtimeContext = new RuntimeContext();
     runtimeContext.set("employeeId", "test-user-id");
-    runtimeContext.set("projectApiKey", "test-api-key");
+    runtimeContext.set("aiApiKey", "test-api-key");
     return runtimeContext;
   };
 
@@ -115,7 +115,7 @@ describe("topicExtractionStep", () => {
       );
     });
 
-    it("employeeIdとprojectApiKeyがRuntimeContextから継承される", async () => {
+    it("employeeIdとaiApiKeyがRuntimeContextから継承される", async () => {
       // Arrange
       mockGenerateLegacy.mockResolvedValue({
         object: {
@@ -143,7 +143,7 @@ describe("topicExtractionStep", () => {
       const callArgs = mockGenerateLegacy.mock.calls[0];
       const options = callArgs[1];
       expect(options.runtimeContext.get("employeeId")).toBe("test-user-id");
-      expect(options.runtimeContext.get("projectApiKey")).toBe("test-api-key");
+      expect(options.runtimeContext.get("aiApiKey")).toBe("test-api-key");
     });
 
     it("メッセージにファイル内容が含まれる", async () => {
@@ -356,11 +356,11 @@ describe("topicExtractionStep", () => {
 
       // Assert
       expect(result.status).toBe("success");
-      // employeeIdとprojectApiKeyはundefinedになる
+      // employeeIdとaiApiKeyはundefinedになる
       const callArgs = mockGenerateLegacy.mock.calls[0];
       const options = callArgs[1];
       expect(options.runtimeContext.get("employeeId")).toBeUndefined();
-      expect(options.runtimeContext.get("projectApiKey")).toBeUndefined();
+      expect(options.runtimeContext.get("aiApiKey")).toBeUndefined();
     });
   });
 });

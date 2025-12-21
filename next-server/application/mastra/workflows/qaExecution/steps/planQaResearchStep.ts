@@ -77,23 +77,23 @@ export const planQaResearchStep = createStep({
       // チェックリスト情報の文字列を生成
       const checklistInfo = buildPlanningChecklistInfo(checklistResults);
 
-      // ワークフローRuntimeContextからシステム設定を取得
+      // ワークフローRuntimeContextから確定済みのAI API設定を取得
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<QaExecutionWorkflowRuntimeContext>
         | undefined;
-      const systemApiKey = typedWorkflowRuntimeContext?.get('systemApiKey');
-      const systemApiUrl = typedWorkflowRuntimeContext?.get('systemApiUrl');
-      const systemApiModel = typedWorkflowRuntimeContext?.get('systemApiModel');
+      const aiApiKey = typedWorkflowRuntimeContext?.get('aiApiKey');
+      const aiApiUrl = typedWorkflowRuntimeContext?.get('aiApiUrl');
+      const aiApiModel = typedWorkflowRuntimeContext?.get('aiApiModel');
 
-      // RuntimeContext作成（システム設定も含める）
+      // RuntimeContext作成
       const runtimeContext =
         createRuntimeContext<QaPlanningAgentRuntimeContext>({
           availableDocuments,
           checklistInfo,
           reviewMode,
-          systemApiKey,
-          systemApiUrl,
-          systemApiModel,
+          aiApiKey,
+          aiApiUrl,
+          aiApiModel,
         });
 
       // Mastraエージェント経由でAI呼び出し（構造化出力）

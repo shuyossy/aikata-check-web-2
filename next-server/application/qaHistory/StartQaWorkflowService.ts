@@ -4,9 +4,12 @@ import { IReviewResultRepository } from "@/application/shared/port/repository/IR
 import { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
 import { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
+import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
+import { IProjectRepository } from "@/application/shared/port/repository/IProjectRepository";
 import { IEventBroker } from "@/application/shared/port/push/IEventBroker";
 import { QaHistory, QaHistoryId, Answer, ResearchSummary, QaStatus } from "@/domain/qaHistory";
 import { ReviewTargetId } from "@/domain/reviewTarget";
+import { ProjectId } from "@/domain/project";
 import { getLogger } from "@/lib/server/logger";
 import type { Mastra } from "@mastra/core";
 import { RuntimeContext } from "@mastra/core/di";
@@ -23,6 +26,7 @@ import {
   type ResearchResult,
 } from "@/application/mastra/workflows/qaExecution";
 import { checkWorkflowResult } from "@/application/mastra/lib/workflowUtils";
+import { resolveAiApiConfig } from "@/application/shared/lib/resolveAiApiConfig";
 
 const logger = getLogger();
 
@@ -38,6 +42,8 @@ export class StartQaWorkflowService {
     private readonly reviewDocumentCacheRepository: IReviewDocumentCacheRepository,
     private readonly largeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository,
     private readonly systemSettingRepository: ISystemSettingRepository,
+    private readonly reviewSpaceRepository: IReviewSpaceRepository,
+    private readonly projectRepository: IProjectRepository,
     private readonly eventBroker: IEventBroker,
     private readonly mastra: Mastra,
   ) {}
@@ -137,26 +143,33 @@ export class StartQaWorkflowService {
         fileName: cache.fileName,
       }));
 
+      // レビュー対象からプロジェクトを取得してAPI設定を解決
+      const reviewTarget = await this.reviewTargetRepository.findById(reviewTargetId);
+      if (!reviewTarget) {
+        throw new Error("レビュー対象が見つかりません");
+      }
+      const reviewSpace = await this.reviewSpaceRepository.findById(reviewTarget.reviewSpaceId);
+      if (!reviewSpace) {
+        throw new Error("レビュースペースが見つかりません");
+      }
+      const projectId = ProjectId.reconstruct(reviewSpace.projectId.value);
+      const project = await this.projectRepository.findById(projectId);
+      if (!project) {
+        throw new Error("プロジェクトが見つかりません");
+      }
+
+      // API設定を取得（プロジェクト設定 > 管理者設定 > 環境変数）
+      const systemSetting = await this.systemSettingRepository.find();
+      const aiApiConfig = resolveAiApiConfig(project.encryptedApiKey, systemSetting);
+
       // RuntimeContext作成
       const runtimeContext = new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
       runtimeContext.set("eventBroker", this.eventBroker);
       runtimeContext.set("userId", userId);
       runtimeContext.set("qaHistoryId", qaHistoryId.value);
-
-      // システム設定（管理者設定）をRuntimeContextに追加
-      const systemSetting = await this.systemSettingRepository.find();
-      if (systemSetting) {
-        const dto = systemSetting.toDto();
-        if (dto.apiKey) {
-          runtimeContext.set("systemApiKey", dto.apiKey);
-        }
-        if (dto.apiUrl) {
-          runtimeContext.set("systemApiUrl", dto.apiUrl);
-        }
-        if (dto.apiModel) {
-          runtimeContext.set("systemApiModel", dto.apiModel);
-        }
-      }
+      runtimeContext.set("aiApiKey", aiApiConfig.apiKey);
+      runtimeContext.set("aiApiUrl", aiApiConfig.apiUrl);
+      runtimeContext.set("aiApiModel", aiApiConfig.apiModel);
 
       // ワークフローを実行
       const run = await qaExecutionWorkflow.createRunAsync();

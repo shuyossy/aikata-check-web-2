@@ -5,24 +5,17 @@ import { aiConfigError } from "@/lib/server/error";
 
 /**
  * AIモデルを取得する
- * 優先順位: プロジェクト設定 > 管理者設定（SystemSetting） > 環境変数
+ * RuntimeContextから確定済みのAI API設定を取得
+ * 設定がない場合は環境変数にフォールバック
  *
  * @param runtimeContext - RuntimeContext（オプション）
  * @returns OpenAI互換のチャットモデル
  */
 export const getModel = (runtimeContext?: RuntimeContext<BaseRuntimeContext>) => {
-  // APIキー: プロジェクト設定 > 管理者設定 > 環境変数
-  const projectApiKey = runtimeContext?.get("projectApiKey");
-  const systemApiKey = runtimeContext?.get("systemApiKey");
-  const apiKey = projectApiKey || systemApiKey || process.env.AI_API_KEY;
-
-  // API URL: 管理者設定 > 環境変数（プロジェクトレベルでは設定不可）
-  const systemApiUrl = runtimeContext?.get("systemApiUrl");
-  const apiUrl = systemApiUrl || process.env.AI_API_URL;
-
-  // APIモデル: 管理者設定 > 環境変数（プロジェクトレベルでは設定不可）
-  const systemApiModel = runtimeContext?.get("systemApiModel");
-  const apiModel = systemApiModel || process.env.AI_API_MODEL;
+  // RuntimeContextから確定済みのAPI設定を取得（環境変数フォールバック）
+  const apiKey = runtimeContext?.get("aiApiKey") || process.env.AI_API_KEY;
+  const apiUrl = runtimeContext?.get("aiApiUrl") || process.env.AI_API_URL;
+  const apiModel = runtimeContext?.get("aiApiModel") || process.env.AI_API_MODEL;
 
   if (!apiKey) {
     throw aiConfigError("AI_CONFIG_API_KEY_MISSING");

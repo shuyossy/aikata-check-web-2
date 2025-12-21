@@ -99,15 +99,14 @@ export const individualDocumentReviewStep = createStep({
     const { file, checkListItems, additionalInstructions, commentFormat } =
       inputData;
 
-    // workflowのRuntimeContextから各種設定を取得
+    // workflowのRuntimeContextから確定済みのAI API設定を取得
     const typedWorkflowRuntimeContext = workflowRuntimeContext as
       | RuntimeContext<ReviewExecutionWorkflowRuntimeContext>
       | undefined;
     const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
-    const projectApiKey = typedWorkflowRuntimeContext?.get("projectApiKey");
-    const systemApiKey = typedWorkflowRuntimeContext?.get("systemApiKey");
-    const systemApiUrl = typedWorkflowRuntimeContext?.get("systemApiUrl");
-    const systemApiModel = typedWorkflowRuntimeContext?.get("systemApiModel");
+    const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+    const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+    const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
 
     try {
       // 動的に出力スキーマを作成（チェックリストIDは1始まり連番）
@@ -167,17 +166,16 @@ Please provide a thorough review based on the document content provided above.`;
 
       // 最大リトライ回数までレビューを繰り返す
       while (attempt < MAX_RETRY_ATTEMPTS && targetChecklistItems.length > 0) {
-        // エージェント用のRuntimeContextを作成（システム設定も含める）
+        // エージェント用のRuntimeContextを作成
         const runtimeContext =
           createRuntimeContext<IndividualDocumentReviewAgentRuntimeContext>({
             checklistItems: targetChecklistItems,
             additionalInstructions: additionalInstructions ?? undefined,
             commentFormat: commentFormat ?? undefined,
-            projectApiKey,
             employeeId,
-            systemApiKey,
-            systemApiUrl,
-            systemApiModel,
+            aiApiKey,
+            aiApiUrl,
+            aiApiModel,
           });
 
         // チェックリストリマインダーを追加

@@ -268,7 +268,7 @@ describe("planQaResearchStep", () => {
       // Assert
       expect(bailMock).toHaveBeenCalledWith({
         status: "failed",
-        errorMessage: "調査対象ドキュメントが特定できませんでした",
+        errorMessage: "調査対象のドキュメントが見つかりませんでした。",
       });
     });
 

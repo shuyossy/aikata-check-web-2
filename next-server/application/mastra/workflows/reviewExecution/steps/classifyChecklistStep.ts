@@ -155,17 +155,21 @@ async function classifyWithAI(
   maxChecklistsPerCategory: number,
   workflowRuntimeContext?: RuntimeContext<ReviewExecutionWorkflowRuntimeContext>,
 ): Promise<{ id: string; content: string }[][]> {
-  // workflowのRuntimeContextからemployeeIdとprojectApiKeyを取得
+  // workflowのRuntimeContextから確定済みのAI API設定を取得
   const employeeId = workflowRuntimeContext?.get("employeeId");
-  const projectApiKey = workflowRuntimeContext?.get("projectApiKey");
+  const aiApiKey = workflowRuntimeContext?.get("aiApiKey");
+  const aiApiUrl = workflowRuntimeContext?.get("aiApiUrl");
+  const aiApiModel = workflowRuntimeContext?.get("aiApiModel");
 
   // エージェント用のRuntimeContextを作成
   const runtimeContext =
     createRuntimeContext<ChecklistCategoryAgentRuntimeContext>({
       maxChecklistsPerCategory,
       maxCategories: DEFAULT_MAX_CATEGORIES,
-      projectApiKey,
       employeeId,
+      aiApiKey,
+      aiApiUrl,
+      aiApiModel,
     });
 
   // チェックリスト項目をフォーマット（1始まりの連番IDを使用してトークン消費を削減）

@@ -67,9 +67,9 @@ export const generateQaAnswerStep = createStep({
       const eventBroker = typedWorkflowRuntimeContext?.get?.('eventBroker') as IEventBroker | undefined;
       const userId = typedWorkflowRuntimeContext?.get?.('userId') as string | undefined;
       const qaHistoryId = typedWorkflowRuntimeContext?.get?.('qaHistoryId') as string | undefined;
-      const systemApiKey = typedWorkflowRuntimeContext?.get('systemApiKey');
-      const systemApiUrl = typedWorkflowRuntimeContext?.get('systemApiUrl');
-      const systemApiModel = typedWorkflowRuntimeContext?.get('systemApiModel');
+      const aiApiKey = typedWorkflowRuntimeContext?.get('aiApiKey');
+      const aiApiUrl = typedWorkflowRuntimeContext?.get('aiApiUrl');
+      const aiApiModel = typedWorkflowRuntimeContext?.get('aiApiModel');
 
       // レビューモードを判定
       const reviewMode = judgeReviewMode(checklistResults);
@@ -85,14 +85,14 @@ export const generateQaAnswerStep = createStep({
         )
         .join('\n\n---\n\n');
 
-      // RuntimeContext作成（システム設定も含める）
+      // RuntimeContext作成
       const runtimeContext = createRuntimeContext<QaAnswerAgentRuntimeContext>({
         userQuestion: question,
         checklistInfo,
         reviewMode,
-        systemApiKey,
-        systemApiUrl,
-        systemApiModel,
+        aiApiKey,
+        aiApiUrl,
+        aiApiModel,
       });
 
       const promptText = `User Question: ${question}\n\nResearch Findings:\n${researchSummary}`;

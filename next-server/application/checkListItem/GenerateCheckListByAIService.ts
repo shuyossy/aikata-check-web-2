@@ -8,6 +8,7 @@ import { AI_TASK_TYPE } from "@/domain/aiTask";
 import { domainValidationError, internalError } from "@/lib/server/error";
 import type { RawUploadFileMeta, FileBuffersMap } from "@/application/mastra";
 import type { ChecklistGenerationTaskPayload } from "@/application/aiTask/AiTaskExecutor";
+import { resolveAiApiConfig } from "@/application/shared/lib/resolveAiApiConfig";
 
 /**
  * AIチェックリスト生成コマンド（入力DTO）
@@ -95,17 +96,9 @@ export class GenerateCheckListByAIService {
       throw domainValidationError("PROJECT_ACCESS_DENIED");
     }
 
-    // APIキーを取得（プロジェクト設定 > 管理者設定 > 環境変数）
-    const decryptedApiKey = project.encryptedApiKey?.decrypt();
+    // API設定を取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const systemSetting = await this.systemSettingRepository.find();
-    const systemApiKey = systemSetting?.toDto().apiKey;
-    const apiKey = decryptedApiKey ?? systemApiKey ?? process.env.AI_API_KEY;
-    if (!apiKey) {
-      throw internalError({
-        expose: true,
-        messageCode: "AI_TASK_NO_API_KEY",
-      });
-    }
+    const aiApiConfig = resolveAiApiConfig(project.encryptedApiKey, systemSetting);
 
     // ペイロードを作成
     const payload: ChecklistGenerationTaskPayload = {
@@ -113,7 +106,7 @@ export class GenerateCheckListByAIService {
       userId,
       files,
       checklistRequirements,
-      decryptedApiKey: decryptedApiKey ?? undefined,
+      aiApiConfig,
     };
 
     // ファイルをFileInfoCommand形式に変換
@@ -145,7 +138,7 @@ export class GenerateCheckListByAIService {
     // キューに登録
     const enqueueResult = await this.aiTaskQueueService.enqueueTask({
       taskType: AI_TASK_TYPE.CHECKLIST_GENERATION,
-      apiKey,
+      apiKey: aiApiConfig.apiKey,
       payload: payload as unknown as Record<string, unknown>,
       files: fileInfoCommands,
     });

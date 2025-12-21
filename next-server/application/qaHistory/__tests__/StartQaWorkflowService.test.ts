@@ -16,17 +16,27 @@ import type { IReviewResultRepository } from "@/application/shared/port/reposito
 import type { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import type { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
 import type { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
+import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
+import type { IProjectRepository } from "@/application/shared/port/repository/IProjectRepository";
 import type { IEventBroker } from "@/application/shared/port/push/IEventBroker";
 import { ReviewTargetId, ReviewDocumentCacheId } from "@/domain/reviewTarget";
+import { ReviewSpaceId } from "@/domain/reviewSpace";
+import { ProjectId } from "@/domain/project";
 import { QaStatus } from "@/domain/qaHistory";
 
 // ワークフローのモック（vi.hoistedでモック変数をhoistする）
-const { mockWorkflowStart, mockCreateRunAsync } = vi.hoisted(() => {
+const { mockWorkflowStart, mockCreateRunAsync, mockCheckWorkflowResult, mockResolveAiApiConfig } = vi.hoisted(() => {
   const mockWorkflowStart = vi.fn();
   const mockCreateRunAsync = vi.fn().mockResolvedValue({
     start: mockWorkflowStart,
   });
-  return { mockWorkflowStart, mockCreateRunAsync };
+  const mockCheckWorkflowResult = vi.fn().mockReturnValue({ status: "success" });
+  const mockResolveAiApiConfig = vi.fn().mockReturnValue({
+    apiKey: "test-api-key",
+    apiUrl: "https://api.example.com",
+    apiModel: "test-model",
+  });
+  return { mockWorkflowStart, mockCreateRunAsync, mockCheckWorkflowResult, mockResolveAiApiConfig };
 });
 
 vi.mock("@/application/mastra/workflows/qaExecution", () => ({
@@ -52,7 +62,12 @@ vi.mock("@/lib/server/logger", () => ({
 
 // checkWorkflowResultのモック
 vi.mock("@/application/mastra/lib/workflowUtils", () => ({
-  checkWorkflowResult: vi.fn().mockReturnValue({ status: "success" }),
+  checkWorkflowResult: mockCheckWorkflowResult,
+}));
+
+// resolveAiApiConfigのモック
+vi.mock("@/application/shared/lib/resolveAiApiConfig", () => ({
+  resolveAiApiConfig: mockResolveAiApiConfig,
 }));
 
 describe("StartQaWorkflowService", () => {
@@ -63,6 +78,8 @@ describe("StartQaWorkflowService", () => {
   let mockReviewDocumentCacheRepository: IReviewDocumentCacheRepository;
   let mockLargeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository;
   let mockSystemSettingRepository: ISystemSettingRepository;
+  let mockReviewSpaceRepository: IReviewSpaceRepository;
+  let mockProjectRepository: IProjectRepository;
   let mockEventBroker: IEventBroker;
   let mockMastra: any;
   let service: StartQaWorkflowService;
@@ -70,6 +87,8 @@ describe("StartQaWorkflowService", () => {
   // テストデータ
   const testUserId = "550e8400-e29b-41d4-a716-446655440001";
   const testReviewTargetId = "550e8400-e29b-41d4-a716-446655440002";
+  const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440003";
+  const testProjectId = "550e8400-e29b-41d4-a716-446655440004";
   const testQaHistoryId = "550e8400-e29b-41d4-a716-446655440010";
   const testDocumentCacheId1 = "550e8400-e29b-41d4-a716-446655440020";
 
@@ -88,6 +107,17 @@ describe("StartQaWorkflowService", () => {
 
   const createMockReviewTarget = () => ({
     id: ReviewTargetId.reconstruct(testReviewTargetId),
+    reviewSpaceId: ReviewSpaceId.reconstruct(testReviewSpaceId),
+  });
+
+  const createMockReviewSpace = () => ({
+    id: ReviewSpaceId.reconstruct(testReviewSpaceId),
+    projectId: ProjectId.reconstruct(testProjectId),
+  });
+
+  const createMockProject = () => ({
+    id: ProjectId.reconstruct(testProjectId),
+    encryptedApiKey: null,
   });
 
   const createMockReviewResults = () => [
@@ -112,6 +142,16 @@ describe("StartQaWorkflowService", () => {
     // mockCreateRunAsyncの戻り値を再設定
     mockCreateRunAsync.mockResolvedValue({
       start: mockWorkflowStart,
+    });
+
+    // checkWorkflowResultをデフォルトで成功に設定
+    mockCheckWorkflowResult.mockReturnValue({ status: "success" });
+
+    // resolveAiApiConfigをデフォルト値で設定
+    mockResolveAiApiConfig.mockReturnValue({
+      apiKey: "test-api-key",
+      apiUrl: "https://api.example.com",
+      apiModel: "test-model",
     });
 
     mockQaHistoryRepository = {
@@ -155,6 +195,20 @@ describe("StartQaWorkflowService", () => {
       save: vi.fn(),
     };
 
+    mockReviewSpaceRepository = {
+      findById: vi.fn(),
+      findByProjectId: vi.fn(),
+      save: vi.fn(),
+      delete: vi.fn(),
+    } as unknown as IReviewSpaceRepository;
+
+    mockProjectRepository = {
+      findById: vi.fn(),
+      findByMemberId: vi.fn(),
+      save: vi.fn(),
+      delete: vi.fn(),
+    } as unknown as IProjectRepository;
+
     mockEventBroker = {
       subscribe: vi.fn(),
       subscribeChannel: vi.fn(),
@@ -175,6 +229,8 @@ describe("StartQaWorkflowService", () => {
       mockReviewDocumentCacheRepository,
       mockLargeDocumentResultCacheRepository,
       mockSystemSettingRepository,
+      mockReviewSpaceRepository,
+      mockProjectRepository,
       mockEventBroker,
       mockMastra,
     );
@@ -195,6 +251,8 @@ describe("StartQaWorkflowService", () => {
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(createMockReviewResults() as any);
       vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(createMockDocumentCaches() as any);
       vi.mocked(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults).mockResolvedValue([]);
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject() as any);
 
       mockWorkflowStart.mockResolvedValue({
         status: "success",
@@ -320,10 +378,11 @@ describe("StartQaWorkflowService", () => {
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(createMockReviewResults() as any);
       vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(createMockDocumentCaches() as any);
       vi.mocked(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults).mockResolvedValue([]);
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject() as any);
 
       // checkWorkflowResultがエラーを返すようモック
-      const { checkWorkflowResult } = await import("@/application/mastra/lib/workflowUtils");
-      vi.mocked(checkWorkflowResult).mockReturnValue({
+      mockCheckWorkflowResult.mockReturnValue({
         status: "failed",
         errorMessage: "ワークフローエラー",
       });
@@ -361,10 +420,15 @@ describe("StartQaWorkflowService", () => {
 
     it("大量レビュー結果がある場合、個別結果がワークフローに渡される", async () => {
       // Arrange
-      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(createMockQaHistory("pending") as any);
+      // findByIdは2回呼ばれる（startWorkflow内と executeQaWorkflow内）
+      vi.mocked(mockQaHistoryRepository.findById)
+        .mockResolvedValueOnce(createMockQaHistory("pending") as any)  // startWorkflow内
+        .mockResolvedValueOnce(createMockQaHistory("processing") as any);  // executeQaWorkflow内
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
       vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(createMockReviewResults() as any);
       vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(createMockDocumentCaches() as any);
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject() as any);
 
       // 大量レビュー結果をモック
       vi.mocked(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults).mockResolvedValue([
@@ -389,7 +453,9 @@ describe("StartQaWorkflowService", () => {
 
       // Act
       await service.startWorkflow(testQaHistoryId, testUserId);
-      await new Promise((resolve) => setTimeout(resolve, 100));
+
+      // 非同期処理の完了を待つ
+      await new Promise((resolve) => setTimeout(resolve, 500));
 
       // Assert - 個別結果がchecklistResultsに含まれることを確認
       expect(mockWorkflowStart).toHaveBeenCalledWith(

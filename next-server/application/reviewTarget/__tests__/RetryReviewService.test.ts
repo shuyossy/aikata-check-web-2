@@ -15,6 +15,22 @@ import { CheckListItem } from "@/domain/checkListItem";
 import { ReviewTarget, ReviewDocumentCache } from "@/domain/reviewTarget";
 import { ReviewResult } from "@/domain/reviewResult";
 import { AI_TASK_TYPE } from "@/domain/aiTask";
+import { domainValidationError } from "@/lib/server/error";
+
+// vi.hoisted()でモック関数を定義（テスト間の分離のため）
+const { mockResolveAiApiConfig } = vi.hoisted(() => {
+  const mockResolveAiApiConfig = vi.fn().mockReturnValue({
+    apiKey: "test-api-key",
+    apiUrl: "https://api.example.com",
+    apiModel: "test-model",
+  });
+  return { mockResolveAiApiConfig };
+});
+
+// resolveAiApiConfigのモック
+vi.mock("@/application/shared/lib/resolveAiApiConfig", () => ({
+  resolveAiApiConfig: mockResolveAiApiConfig,
+}));
 
 // AiTaskQueueServiceのモック
 vi.mock("@/application/aiTask/AiTaskQueueService", () => ({
@@ -215,8 +231,12 @@ describe("RetryReviewService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
 
-    // 環境変数を設定
-    process.env.AI_API_KEY = "test-api-key";
+    // resolveAiApiConfigのモックをデフォルト値にリセット
+    mockResolveAiApiConfig.mockReturnValue({
+      apiKey: "test-api-key",
+      apiUrl: "https://api.example.com",
+      apiModel: "test-model",
+    });
 
     // モックの設定
     mockEnqueueTask.mockResolvedValue({
@@ -603,8 +623,10 @@ describe("RetryReviewService", () => {
     });
 
     it("APIキーが設定されていない場合エラーになる", async () => {
-      // 環境変数をクリア
-      delete process.env.AI_API_KEY;
+      // resolveAiApiConfigがエラーをスローするように設定
+      mockResolveAiApiConfig.mockImplementation(() => {
+        throw domainValidationError("AI_TASK_NO_API_KEY");
+      });
 
       const testTarget = createTestReviewTarget();
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);

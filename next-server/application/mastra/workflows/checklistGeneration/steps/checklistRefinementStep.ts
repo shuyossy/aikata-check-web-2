@@ -61,15 +61,14 @@ export const checklistRefinementStep = createStep({
         };
       }
 
-      // workflowのRuntimeContextから設定を取得
+      // workflowのRuntimeContextから確定済みのAI API設定を取得
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>
         | undefined;
       const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
-      const projectApiKey = typedWorkflowRuntimeContext?.get("projectApiKey");
-      const systemApiKey = typedWorkflowRuntimeContext?.get("systemApiKey");
-      const systemApiUrl = typedWorkflowRuntimeContext?.get("systemApiUrl");
-      const systemApiModel = typedWorkflowRuntimeContext?.get("systemApiModel");
+      const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+      const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+      const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
 
       // これまでにブラッシュアップしたチェックリスト項目を蓄積する配列
       const accumulated: string[] = [];
@@ -85,11 +84,10 @@ export const checklistRefinementStep = createStep({
         const runtimeContext =
           createRuntimeContext<ChecklistRefinementAgentRuntimeContext>({
             checklistRequirements,
-            projectApiKey,
             employeeId,
-            systemApiKey,
-            systemApiUrl,
-            systemApiModel,
+            aiApiKey,
+            aiApiUrl,
+            aiApiModel,
           });
 
         // userプロンプトに全チェックリスト情報を含める

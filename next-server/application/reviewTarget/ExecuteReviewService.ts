@@ -20,6 +20,7 @@ import type {
   ReviewType,
 } from "@/application/mastra";
 import type { ReviewTaskPayload } from "@/application/aiTask";
+import { resolveAiApiConfig } from "@/application/shared/lib/resolveAiApiConfig";
 
 const logger = getLogger();
 
@@ -162,18 +163,9 @@ export class ExecuteReviewService {
     // レビュー対象をDBに保存（ステータス: queued）
     await this.reviewTargetRepository.save(queuedTarget);
 
-    // APIキーを取得（プロジェクト設定 > 管理者設定 > 環境変数）
-    const decryptedApiKey = project.encryptedApiKey?.decrypt();
+    // API設定を取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const systemSetting = await this.systemSettingRepository.find();
-    const systemApiKey = systemSetting?.toDto().apiKey;
-    const apiKey = decryptedApiKey ?? systemApiKey ?? process.env.AI_API_KEY;
-
-    if (!apiKey) {
-      throw internalError({
-        expose: true,
-        messageCode: "AI_TASK_NO_API_KEY",
-      });
-    }
+    const aiApiConfig = resolveAiApiConfig(project.encryptedApiKey, systemSetting);
 
     // ファイルバッファをFileInfoCommand配列に変換
     const fileCommands: FileInfoCommand[] = [];
@@ -226,7 +218,7 @@ export class ExecuteReviewService {
           }
         : undefined,
       reviewType,
-      decryptedApiKey: decryptedApiKey ?? undefined,
+      aiApiConfig,
     };
 
     // タスクタイプを決定
@@ -238,7 +230,7 @@ export class ExecuteReviewService {
     // キューにタスクを登録
     const enqueueResult = await this.aiTaskQueueService.enqueueTask({
       taskType,
-      apiKey,
+      apiKey: aiApiConfig.apiKey,
       payload: payload as unknown as Record<string, unknown>,
       files: fileCommands,
     });

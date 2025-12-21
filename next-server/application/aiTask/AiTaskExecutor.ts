@@ -7,8 +7,8 @@ import { ICheckListItemRepository } from "@/application/shared/port/repository/I
 import { IReviewDocumentCacheRepository } from "@/application/shared/port/repository/IReviewDocumentCacheRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
-import { ISystemSettingRepository } from "@/application/shared/port/repository/ISystemSettingRepository";
 import { IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
+import type { AiApiConfig } from "@/application/shared/lib/resolveAiApiConfig";
 import { ReviewTargetId, ReviewDocumentCache } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { CheckListItem } from "@/domain/checkListItem";
@@ -60,8 +60,8 @@ export interface ReviewTaskPayload {
   };
   /** レビュー種別 */
   reviewType: ReviewType;
-  /** 復号化済みAPIキー（オプション） */
-  decryptedApiKey?: string;
+  /** 確定済みAI API設定 */
+  aiApiConfig: AiApiConfig;
   /** リトライモードフラグ */
   isRetry?: boolean;
   /** リトライ範囲（isRetry=trueの場合のみ） */
@@ -82,8 +82,8 @@ export interface ChecklistGenerationTaskPayload {
   files: RawUploadFileMeta[];
   /** チェックリスト生成要件 */
   checklistRequirements: string;
-  /** 復号化済みAPIキー（オプション） */
-  decryptedApiKey?: string;
+  /** 確定済みAI API設定 */
+  aiApiConfig: AiApiConfig;
 }
 
 /**
@@ -108,7 +108,6 @@ export class AiTaskExecutor {
     private readonly reviewDocumentCacheRepository: IReviewDocumentCacheRepository,
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly largeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository,
-    private readonly systemSettingRepository: ISystemSettingRepository,
     private readonly workflowRunRegistry?: IWorkflowRunRegistry,
   ) {}
 
@@ -149,30 +148,6 @@ export class AiTaskExecutor {
         errorMessage:
           normalizedError.message || "タスク実行中に予期せぬエラーが発生しました",
       };
-    }
-  }
-
-  /**
-   * RuntimeContextにシステム設定（管理者設定）を追加する
-   */
-  private async setSystemSettingToRuntimeContext(
-    runtimeContext: RuntimeContext<ReviewExecutionWorkflowRuntimeContext> | RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>,
-  ): Promise<void> {
-    const systemSetting = await this.systemSettingRepository.find();
-    if (systemSetting) {
-      const dto = systemSetting.toDto();
-      // 型アサーションを使用してRuntimeContextに設定
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ctx = runtimeContext as RuntimeContext<any>;
-      if (dto.apiKey) {
-        ctx.set("systemApiKey", dto.apiKey);
-      }
-      if (dto.apiUrl) {
-        ctx.set("systemApiUrl", dto.apiUrl);
-      }
-      if (dto.apiModel) {
-        ctx.set("systemApiModel", dto.apiModel);
-      }
     }
   }
 
@@ -250,17 +225,14 @@ export class AiTaskExecutor {
     await this.reviewTargetRepository.save(reviewingTarget);
 
     try {
-      // RuntimeContextを作成
+      // RuntimeContextを作成（確定済みのAI API設定を設定）
       const runtimeContext =
         new RuntimeContext<ReviewExecutionWorkflowRuntimeContext>();
       runtimeContext.set("employeeId", payload.userId);
-      if (payload.decryptedApiKey) {
-        runtimeContext.set("projectApiKey", payload.decryptedApiKey);
-      }
+      runtimeContext.set("aiApiKey", payload.aiApiConfig.apiKey);
+      runtimeContext.set("aiApiUrl", payload.aiApiConfig.apiUrl);
+      runtimeContext.set("aiApiModel", payload.aiApiConfig.apiModel);
       runtimeContext.set("reviewTargetId", payload.reviewTargetId);
-
-      // システム設定（管理者設定）をRuntimeContextに追加
-      await this.setSystemSettingToRuntimeContext(runtimeContext);
 
       // DB保存コールバックを設定
       const onReviewResultSaved = createReviewResultSavedCallback(
@@ -521,17 +493,14 @@ export class AiTaskExecutor {
     const payload = task.payload as unknown as ChecklistGenerationTaskPayload;
     const reviewSpaceId = ReviewSpaceId.reconstruct(payload.reviewSpaceId);
 
-    // RuntimeContextを作成
+    // RuntimeContextを作成（確定済みのAI API設定を設定）
     const runtimeContext =
       new RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>();
     runtimeContext.set("employeeId", payload.userId);
-    if (payload.decryptedApiKey) {
-      runtimeContext.set("projectApiKey", payload.decryptedApiKey);
-    }
+    runtimeContext.set("aiApiKey", payload.aiApiConfig.apiKey);
+    runtimeContext.set("aiApiUrl", payload.aiApiConfig.apiUrl);
+    runtimeContext.set("aiApiModel", payload.aiApiConfig.apiModel);
     runtimeContext.set(FILE_BUFFERS_CONTEXT_KEY, fileBuffers);
-
-    // システム設定（管理者設定）をRuntimeContextに追加
-    await this.setSystemSettingToRuntimeContext(runtimeContext);
 
     // ワークフロー実行
     const workflow = mastra.getWorkflow("checklistGenerationWorkflow");
