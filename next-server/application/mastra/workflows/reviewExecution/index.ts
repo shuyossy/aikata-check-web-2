@@ -103,12 +103,8 @@ const chunkReviewWorkflow = createWorkflow({
   .map(async ({ inputData }) => {
     // branchの結果を統一フォーマットで返す
     const result =
-      (inputData as Record<string, z.infer<typeof chunkReviewOutputSchema>>)[
-        "small-chunk-review-workflow"
-      ] ||
-      (inputData as Record<string, z.infer<typeof chunkReviewOutputSchema>>)[
-        "large-chunk-review-workflow"
-      ];
+      inputData["small-chunk-review-workflow"] ||
+      inputData["large-chunk-review-workflow"];
     return {
       status: result.status,
       errorMessage: result.errorMessage,
@@ -217,8 +213,7 @@ export const reviewExecutionWorkflow = createWorkflow({
       .branch([
         // キャッシュモード: キャッシュ結果をそのまま返す
         [
-          async ({ inputData }) =>
-            (inputData as { useCacheMode?: boolean }).useCacheMode === true,
+          async ({ inputData }) => inputData.useCacheMode === true,
           createWorkflow({
             id: "use-cache-result",
             inputSchema: z.object({
@@ -242,8 +237,7 @@ export const reviewExecutionWorkflow = createWorkflow({
         ],
         // 通常モード: ファイル処理を実行
         [
-          async ({ inputData }) =>
-            (inputData as { useCacheMode?: boolean }).useCacheMode === false,
+          async ({ inputData }) => inputData.useCacheMode === false,
           createWorkflow({
             id: "normal-file-processing",
             inputSchema: z.object({
@@ -360,7 +354,7 @@ export const reviewExecutionWorkflow = createWorkflow({
     }
 
     // 元のトリガー入力を取得
-    const initialInput = getInitData();
+    const initialInput = getInitData() as z.infer<typeof triggerSchema>;
     const reviewType = initialInput.reviewType ?? "small";
     const reviewSettings = initialInput.reviewSettings;
 

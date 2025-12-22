@@ -67,6 +67,7 @@ export const smallDocumentReviewStep = createStep({
   execute: async ({
     inputData,
     runtimeContext: workflowRuntimeContext,
+    abortSignal,
   }): Promise<SmallDocumentReviewOutput> => {
     // catch節でアクセスするため、try節の外で変数を定義
     const {
@@ -89,6 +90,9 @@ export const smallDocumentReviewStep = createStep({
     const onReviewResultSaved = typedWorkflowRuntimeContext?.get(
       "onReviewResultSaved",
     );
+
+    // 結果を格納する配列
+    const reviewResults: z.infer<typeof singleReviewResultSchema>[] = [];
 
     try {
       // 評価基準のラベル一覧を取得
@@ -126,8 +130,6 @@ export const smallDocumentReviewStep = createStep({
         }),
       );
 
-      // 結果を格納する配列
-      const reviewResults: z.infer<typeof singleReviewResultSchema>[] = [];
       let targetChecklistItems = [...checkListItems];
       let attempt = 0;
 
@@ -178,6 +180,7 @@ Please review the document against the above checklist items.`;
           {
             output: dynamicOutputSchema,
             runtimeContext,
+            abortSignal,
           },
         );
 
@@ -269,13 +272,22 @@ Please review the document against the above checklist items.`;
       // エラーを正規化して統一的に処理
       const normalizedError = normalizeUnknownError(error);
 
-      // 入力チェック項目全てにエラー結果を作成
-      const errorResults: SingleReviewResult[] = checkListItems.map((item) => ({
-        checkListItemContent: item.content,
-        evaluation: null,
-        comment: null,
-        errorMessage: normalizedError.message,
-      }));
+      // レビュー未済のチェック項目に対してエラー結果を作成
+      const errorResults: SingleReviewResult[] = [];
+      const reviewedContents = new Set(
+        reviewResults.map((r) => r.checkListItemContent),
+      );
+      for (const item of checkListItems) {
+        if (!reviewedContents.has(item.content)) {
+          const errorResult: SingleReviewResult = {
+            checkListItemContent: item.content,
+            evaluation: null,
+            comment: null,
+            errorMessage: normalizedError.message,
+          };
+          errorResults.push(errorResult);
+        }
+      }
 
       // DB保存コールバックが設定されていれば保存
       if (reviewTargetId && onReviewResultSaved) {

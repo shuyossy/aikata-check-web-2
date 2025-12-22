@@ -149,6 +149,9 @@ export const consolidateReviewStep = createStep({
       "onIndividualResultsSaved",
     );
 
+    // 結果を格納する配列
+    const reviewResults: SingleReviewResult[] = [];
+
     try {
       // 評価基準のラベル一覧を取得
       const evaluationLabels =
@@ -173,8 +176,6 @@ export const consolidateReviewStep = createStep({
         }),
       );
 
-      // 結果を格納する配列
-      const reviewResults: SingleReviewResult[] = [];
       let targetChecklistItems = [...checkListItems];
       let attempt = 0;
 
@@ -384,13 +385,23 @@ Please provide a consolidated review that synthesizes all individual document re
       // エラーを正規化して統一的に処理
       const normalizedError = normalizeUnknownError(error);
 
-      // 入力チェック項目全てにエラー結果を作成
-      const errorResults: SingleReviewResult[] = checkListItems.map((item) => ({
-        checkListItemContent: item.content,
-        evaluation: null,
-        comment: null,
-        errorMessage: normalizedError.message,
-      }));
+      // 統合されなかったチェック項目に対してのみエラー結果を作成
+      const errorResults: SingleReviewResult[] = [];
+      for (const item of checkListItems) {
+        const alreadyReviewed = reviewResults.find(
+          (r) => r.checkListItemContent === item.content,
+        );
+        if (alreadyReviewed) {
+          continue;
+        }
+        const errorResult: SingleReviewResult = {
+          checkListItemContent: item.content,
+          evaluation: null,
+          comment: null,
+          errorMessage: normalizedError.message,
+        };
+        errorResults.push(errorResult);
+      }
 
       // DB保存コールバックが設定されていれば保存
       if (reviewTargetId && onReviewResultSaved) {

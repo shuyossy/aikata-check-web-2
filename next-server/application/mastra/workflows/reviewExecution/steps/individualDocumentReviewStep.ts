@@ -100,6 +100,7 @@ export const individualDocumentReviewStep = createStep({
   execute: async ({
     inputData,
     runtimeContext: workflowRuntimeContext,
+    abortSignal,
   }): Promise<IndividualDocumentReviewOutput> => {
     const { file, checkListItems, additionalInstructions, commentFormat } =
       inputData;
@@ -117,19 +118,13 @@ export const individualDocumentReviewStep = createStep({
       // 動的に出力スキーマを作成（チェックリストIDは1始まり連番）
       const dynamicOutputSchema = z.array(
         z.object({
-          checklistId: z.number().describe("Checklist item ID"),
+          // CoTのようにAIにどのファイルのどのセクションをレビューするべきかを考えさせるための隠しフィールド
           reviewSections: z
-            .array(
-              z.object({
-                fileName: z.string().describe("file name to review"),
-                sectionNames: z.array(
-                  z.string().describe("section name within the file"),
-                ),
-              }),
-            )
+            .array(z.string().describe('section name within the file'))
             .describe(
-              "files and sections that should be reviewed for commenting",
+              'sections that should be reviewed for evaluation and commenting',
             ),
+          checklistId: z.number().describe("checklist item ID"),
           comment: z.string().describe("review comment"),
         }),
       );
@@ -198,6 +193,7 @@ Please provide a thorough review based on the document content provided above.`;
           {
             output: dynamicOutputSchema,
             runtimeContext,
+            abortSignal,
           },
         );
 
@@ -205,11 +201,7 @@ Please provide a thorough review based on the document content provided above.`;
         if (result.finishReason === "length") {
           return {
             status: "failed",
-            errorMessage: formatMessage("REVIEW_LARGE_DOC_CONTENT_TOO_LONG", {
-              detail: targetChecklistItems
-                .map((c) => `・${c.content}`)
-                .join("\n"),
-            }),
+            errorMessage: formatMessage("REVIEW_LARGE_DOC_CONTENT_TOO_LONG"),
             finishReason: "content_length",
           };
         }
@@ -259,11 +251,7 @@ Please provide a thorough review based on the document content provided above.`;
       if (targetChecklistItems.length > 0) {
         return {
           status: "failed",
-          errorMessage: formatMessage("REVIEW_AI_OUTPUT_MISSING_RESULT", {
-            detail: targetChecklistItems
-              .map((c) => `・${c.content}`)
-              .join("\n"),
-          }),
+          errorMessage: formatMessage("REVIEW_AI_OUTPUT_MISSING_RESULT"),
           reviewResults,
           finishReason: "error",
         };

@@ -1,18 +1,13 @@
 import { createStep } from "@mastra/core/workflows";
 import { z } from "zod";
 import type { RuntimeContext } from "@mastra/core/di";
-import { NoObjectGeneratedError } from "ai";
 import { baseStepOutputSchema } from "../../schema";
 import {
   checklistCategoryAgent,
   checklistCategoryOutputSchema,
 } from "../../../agents";
 import { createRuntimeContext } from "../../../lib/agentUtils";
-import {
-  normalizeUnknownError,
-  extractAIAPISafeError,
-  workflowError,
-} from "@/lib/server/error";
+import { normalizeUnknownError, workflowError } from "@/lib/server/error";
 import type { ChecklistCategoryAgentRuntimeContext } from "../../../agents";
 import {
   checkListItemSchema,
@@ -96,6 +91,7 @@ export const classifyChecklistStep = createStep({
   execute: async ({
     inputData,
     runtimeContext: workflowRuntimeContext,
+    abortSignal,
   }): Promise<ClassifyChecklistOutput> => {
     try {
       const { checkListItems, concurrentReviewItems } = inputData;
@@ -135,6 +131,7 @@ export const classifyChecklistStep = createStep({
           workflowRuntimeContext as
             | RuntimeContext<ReviewExecutionWorkflowRuntimeContext>
             | undefined,
+          abortSignal,
         );
         return {
           status: "success",
@@ -164,6 +161,7 @@ async function classifyWithAI(
   checkListItems: { id: string; content: string }[],
   maxChecklistsPerCategory: number,
   workflowRuntimeContext?: RuntimeContext<ReviewExecutionWorkflowRuntimeContext>,
+  abortSignal?: AbortSignal,
 ): Promise<{ id: string; content: string }[][]> {
   // workflowのRuntimeContextから確定済みのAI API設定を取得
   const employeeId = workflowRuntimeContext?.get("employeeId");
@@ -194,6 +192,7 @@ async function classifyWithAI(
       {
         output: checklistCategoryOutputSchema,
         runtimeContext,
+        abortSignal,
       },
     );
 
@@ -267,14 +266,6 @@ async function classifyWithAI(
 
     return chunks;
   } catch (error) {
-    // AIエラーの場合は再スロー（呼び出し元でフォールバック処理）
-    if (
-      extractAIAPISafeError(error) ||
-      NoObjectGeneratedError.isInstance(error)
-    ) {
-      throw error;
-    }
-    // その他のエラーも再スロー
     throw error;
   }
 }

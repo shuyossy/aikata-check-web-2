@@ -86,8 +86,8 @@ export const template = {
   REVIEW_EXECUTION_NO_CHECKLIST: `チェックリストがありません。レビュー実行前にチェックリストを追加してください。`,
   REVIEW_EXECUTION_FAILED: `レビュー実行に失敗しました。{detail}`,
   // 大量レビュー関連エラー
-  REVIEW_LARGE_DOC_CONTENT_TOO_LONG: `ドキュメントの内容が長すぎてAIが処理できませんでした: {detail}`,
-  REVIEW_AI_OUTPUT_MISSING_RESULT: `AIの出力にレビュー結果が含まれませんでした（最大試行回数到達）: {detail}`,
+  REVIEW_LARGE_DOC_CONTENT_TOO_LONG: `ドキュメントの内容が長すぎてAIが処理できませんでした`,
+  REVIEW_AI_OUTPUT_MISSING_RESULT: `AIの出力にレビュー結果が含まれませんでした（最大試行回数到達）`,
   REVIEW_AI_OUTPUT_MISSING_CHECKLIST_RESULT: `AIの出力に当該チェックリストのレビュー結果が含まれませんでした（最大試行回数到達）`,
   REVIEW_SPLIT_RETRY_EXCEEDED: `ドキュメント分割を複数回実行しましたが、コンテキスト長エラーが解消されませんでした`,
   REVIEW_INDIVIDUAL_DOC_REVIEW_FAILED: `個別ドキュメントレビューに失敗しました`,
