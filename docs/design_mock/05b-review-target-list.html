@@ -1,387 +1,720 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AIKATA - レビュー対象管理</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AIKATA - レビュー対象管理</title>
 
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Custom Tailwind Config -->
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            primary: {
-              50: '#EFF6FF',
-              100: '#DBEAFE',
-              200: '#BFDBFE',
-              500: '#3B82F6',
-              600: '#2563EB',
-              700: '#1D4ED8',
-              900: '#1E3A8A',
-            }
-          }
-        }
-      }
-    }
-  </script>
-</head>
-<body class="bg-gray-50 min-h-screen flex flex-col md:flex-row">
-  <!-- Sidebar -->
-  <aside class="w-full md:w-64 bg-white border-r border-gray-200 flex flex-col h-screen overflow-y-auto">
-    <div class="p-4">
-      <!-- Logo -->
-      <h1 class="text-xl font-bold text-primary-600 mb-6">AIKATA</h1>
+    <!-- Custom Tailwind Config -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: {
+                50: '#EFF6FF',
+                100: '#DBEAFE',
+                200: '#BFDBFE',
+                500: '#3B82F6',
+                600: '#2563EB',
+                700: '#1D4ED8',
+                900: '#1E3A8A',
+              },
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body class="bg-gray-50 min-h-screen flex flex-col md:flex-row">
+    <!-- Sidebar -->
+    <aside
+      class="w-full md:w-64 bg-white border-r border-gray-200 flex flex-col h-screen overflow-y-auto"
+    >
+      <div class="p-4">
+        <!-- Logo -->
+        <h1 class="text-xl font-bold text-primary-600 mb-6">AIKATA</h1>
 
-      <!-- Project Switcher -->
-      <button class="w-full px-3 py-2 mb-6 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-150 text-sm font-medium flex items-center justify-between">
-        <span class="truncate">○○システム開発</span>
-        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"/>
-        </svg>
-      </button>
+        <!-- Project Switcher -->
+        <button
+          class="w-full px-3 py-2 mb-6 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition duration-150 text-sm font-medium flex items-center justify-between"
+        >
+          <span class="truncate">○○システム開発</span>
+          <svg
+            class="w-4 h-4 flex-shrink-0"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M8 7h12M8 12h12M8 17h12M4 7h.01M4 12h.01M4 17h.01"
+            />
+          </svg>
+        </button>
 
-      <!-- Review Spaces Section -->
-      <div class="mb-6">
-        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3">
-          レビュースペース
-        </h3>
-        <nav class="space-y-1">
-          <!-- Review Space: 設計書レビュー (Expanded) -->
-          <div class="space-y-1">
-            <button class="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg">
-              <svg class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-              </svg>
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-              </svg>
-              <span class="truncate">設計書レビュー</span>
-            </button>
-
-            <!-- Checklist and Review Targets (Indented) -->
-            <div class="ml-6 space-y-1 border-l-2 border-gray-200 pl-2">
-              <a href="10-checklist-view-edit.html" class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition duration-150">
-                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        <!-- Review Spaces Section -->
+        <div class="mb-6">
+          <h3
+            class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 px-3"
+          >
+            レビュースペース
+          </h3>
+          <nav class="space-y-1">
+            <!-- Review Space: 設計書レビュー (Expanded) -->
+            <div class="space-y-1">
+              <button
+                class="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-primary-600 bg-primary-50 rounded-lg"
+              >
+                <svg
+                  class="w-4 h-4 transition-transform"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
-                <span class="truncate">チェックリスト</span>
-              </a>
-              <a href="13-review-results.html" class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition duration-150">
-                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                  <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                  />
                 </svg>
-                <span class="truncate">基本設計書v1.0</span>
-              </a>
-              <a href="12-review-execute.html" class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition duration-150">
-                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                  <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                </svg>
-                <span class="truncate">基本設計書v1.1</span>
-              </a>
-              <a href="05b-review-target-list.html" class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition duration-150">
-                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
-                  <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd"/>
-                </svg>
-                <span class="truncate">詳細設計書v1.0</span>
-              </a>
-            </div>
-          </div>
+                <span class="truncate">設計書レビュー</span>
+              </button>
 
-          <!-- Other Review Spaces (Collapsed) -->
-          <button class="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition duration-150">
-            <svg class="w-4 h-4 transition-transform rotate-[-90deg]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-            </svg>
-            <span class="truncate">コードレビュー</span>
-          </button>
-
-          <button class="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition duration-150">
-            <svg class="w-4 h-4 transition-transform rotate-[-90deg]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-            </svg>
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
-            </svg>
-            <span class="truncate">テスト仕様レビュー</span>
-          </button>
-        </nav>
-      </div>
-    </div>
-  </aside>
-
-  <!-- Main Content -->
-  <div class="flex-1 flex flex-col">
-    <!-- Header -->
-    <header class="bg-white border-b border-gray-200">
-      <div class="px-6 py-4">
-        <div class="flex items-center justify-between">
-          <h2 class="text-xl font-bold text-gray-900">設計書レビュー</h2>
-          <div class="flex items-center gap-2">
-            <div class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm">山</div>
-            <span class="text-sm font-medium text-gray-700 hidden sm:block">山田太郎</span>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Page Content -->
-    <main class="flex-1 p-6">
-      <!-- Breadcrumb -->
-      <nav class="flex flex-wrap text-sm text-gray-500 mb-6">
-        <a href="02-project-list.html" class="hover:text-gray-700 transition duration-150">プロジェクト</a>
-        <span class="mx-2">/</span>
-        <a href="05-review-space-list.html" class="hover:text-gray-700 transition duration-150">○○システム開発</a>
-        <span class="mx-2">/</span>
-        <span class="text-gray-900 font-medium">設計書レビュー</span>
-      </nav>
-
-      <!-- Space Information & Settings -->
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
-        <div class="p-6">
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="text-lg font-semibold text-gray-900">スペース情報</h3>
-            <button class="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-              </svg>
-              編集
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Space Name -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">スペース名</label>
-              <p class="text-sm text-gray-900">設計書レビュー</p>
-            </div>
-
-            <!-- Checklist Count -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">チェックリスト</label>
-              <div class="flex items-center gap-2">
-                <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                </svg>
-                <p class="text-sm text-gray-900">15項目</p>
+              <!-- Checklist and Review Targets (Indented) -->
+              <div class="ml-6 space-y-1 border-l-2 border-gray-200 pl-2">
+                <a
+                  href="10-checklist-view-edit.html"
+                  class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition duration-150"
+                >
+                  <svg
+                    class="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
+                  </svg>
+                  <span class="truncate">チェックリスト</span>
+                </a>
+                <a
+                  href="13-review-results.html"
+                  class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition duration-150"
+                >
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path
+                      fill-rule="evenodd"
+                      d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                  <span class="truncate">基本設計書v1.0</span>
+                </a>
+                <a
+                  href="12-review-execute.html"
+                  class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition duration-150"
+                >
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path
+                      fill-rule="evenodd"
+                      d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                  <span class="truncate">基本設計書v1.1</span>
+                </a>
+                <a
+                  href="05b-review-target-list.html"
+                  class="flex items-center gap-2 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition duration-150"
+                >
+                  <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                    <path
+                      fill-rule="evenodd"
+                      d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
+                      clip-rule="evenodd"
+                    />
+                  </svg>
+                  <span class="truncate">詳細設計書v1.0</span>
+                </a>
               </div>
             </div>
 
-            <!-- Description -->
-            <div class="lg:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">説明</label>
-              <p class="text-sm text-gray-600">システム設計書のレビューを実施します</p>
+            <!-- Other Review Spaces (Collapsed) -->
+            <button
+              class="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition duration-150"
+            >
+              <svg
+                class="w-4 h-4 transition-transform rotate-[-90deg]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                />
+              </svg>
+              <span class="truncate">コードレビュー</span>
+            </button>
+
+            <button
+              class="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg transition duration-150"
+            >
+              <svg
+                class="w-4 h-4 transition-transform rotate-[-90deg]"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
+                />
+              </svg>
+              <span class="truncate">テスト仕様レビュー</span>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="flex-1 flex flex-col">
+      <!-- Header -->
+      <header class="bg-white border-b border-gray-200">
+        <div class="px-6 py-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold text-gray-900">設計書レビュー</h2>
+            <div class="flex items-center gap-2">
+              <div
+                class="w-8 h-8 rounded-full bg-primary-500 flex items-center justify-center text-white font-medium text-sm"
+              >
+                山
+              </div>
+              <span class="text-sm font-medium text-gray-700 hidden sm:block"
+                >山田太郎</span
+              >
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Page Content -->
+      <main class="flex-1 p-6">
+        <!-- Breadcrumb -->
+        <nav class="flex flex-wrap text-sm text-gray-500 mb-6">
+          <a
+            href="02-project-list.html"
+            class="hover:text-gray-700 transition duration-150"
+            >プロジェクト</a
+          >
+          <span class="mx-2">/</span>
+          <a
+            href="05-review-space-list.html"
+            class="hover:text-gray-700 transition duration-150"
+            >○○システム開発</a
+          >
+          <span class="mx-2">/</span>
+          <span class="text-gray-900 font-medium">設計書レビュー</span>
+        </nav>
+
+        <!-- Space Information & Settings -->
+        <div class="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">スペース情報</h3>
+              <button
+                class="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1"
+              >
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+                編集
+              </button>
             </div>
 
-            <!-- Default Review Settings (Collapsible) -->
-            <div class="lg:col-span-2 pt-4 border-t border-gray-200">
-              <details class="group">
-                <summary class="flex items-center justify-between cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 transition duration-150">
-                  <span>既定のレビュー設定</span>
-                  <svg class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Space Name -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >スペース名</label
+                >
+                <p class="text-sm text-gray-900">設計書レビュー</p>
+              </div>
+
+              <!-- Checklist Count -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >チェックリスト</label
+                >
+                <div class="flex items-center gap-2">
+                  <svg
+                    class="w-5 h-5 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                    />
                   </svg>
-                </summary>
-                <div class="mt-4 space-y-4 pl-4 border-l-2 border-gray-200">
-                  <!-- Additional Instructions -->
-                  <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">追加指示</label>
-                    <p class="text-sm text-gray-700">特にセキュリティとパフォーマンスの観点を重視してレビューしてください。</p>
-                  </div>
+                  <p class="text-sm text-gray-900">15項目</p>
+                </div>
+              </div>
 
-                  <!-- Concurrent Review Items -->
-                  <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">同時レビュー項目数</label>
-                    <p class="text-sm text-gray-700">5項目</p>
-                  </div>
+              <!-- Description -->
+              <div class="lg:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2"
+                  >説明</label
+                >
+                <p class="text-sm text-gray-600">
+                  システム設計書のレビューを実施します
+                </p>
+              </div>
 
-                  <!-- Comment Format -->
-                  <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">コメントフォーマット</label>
-                    <pre class="text-sm text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 whitespace-pre-wrap">- 問題点:
+              <!-- Default Review Settings (Collapsible) -->
+              <div class="lg:col-span-2 pt-4 border-t border-gray-200">
+                <details class="group">
+                  <summary
+                    class="flex items-center justify-between cursor-pointer text-sm font-medium text-gray-700 hover:text-gray-900 transition duration-150"
+                  >
+                    <span>既定のレビュー設定</span>
+                    <svg
+                      class="w-5 h-5 text-gray-400 transition-transform group-open:rotate-180"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </summary>
+                  <div class="mt-4 space-y-4 pl-4 border-l-2 border-gray-200">
+                    <!-- Additional Instructions -->
+                    <div>
+                      <label
+                        class="block text-xs font-medium text-gray-600 mb-1"
+                        >追加指示</label
+                      >
+                      <p class="text-sm text-gray-700">
+                        特にセキュリティとパフォーマンスの観点を重視してレビューしてください。
+                      </p>
+                    </div>
+
+                    <!-- Concurrent Review Items -->
+                    <div>
+                      <label
+                        class="block text-xs font-medium text-gray-600 mb-1"
+                        >同時レビュー項目数</label
+                      >
+                      <p class="text-sm text-gray-700">5項目</p>
+                    </div>
+
+                    <!-- Comment Format -->
+                    <div>
+                      <label
+                        class="block text-xs font-medium text-gray-600 mb-1"
+                        >コメントフォーマット</label
+                      >
+                      <pre
+                        class="text-sm text-gray-700 bg-gray-50 p-3 rounded border border-gray-200 whitespace-pre-wrap"
+                      >
+- 問題点:
 - 改善提案:
-- 参考情報:</pre>
-                  </div>
+- 参考情報:</pre
+                      >
+                    </div>
 
-                  <!-- Evaluation Criteria -->
-                  <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-2">評定基準</label>
-                    <div class="space-y-2">
-                      <div class="flex items-start gap-2 text-sm">
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-green-100 text-green-800 font-bold flex-shrink-0">A</span>
-                        <p class="text-gray-700">チェック項目の要件を完全に満たしており、問題がない状態</p>
-                      </div>
-                      <div class="flex items-start gap-2 text-sm">
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-yellow-100 text-yellow-800 font-bold flex-shrink-0">B</span>
-                        <p class="text-gray-700">軽微な問題があり、改善が望ましい状態</p>
-                      </div>
-                      <div class="flex items-start gap-2 text-sm">
-                        <span class="inline-flex items-center justify-center w-6 h-6 rounded bg-red-100 text-red-800 font-bold flex-shrink-0">C</span>
-                        <p class="text-gray-700">重大な問題があり、修正が必要な状態</p>
+                    <!-- Evaluation Criteria -->
+                    <div>
+                      <label
+                        class="block text-xs font-medium text-gray-600 mb-2"
+                        >評定基準</label
+                      >
+                      <div class="space-y-2">
+                        <div class="flex items-start gap-2 text-sm">
+                          <span
+                            class="inline-flex items-center justify-center w-6 h-6 rounded bg-green-100 text-green-800 font-bold flex-shrink-0"
+                            >A</span
+                          >
+                          <p class="text-gray-700">
+                            チェック項目の要件を完全に満たしており、問題がない状態
+                          </p>
+                        </div>
+                        <div class="flex items-start gap-2 text-sm">
+                          <span
+                            class="inline-flex items-center justify-center w-6 h-6 rounded bg-yellow-100 text-yellow-800 font-bold flex-shrink-0"
+                            >B</span
+                          >
+                          <p class="text-gray-700">
+                            軽微な問題があり、改善が望ましい状態
+                          </p>
+                        </div>
+                        <div class="flex items-start gap-2 text-sm">
+                          <span
+                            class="inline-flex items-center justify-center w-6 h-6 rounded bg-red-100 text-red-800 font-bold flex-shrink-0"
+                            >C</span
+                          >
+                          <p class="text-gray-700">
+                            重大な問題があり、修正が必要な状態
+                          </p>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </details>
+                </details>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Page Header with Actions -->
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <div>
-          <h3 class="text-2xl font-bold text-gray-900">レビュー対象一覧</h3>
-          <p class="text-sm text-gray-600 mt-1">このレビュースペースで管理するレビュー対象を確認・追加できます</p>
-        </div>
-        <div class="flex flex-col sm:flex-row gap-3">
-          <a href="10-checklist-view-edit.html" class="px-4 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium flex items-center justify-center gap-2">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-            </svg>
-            チェックリストを表示/編集
-          </a>
-          <button class="px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2" onclick="location.href='12-review-execute.html'">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-            </svg>
-            新規レビューを実行
-          </button>
-        </div>
-      </div>
-
-      <!-- Info Alert -->
-      <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded">
-        <div class="flex items-start">
-          <svg class="h-5 w-5 text-blue-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
-          </svg>
-          <div class="ml-3">
-            <p class="text-sm text-blue-800 font-medium">レビュー対象について</p>
-            <p class="mt-1 text-sm text-blue-700">各レビュー対象は、同一のチェックリストを使用してレビューされます。レビュー対象ごとに個別にレビューを実行し、結果を確認できます。</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Review Targets Table -->
-      <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-        <div class="overflow-x-auto">
-          <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-              <tr>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  No.
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  レビュー対象名
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">
-                  ステータス
-                </th>
-                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40">
-                  最終更新
-                </th>
-                <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-56">
-                  アクション
-                </th>
-              </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-              <!-- Row 1: Completed Review -->
-              <tr class="hover:bg-gray-50 transition duration-150">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  1
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-900">
-                  <div class="font-medium">基本設計書v1.0</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                    </svg>
-                    レビュー済み
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2024/12/07 14:30
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div class="flex items-center justify-end gap-3">
-                    <a href="13-review-results.html" class="text-primary-600 hover:text-primary-900 transition duration-150">
-                      結果を見る
-                    </a>
-                    <button class="text-red-600 hover:text-red-900 transition duration-150" title="削除">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-
-              <!-- Row 2: In Progress -->
-              <tr class="hover:bg-gray-50 transition duration-150">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  2
-                </td>
-                <td class="px-6 py-4 text-sm text-gray-900">
-                  <div class="font-medium">基本設計書v1.1</div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    <svg class="w-3 h-3 mr-1 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
-                    レビュー中
-                  </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  2024/12/08 10:15
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div class="flex items-center justify-end gap-3">
-                    <a href="13-review-results.html" class="text-primary-600 hover:text-primary-900 transition duration-150">
-                      結果を見る
-                    </a>
-                    <button class="text-red-600 hover:text-red-900 transition duration-150" title="削除">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                      </svg>
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Help Section -->
-      <div class="mt-6 bg-gray-100 rounded-lg p-4">
-        <div class="flex items-start gap-3">
-          <svg class="w-5 h-5 text-gray-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clip-rule="evenodd"/>
-          </svg>
+        <!-- Page Header with Actions -->
+        <div
+          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
+        >
           <div>
-            <p class="text-sm font-medium text-gray-900">レビュー対象管理のヒント</p>
-            <ul class="mt-2 text-sm text-gray-600 space-y-1 list-disc list-inside">
-              <li>すべてのレビュー対象は同一のチェックリストを使用します</li>
-              <li>レビュー中の対象は途中経過を確認できます</li>
-            </ul>
+            <h3 class="text-2xl font-bold text-gray-900">レビュー対象一覧</h3>
+            <p class="text-sm text-gray-600 mt-1">
+              このレビュースペースで管理するレビュー対象を確認・追加できます
+            </p>
+          </div>
+          <div class="flex flex-col sm:flex-row gap-3">
+            <a
+              href="10-checklist-view-edit.html"
+              class="px-4 py-2.5 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition duration-150 font-medium flex items-center justify-center gap-2"
+            >
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+              チェックリストを表示/編集
+            </a>
+            <button
+              class="px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition duration-150 font-medium flex items-center justify-center gap-2"
+              onclick="location.href='12-review-execute.html'"
+            >
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              新規レビュー
+            </button>
           </div>
         </div>
-      </div>
-    </main>
-  </div>
-</body>
+
+        <!-- Info Alert -->
+        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-6 rounded">
+          <div class="flex items-start">
+            <svg
+              class="h-5 w-5 text-blue-500 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <div class="ml-3">
+              <p class="text-sm text-blue-800 font-medium">
+                レビュー対象について
+              </p>
+              <p class="mt-1 text-sm text-blue-700">
+                各レビュー対象は、同一のチェックリストを使用してレビューされます。レビュー対象ごとに個別にレビューを実行し、結果を確認できます。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Review Targets Table -->
+        <div
+          class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden"
+        >
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16"
+                  >
+                    No.
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    レビュー対象名
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32"
+                  >
+                    ステータス
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-40"
+                  >
+                    最終更新
+                  </th>
+                  <th
+                    scope="col"
+                    class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-56"
+                  >
+                    アクション
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-200">
+                <!-- Row 1: Completed Review -->
+                <tr class="hover:bg-gray-50 transition duration-150">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    1
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900">
+                    <div class="font-medium">基本設計書v1.0</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                    >
+                      <svg
+                        class="w-3 h-3 mr-1"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clip-rule="evenodd"
+                        />
+                      </svg>
+                      レビュー済み
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    2024/12/07 14:30
+                  </td>
+                  <td
+                    class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                  >
+                    <div class="flex items-center justify-end gap-3">
+                      <a
+                        href="13-review-results.html"
+                        class="text-primary-600 hover:text-primary-900 transition duration-150"
+                      >
+                        結果を見る
+                      </a>
+                      <button
+                        class="text-red-600 hover:text-red-900 transition duration-150"
+                        title="削除"
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <!-- Row 2: In Progress -->
+                <tr class="hover:bg-gray-50 transition duration-150">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    2
+                  </td>
+                  <td class="px-6 py-4 text-sm text-gray-900">
+                    <div class="font-medium">基本設計書v1.1</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span
+                      class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                    >
+                      <svg
+                        class="w-3 h-3 mr-1 animate-spin"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                        />
+                      </svg>
+                      レビュー中
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    2024/12/08 10:15
+                  </td>
+                  <td
+                    class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium"
+                  >
+                    <div class="flex items-center justify-end gap-3">
+                      <a
+                        href="13-review-results.html"
+                        class="text-primary-600 hover:text-primary-900 transition duration-150"
+                      >
+                        結果を見る
+                      </a>
+                      <button
+                        class="text-red-600 hover:text-red-900 transition duration-150"
+                        title="削除"
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="mt-6 bg-gray-100 rounded-lg p-4">
+          <div class="flex items-start gap-3">
+            <svg
+              class="w-5 h-5 text-gray-600 mt-0.5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            <div>
+              <p class="text-sm font-medium text-gray-900">
+                レビュー対象管理のヒント
+              </p>
+              <ul
+                class="mt-2 text-sm text-gray-600 space-y-1 list-disc list-inside"
+              >
+                <li>すべてのレビュー対象は同一のチェックリストを使用します</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
 </html>

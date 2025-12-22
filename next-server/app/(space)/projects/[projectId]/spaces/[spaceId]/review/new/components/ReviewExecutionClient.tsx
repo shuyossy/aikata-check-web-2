@@ -533,7 +533,7 @@ export function ReviewExecutionClient({
                 maxFileSize={maxFileSize}
               />
               <p className="mt-2 text-sm text-gray-500">
-                PDFファイルは処理モードを選択できます。図表が多い場合は「画像変換」を推奨します。
+                PDFファイルは処理モードを選択できます。図表が多い場合は「画像変換」を推奨します（ただし、文字の認識精度は低下します）。
               </p>
             </FormSection>
 

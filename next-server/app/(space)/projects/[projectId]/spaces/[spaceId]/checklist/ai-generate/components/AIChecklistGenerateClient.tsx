@@ -334,7 +334,7 @@ export function AIChecklistGenerateClient({
                   maxFileSize={maxFileSize}
                 />
                 <p className="mt-2 text-sm text-gray-500">
-                  PDFファイルは処理モードを選択できます。図表が多い場合は「画像変換」を推奨します。
+                  PDFファイルは処理モードを選択できます。図表が多い場合は「画像変換」を推奨します（ただし、文字の認識精度は低下します）。
                 </p>
               </div>
             </div>
@@ -357,13 +357,10 @@ export function AIChecklistGenerateClient({
                 <Textarea
                   value={checklistRequirements}
                   onChange={(e) => setChecklistRequirements(e.target.value)}
-                  placeholder={`どのような観点でチェック項目を生成してほしいか記述してください
+                  placeholder={`どのような観点でチェックリストを生成してほしいか記述してください
 
 例:
-- 設計書として必要な記載事項が網羅されているか
-- セキュリティ要件が適切に考慮されているか
-- パフォーマンス要件が満たされているか
-- 保守性・拡張性が考慮されているか`}
+要件定義書をレビューするためのチェックリストを生成してください`}
                   rows={6}
                   disabled={isProcessing}
                   className="w-full"

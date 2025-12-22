@@ -361,7 +361,7 @@ export function ReviewTargetListClient({
                 href={`/projects/${projectId}/spaces/${spaceId}/review/new`}
               >
                 <PlayCircle className="w-5 h-5" />
-                新規レビューを実行
+                新規レビュー
               </Link>
             </Button>
           </div>
@@ -430,7 +430,7 @@ export function ReviewTargetListClient({
                       <div className="flex flex-col items-center gap-2">
                         <p>レビュー対象がありません</p>
                         <p className="text-sm">
-                          「新規レビューを実行」ボタンからレビューを開始してください
+                          「新規レビュー」ボタンからレビューを開始してください
                         </p>
                       </div>
                     </td>
@@ -529,7 +529,6 @@ export function ReviewTargetListClient({
               </p>
               <ul className="mt-2 text-sm text-gray-600 space-y-1 list-disc list-inside">
                 <li>すべてのレビュー対象は同一のチェックリストを使用します</li>
-                <li>レビュー中の対象は途中経過を確認できます</li>
               </ul>
             </div>
           </div>
