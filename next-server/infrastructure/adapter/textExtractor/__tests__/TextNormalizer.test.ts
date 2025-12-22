@@ -137,6 +137,7 @@ describe("TextNormalizer", () => {
         const input = "行1\n,,,\n行2";
         const result = normalizer.normalize(input, {
           removeCommaOnlyLines: false,
+          removeTrailingCommas: false,
         });
         expect(result).toBe("行1\n,,,\n行2");
       });
@@ -150,28 +151,27 @@ describe("TextNormalizer", () => {
       });
 
       it("複数の行末カンマを削除する", () => {
-        // 注: 「テスト,,,」は内部カンマを含むと判定されるため、行末カンマは温存される
         const input = "テスト,,,";
         const result = normalizer.normalize(input);
-        expect(result).toBe("テスト,,,");
+        expect(result).toBe("テスト");
       });
 
-      it("CSV形式（内部カンマあり）の行末カンマは保持する", () => {
+      it("CSV形式（内部カンマあり）でも行末カンマを削除する", () => {
         const input = "値1,値2,";
         const result = normalizer.normalize(input);
-        expect(result).toBe("値1,値2,");
+        expect(result).toBe("値1,値2");
       });
 
-      it("クォートを含む行の行末カンマは保持する", () => {
+      it("クォートを含む行でも行末カンマを削除する", () => {
         const input = '"テスト",';
         const result = normalizer.normalize(input);
-        expect(result).toBe('"テスト",');
+        expect(result).toBe('"テスト"');
       });
 
-      it("シートヘッダー行の行末カンマは保持する", () => {
+      it("シートヘッダー行でも行末カンマを削除する", () => {
         const input = "#sheet:Sheet1,";
         const result = normalizer.normalize(input);
-        expect(result).toBe("#sheet:Sheet1,");
+        expect(result).toBe("#sheet:Sheet1");
       });
 
       it("オプションで無効にできる", () => {
@@ -182,12 +182,12 @@ describe("TextNormalizer", () => {
         expect(result).toBe("テスト,");
       });
 
-      it("CSV末尾空セル温存を無効にできる", () => {
+      it("CSV末尾空セルを温存できる", () => {
         const input = "値1,値2,";
         const result = normalizer.normalize(input, {
-          preserveCsvTrailingEmptyFields: false,
+          preserveCsvTrailingEmptyFields: true,
         });
-        expect(result).toBe("値1,値2");
+        expect(result).toBe("値1,値2,");
       });
     });
 
@@ -257,7 +257,7 @@ describe("TextNormalizer", () => {
         collapsePreserveIndent: true,
         trimLineEndSpaces: true,
         removeTrailingCommas: true,
-        preserveCsvTrailingEmptyFields: true,
+        preserveCsvTrailingEmptyFields: false,
         maxConsecutiveBlankLines: 2,
         removeCommaOnlyLines: true,
       });

@@ -11,7 +11,7 @@ const DEFAULT_OPTIONS: TextNormalizerOptions = {
   collapsePreserveIndent: true,
   trimLineEndSpaces: true,
   removeTrailingCommas: true,
-  preserveCsvTrailingEmptyFields: true,
+  preserveCsvTrailingEmptyFields: false,
   maxConsecutiveBlankLines: 2,
   removeCommaOnlyLines: true,
 };
