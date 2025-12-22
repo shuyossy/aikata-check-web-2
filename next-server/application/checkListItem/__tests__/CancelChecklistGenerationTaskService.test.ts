@@ -111,6 +111,7 @@ describe("CancelChecklistGenerationTaskService", () => {
       countByProjectId: vi.fn(),
       save: vi.fn(),
       delete: vi.fn(),
+      updateChecklistGenerationError: vi.fn().mockResolvedValue(undefined),
     };
     mockProjectRepository = {
       findById: vi.fn().mockResolvedValue(mockProject),
@@ -139,6 +140,28 @@ describe("CancelChecklistGenerationTaskService", () => {
       // タスク削除が呼ばれることを確認
       expect(mockAiTaskRepository.delete).toHaveBeenCalledWith(
         expect.objectContaining({ value: validTaskId }),
+      );
+    });
+
+    it("キュー待機中のタスクをキャンセルした場合、checklistGenerationErrorをクリアする", async () => {
+      // Arrange
+      mockReviewSpaceRepository.updateChecklistGenerationError = vi
+        .fn()
+        .mockResolvedValue(undefined);
+
+      // Act
+      await service.execute({
+        reviewSpaceId: validReviewSpaceId,
+        userId: validUserId,
+      });
+
+      // Assert
+      // checklistGenerationErrorがクリア（nullで更新）されることを確認
+      expect(
+        mockReviewSpaceRepository.updateChecklistGenerationError,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({ value: validReviewSpaceId }),
+        null,
       );
     });
   });

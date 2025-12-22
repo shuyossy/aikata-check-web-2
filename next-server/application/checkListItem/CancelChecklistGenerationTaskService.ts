@@ -76,5 +76,11 @@ export class CancelChecklistGenerationTaskService {
 
     // タスクを削除
     await this.aiTaskRepository.delete(task.id);
+
+    // チェックリスト生成エラーをクリア（存在する場合のみ）
+    await this.reviewSpaceRepository.updateChecklistGenerationError(
+      reviewSpaceIdVo,
+      null,
+    );
   }
 }

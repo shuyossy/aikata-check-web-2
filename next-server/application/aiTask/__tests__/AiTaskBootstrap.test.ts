@@ -1,5 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { AiTaskBootstrap, getAiTaskBootstrap } from "../AiTaskBootstrap";
+import { AiTask, AI_TASK_TYPE, AI_TASK_STATUS } from "@/domain/aiTask";
+import { ReviewTarget, REVIEW_TARGET_STATUS } from "@/domain/reviewTarget";
+
+// モック用の関数参照を保持
+let mockFindByStatus = vi.fn().mockResolvedValue([]);
+let mockAiTaskDelete = vi.fn().mockResolvedValue(undefined);
+let mockAiTaskSave = vi.fn().mockResolvedValue(undefined);
+let mockReviewTargetFindById = vi.fn().mockResolvedValue(null);
+let mockReviewTargetSave = vi.fn().mockResolvedValue(undefined);
+let mockUpdateChecklistGenerationError = vi.fn().mockResolvedValue(undefined);
 
 // 依存モジュールのモック
 vi.mock("../AiTaskQueueService", () => {
@@ -29,14 +39,22 @@ vi.mock("../AiTaskExecutor", () => {
 vi.mock("@/infrastructure/adapter/db/drizzle/repository", () => {
   return {
     AiTaskRepository: vi.fn().mockImplementation(() => ({
-      findByStatus: vi.fn().mockResolvedValue([]),
+      findByStatus: (...args: unknown[]) => mockFindByStatus(...args),
+      delete: (...args: unknown[]) => mockAiTaskDelete(...args),
+      save: (...args: unknown[]) => mockAiTaskSave(...args),
     })),
     AiTaskFileMetadataRepository: vi.fn().mockImplementation(() => ({})),
-    ReviewTargetRepository: vi.fn().mockImplementation(() => ({})),
+    ReviewTargetRepository: vi.fn().mockImplementation(() => ({
+      findById: (...args: unknown[]) => mockReviewTargetFindById(...args),
+      save: (...args: unknown[]) => mockReviewTargetSave(...args),
+    })),
     ReviewResultRepository: vi.fn().mockImplementation(() => ({})),
     CheckListItemRepository: vi.fn().mockImplementation(() => ({})),
     ReviewDocumentCacheRepository: vi.fn().mockImplementation(() => ({})),
-    ReviewSpaceRepository: vi.fn().mockImplementation(() => ({})),
+    ReviewSpaceRepository: vi.fn().mockImplementation(() => ({
+      updateChecklistGenerationError: (...args: unknown[]) =>
+        mockUpdateChecklistGenerationError(...args),
+    })),
     LargeDocumentResultCacheRepository: vi.fn().mockImplementation(() => ({})),
     SystemSettingRepository: vi.fn().mockImplementation(() => ({
       find: vi.fn().mockResolvedValue(null),
@@ -59,6 +77,14 @@ describe("AiTaskBootstrap", () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // モック関数をリセット
+    mockFindByStatus = vi.fn().mockResolvedValue([]);
+    mockAiTaskDelete = vi.fn().mockResolvedValue(undefined);
+    mockAiTaskSave = vi.fn().mockResolvedValue(undefined);
+    mockReviewTargetFindById = vi.fn().mockResolvedValue(null);
+    mockReviewTargetSave = vi.fn().mockResolvedValue(undefined);
+    mockUpdateChecklistGenerationError = vi.fn().mockResolvedValue(undefined);
 
     // シングルトンインスタンスをリセット
     // プライベートフィールドにアクセスするためのワークアラウンド
@@ -170,6 +196,173 @@ describe("AiTaskBootstrap", () => {
 
       // Act & Assert - エラーが発生しないことを確認
       await expect(bootstrap.shutdown()).resolves.toBeUndefined();
+    });
+  });
+
+  describe("recoverStuckTasks", () => {
+    const validReviewTargetId = "123e4567-e89b-12d3-a456-426614174001";
+    const validReviewSpaceId = "223e4567-e89b-12d3-a456-426614174002";
+    const validTaskId = "323e4567-e89b-12d3-a456-426614174003";
+
+    // レビュータスク（processing状態）のモックデータを作成
+    const createMockReviewTask = (taskType: string) =>
+      AiTask.reconstruct({
+        id: validTaskId,
+        taskType: taskType,
+        status: AI_TASK_STATUS.PROCESSING,
+        apiKeyHash: "test_hash",
+        priority: 5,
+        payload: {
+          reviewTargetId: validReviewTargetId,
+          reviewSpaceId: validReviewSpaceId,
+        },
+        errorMessage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        startedAt: new Date(),
+        completedAt: null,
+        fileMetadata: [],
+      });
+
+    // チェックリスト生成タスク（processing状態）のモックデータを作成
+    const createMockChecklistGenerationTask = () =>
+      AiTask.reconstruct({
+        id: validTaskId,
+        taskType: AI_TASK_TYPE.CHECKLIST_GENERATION,
+        status: AI_TASK_STATUS.PROCESSING,
+        apiKeyHash: "test_hash",
+        priority: 5,
+        payload: {
+          reviewSpaceId: validReviewSpaceId,
+        },
+        errorMessage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        startedAt: new Date(),
+        completedAt: null,
+        fileMetadata: [],
+      });
+
+    // reviewing状態のReviewTargetを作成
+    const createMockReviewTarget = () =>
+      ReviewTarget.reconstruct({
+        id: validReviewTargetId,
+        reviewSpaceId: validReviewSpaceId,
+        name: "テストレビュー対象",
+        status: REVIEW_TARGET_STATUS.REVIEWING,
+        reviewSettings: null,
+        reviewType: "small",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+    describe("レビュータスク復元", () => {
+      it("処理中のレビュータスク（small_review）がある場合、review_targetsのステータスをerrorに更新する", async () => {
+        // Arrange
+        const mockTask = createMockReviewTask(AI_TASK_TYPE.SMALL_REVIEW);
+        const mockReviewTarget = createMockReviewTarget();
+        mockFindByStatus.mockResolvedValue([mockTask]);
+        mockReviewTargetFindById.mockResolvedValue(mockReviewTarget);
+
+        // Act
+        await bootstrap.initialize();
+
+        // Assert
+        // ReviewTargetRepository.findByIdが呼ばれたことを確認
+        expect(mockReviewTargetFindById).toHaveBeenCalledWith(
+          expect.objectContaining({ value: validReviewTargetId }),
+        );
+        // ReviewTargetRepository.saveが呼ばれ、ステータスがerrorになっていることを確認
+        expect(mockReviewTargetSave).toHaveBeenCalled();
+        const savedReviewTarget = mockReviewTargetSave.mock.calls[0][0];
+        expect(savedReviewTarget.status.value).toBe(REVIEW_TARGET_STATUS.ERROR);
+      });
+
+      it("処理中のレビュータスク（large_review）がある場合、review_targetsのステータスをerrorに更新する", async () => {
+        // Arrange
+        const mockTask = createMockReviewTask(AI_TASK_TYPE.LARGE_REVIEW);
+        const mockReviewTarget = createMockReviewTarget();
+        mockFindByStatus.mockResolvedValue([mockTask]);
+        mockReviewTargetFindById.mockResolvedValue(mockReviewTarget);
+
+        // Act
+        await bootstrap.initialize();
+
+        // Assert
+        expect(mockReviewTargetFindById).toHaveBeenCalledWith(
+          expect.objectContaining({ value: validReviewTargetId }),
+        );
+        expect(mockReviewTargetSave).toHaveBeenCalled();
+        const savedReviewTarget = mockReviewTargetSave.mock.calls[0][0];
+        expect(savedReviewTarget.status.value).toBe(REVIEW_TARGET_STATUS.ERROR);
+      });
+    });
+
+    describe("チェックリスト生成タスク復元", () => {
+      it("処理中のチェックリスト生成タスクがある場合、checklistGenerationErrorを保存する", async () => {
+        // Arrange
+        const mockTask = createMockChecklistGenerationTask();
+        mockFindByStatus.mockResolvedValue([mockTask]);
+
+        // Act
+        await bootstrap.initialize();
+
+        // Assert
+        expect(mockUpdateChecklistGenerationError).toHaveBeenCalledWith(
+          expect.objectContaining({ value: validReviewSpaceId }),
+          "システム再起動により処理が中断されました",
+        );
+      });
+    });
+
+    describe("エラーハンドリング", () => {
+      it("ReviewTargetが見つからない場合、エラーをログに記録して処理を継続する", async () => {
+        // Arrange
+        const mockTask = createMockReviewTask(AI_TASK_TYPE.SMALL_REVIEW);
+        mockFindByStatus.mockResolvedValue([mockTask]);
+        mockReviewTargetFindById.mockResolvedValue(null);
+
+        // Act & Assert - エラーなく初期化が完了すること
+        await expect(bootstrap.initialize()).resolves.toBeUndefined();
+        expect(bootstrap.getIsInitialized()).toBe(true);
+
+        // ReviewTargetRepository.saveは呼ばれないこと
+        expect(mockReviewTargetSave).not.toHaveBeenCalled();
+        // タスク削除は行われること
+        expect(mockAiTaskDelete).toHaveBeenCalled();
+      });
+
+      it("ReviewTargetのステータス更新に失敗した場合、エラーをログに記録して処理を継続する", async () => {
+        // Arrange
+        const mockTask = createMockReviewTask(AI_TASK_TYPE.SMALL_REVIEW);
+        const mockReviewTarget = createMockReviewTarget();
+        mockFindByStatus.mockResolvedValue([mockTask]);
+        mockReviewTargetFindById.mockResolvedValue(mockReviewTarget);
+        mockReviewTargetSave.mockRejectedValue(new Error("DB Error"));
+
+        // Act & Assert - エラーなく初期化が完了すること
+        await expect(bootstrap.initialize()).resolves.toBeUndefined();
+        expect(bootstrap.getIsInitialized()).toBe(true);
+
+        // タスク削除は行われること
+        expect(mockAiTaskDelete).toHaveBeenCalled();
+      });
+
+      it("チェックリスト生成エラーの保存に失敗した場合、エラーをログに記録して処理を継続する", async () => {
+        // Arrange
+        const mockTask = createMockChecklistGenerationTask();
+        mockFindByStatus.mockResolvedValue([mockTask]);
+        mockUpdateChecklistGenerationError.mockRejectedValue(
+          new Error("DB Error"),
+        );
+
+        // Act & Assert - エラーなく初期化が完了すること
+        await expect(bootstrap.initialize()).resolves.toBeUndefined();
+        expect(bootstrap.getIsInitialized()).toBe(true);
+
+        // タスク削除は行われること
+        expect(mockAiTaskDelete).toHaveBeenCalled();
+      });
     });
   });
 });
