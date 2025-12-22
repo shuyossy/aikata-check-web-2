@@ -760,7 +760,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         );
       });
 
-      it("RuntimeContextにAI API設定が正しく設定されること", async () => {
+      it("RuntimeContextが正しく設定されること", async () => {
         // Arrange
         const testFiles: RawUploadFileMeta[] = [createTestFileMeta("text", 0)];
         const checklistRequirements = "テスト用チェックリスト";
@@ -793,14 +793,15 @@ describe("AIチェックリスト生成 結合テスト", () => {
         );
         await executor.execute(taskDto);
 
-        // Assert: RuntimeContextにAI API設定が含まれていることを確認
+        // Assert: RuntimeContextが正しく含まれていることを確認
         assertRuntimeContext(capturedRuntimeContext, {
-          shouldExist: ["employeeId", "aiApiKey", "aiApiUrl", "aiApiModel"],
+          shouldExist: ["employeeId", "aiApiKey", "aiApiUrl", "aiApiModel", "checklistRequirements"],
           exactValues: {
             employeeId: testUserId,
             aiApiKey: "test-api-key",
             aiApiUrl: "http://test-api-url",
             aiApiModel: "test-model",
+            checklistRequirements,
           },
         });
       });

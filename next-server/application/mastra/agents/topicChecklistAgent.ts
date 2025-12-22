@@ -7,8 +7,8 @@ import { getTopicChecklistCreationPrompt } from "./prompts";
  * トピック別チェックリスト生成エージェントの出力スキーマ
  */
 export const topicChecklistOutputSchema = z.object({
-  checklistItems: z.array(z.string().describe("チェックリスト項目")),
-  reason: z.string().describe("このチェックリスト項目が価値ある理由"),
+  checklistItems: z.array(z.string().describe("Checklist item")),
+  reason: z.string().describe("Reason why this checklist item is valuable"),
 });
 
 export type TopicChecklistOutput = z.infer<typeof topicChecklistOutputSchema>;
