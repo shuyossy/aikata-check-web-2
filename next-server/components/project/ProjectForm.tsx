@@ -30,13 +30,13 @@ export type ProjectFormSchemaData = z.infer<typeof projectFormSchema>;
 export interface ProjectFormData {
   name: string;
   description: string;
-  apiKey: string;
+  apiKey: string | null; // nullは「変更なし」を意味する
   members: UserDto[];
 }
 
 export interface ProjectFormProps {
   /** 初期値（編集時） */
-  initialData?: Partial<ProjectFormData>;
+  initialData?: Partial<ProjectFormData> & { hasApiKey?: boolean };
   /** 現在のユーザー */
   currentUser: UserDto;
   /** 送信ハンドラ */
@@ -61,6 +61,10 @@ export function ProjectForm({
   submitLabel = "プロジェクトを作成",
 }: ProjectFormProps) {
   const [showApiKey, setShowApiKey] = useState(false);
+  // APIキーが変更されたかを追跡
+  const [isApiKeyChanged, setIsApiKeyChanged] = useState(false);
+  // APIキー設定有無の判定
+  const hasApiKey = initialData?.hasApiKey ?? false;
   // membersは配列なのでuseStateで別管理
   const [members, setMembers] = useState<UserDto[]>(
     initialData?.members ?? [currentUser],
@@ -90,10 +94,15 @@ export function ProjectForm({
     }
     setMembersError(null);
 
+    // APIキーは変更された場合のみ送信、空文字の場合はnull
+    const trimmedApiKey = data.apiKey?.trim();
+    const apiKeyToSubmit =
+      isApiKeyChanged && trimmedApiKey ? trimmedApiKey : null;
+
     onSubmit({
       name: data.name.trim(),
       description: data.description?.trim() ?? "",
-      apiKey: data.apiKey?.trim() ?? "",
+      apiKey: apiKeyToSubmit,
       members,
     });
   };
@@ -219,17 +228,27 @@ export function ProjectForm({
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
                 APIキー{" "}
-                <span className="text-gray-400 text-xs">
-                  (任意・後で設定可能)
-                </span>
+                {hasApiKey && !isApiKeyChanged ? (
+                  <span className="text-xs text-green-600">（設定済み）</span>
+                ) : (
+                  <span className="text-gray-400 text-xs">
+                    (任意・後で設定可能)
+                  </span>
+                )}
               </label>
               <div className="relative">
                 <Input
                   id="apiKey"
                   type={showApiKey ? "text" : "password"}
-                  {...register("apiKey")}
+                  {...register("apiKey", {
+                    onChange: (e) => setIsApiKeyChanged(e.target.value.length > 0),
+                  })}
                   className="h-11 pr-10 font-mono text-sm"
-                  placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+                  placeholder={
+                    hasApiKey
+                      ? "新しいAPIキーを入力すると上書きされます"
+                      : "sk-xxxxxxxxxxxxxxxxxxxx"
+                  }
                   disabled={isSubmitting}
                 />
                 <Button

@@ -152,7 +152,7 @@ describe("ProjectForm", () => {
         expect(onSubmit).toHaveBeenCalledWith({
           name: "テストプロジェクト",
           description: "",
-          apiKey: "",
+          apiKey: null, // APIキーは変更されていないのでnull
           members: [currentUser],
         });
       });
@@ -198,6 +198,204 @@ describe("ProjectForm", () => {
       expect(
         screen.getByText("「メンバーを追加」ボタンから追加できます"),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe("API設定セクション", () => {
+    describe("新規作成モード（hasApiKey未指定）", () => {
+      it("「設定済み」バッジが表示されない", () => {
+        render(<ProjectForm {...defaultProps} />);
+
+        expect(screen.queryByText("（設定済み）")).not.toBeInTheDocument();
+      });
+
+      it("プレースホルダーが「sk-xxxx...」形式で表示される", () => {
+        render(<ProjectForm {...defaultProps} />);
+
+        const apiKeyInput = screen.getByPlaceholderText("sk-xxxxxxxxxxxxxxxxxxxx");
+        expect(apiKeyInput).toBeInTheDocument();
+      });
+
+      it("APIキーを入力して送信すると値が渡される", async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        render(<ProjectForm {...defaultProps} onSubmit={onSubmit} />);
+
+        // プロジェクト名を入力（必須フィールド）
+        const nameInput = screen.getByPlaceholderText(
+          "例: ○○システム開発プロジェクト",
+        );
+        await user.type(nameInput, "テストプロジェクト");
+
+        // APIキーを入力
+        const apiKeyInput = screen.getByPlaceholderText("sk-xxxxxxxxxxxxxxxxxxxx");
+        await user.type(apiKeyInput, "sk-test-key");
+
+        // 送信
+        const submitButton = screen.getByText("プロジェクトを作成");
+        await user.click(submitButton);
+
+        await waitFor(() => {
+          expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+              apiKey: "sk-test-key",
+            }),
+          );
+        });
+      });
+    });
+
+    describe("編集モード（hasApiKey=true）", () => {
+      const initialDataWithApiKey: Partial<ProjectFormData> & {
+        hasApiKey: boolean;
+      } = {
+        name: "既存プロジェクト",
+        description: "説明",
+        apiKey: "", // APIキーの実際の値は渡さない
+        members: [currentUser],
+        hasApiKey: true,
+      };
+
+      it("「設定済み」バッジが表示される", () => {
+        render(
+          <ProjectForm {...defaultProps} initialData={initialDataWithApiKey} />,
+        );
+
+        expect(screen.getByText("（設定済み）")).toBeInTheDocument();
+      });
+
+      it("プレースホルダーが「新しいAPIキーを入力すると上書きされます」と表示される", () => {
+        render(
+          <ProjectForm {...defaultProps} initialData={initialDataWithApiKey} />,
+        );
+
+        const apiKeyInput = screen.getByPlaceholderText(
+          "新しいAPIキーを入力すると上書きされます",
+        );
+        expect(apiKeyInput).toBeInTheDocument();
+      });
+
+      it("APIキーを変更せずに送信するとapiKeyがnullで渡される", async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        render(
+          <ProjectForm
+            {...defaultProps}
+            initialData={initialDataWithApiKey}
+            onSubmit={onSubmit}
+          />,
+        );
+
+        // 送信（APIキーは変更しない）
+        const submitButton = screen.getByText("プロジェクトを作成");
+        await user.click(submitButton);
+
+        await waitFor(() => {
+          expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+              apiKey: null, // 変更されていないのでnull
+            }),
+          );
+        });
+      });
+
+      it("APIキーを変更して送信すると新しい値が渡される", async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        render(
+          <ProjectForm
+            {...defaultProps}
+            initialData={initialDataWithApiKey}
+            onSubmit={onSubmit}
+          />,
+        );
+
+        // 新しいAPIキーを入力
+        const apiKeyInput = screen.getByPlaceholderText(
+          "新しいAPIキーを入力すると上書きされます",
+        );
+        await user.type(apiKeyInput, "sk-new-key");
+
+        // 送信
+        const submitButton = screen.getByText("プロジェクトを作成");
+        await user.click(submitButton);
+
+        await waitFor(() => {
+          expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+              apiKey: "sk-new-key",
+            }),
+          );
+        });
+      });
+
+      it("APIキーを入力後、空にして送信するとapiKeyがnullで渡される", async () => {
+        const user = userEvent.setup();
+        const onSubmit = vi.fn();
+        render(
+          <ProjectForm
+            {...defaultProps}
+            initialData={initialDataWithApiKey}
+            onSubmit={onSubmit}
+          />,
+        );
+
+        const apiKeyInput = screen.getByPlaceholderText(
+          "新しいAPIキーを入力すると上書きされます",
+        );
+        // 入力して
+        await user.type(apiKeyInput, "temp");
+        // クリア
+        await user.clear(apiKeyInput);
+
+        // 送信
+        const submitButton = screen.getByText("プロジェクトを作成");
+        await user.click(submitButton);
+
+        await waitFor(() => {
+          // 空文字で変更されたが、空なのでnullとして扱う
+          expect(onSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+              apiKey: null,
+            }),
+          );
+        });
+      });
+    });
+
+    describe("編集モード（hasApiKey=false）", () => {
+      const initialDataWithoutApiKey: Partial<ProjectFormData> & {
+        hasApiKey: boolean;
+      } = {
+        name: "既存プロジェクト",
+        description: "説明",
+        apiKey: "",
+        members: [currentUser],
+        hasApiKey: false,
+      };
+
+      it("「設定済み」バッジが表示されない", () => {
+        render(
+          <ProjectForm
+            {...defaultProps}
+            initialData={initialDataWithoutApiKey}
+          />,
+        );
+
+        expect(screen.queryByText("（設定済み）")).not.toBeInTheDocument();
+      });
+
+      it("プレースホルダーが「sk-xxxx...」形式で表示される", () => {
+        render(
+          <ProjectForm
+            {...defaultProps}
+            initialData={initialDataWithoutApiKey}
+          />,
+        );
+
+        const apiKeyInput = screen.getByPlaceholderText("sk-xxxxxxxxxxxxxxxxxxxx");
+        expect(apiKeyInput).toBeInTheDocument();
+      });
     });
   });
 

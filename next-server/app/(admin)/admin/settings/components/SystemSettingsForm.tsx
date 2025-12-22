@@ -83,7 +83,7 @@ export function SystemSettingsForm({
             value={apiKey}
             onChange={(e) => {
               setApiKey(e.target.value);
-              setIsApiKeyChanged(true);
+              setIsApiKeyChanged(e.target.value.length > 0);
             }}
             className="pr-10"
           />

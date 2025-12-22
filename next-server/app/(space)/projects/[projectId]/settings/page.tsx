@@ -116,11 +116,12 @@ export default function ProjectSettingsPage({ params }: Props) {
 
   const handleSubmit = async (data: ProjectFormData) => {
     // プロジェクト情報を更新
+    // apiKeyがnullの場合はプロパティ自体を含めない（変更なしを意味する）
     await updateProject({
       projectId,
       name: data.name,
       description: data.description || null,
-      apiKey: data.apiKey || null,
+      ...(data.apiKey !== null && { apiKey: data.apiKey || null }),
     });
 
     // メンバーを更新（変更があれば）
@@ -210,10 +211,11 @@ export default function ProjectSettingsPage({ params }: Props) {
   }
 
   // プロジェクトデータをフォーム用に変換
-  const formData: Partial<ProjectFormData> = {
+  const formData: Partial<ProjectFormData> & { hasApiKey: boolean } = {
     name: project.name,
     description: project.description ?? "",
     apiKey: "", // APIキーは表示しない（セキュリティ上）
+    hasApiKey: project.hasApiKey, // APIキー設定有無
     members: project.members.map((m) => ({
       id: m.userId,
       employeeId: m.employeeId,
