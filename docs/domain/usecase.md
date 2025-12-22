@@ -24,7 +24,7 @@
 - ユーザ同期
   - 識別子: SyncUserService
   - 前提条件
-    - Keycloakで認証済みであること
+    - KeycloakまたはGitLabで認証済みであること
   - 入力: SyncUserCommand { employeeId: string, displayName: string }
   - 出力: UserDto { id: string, employeeId: string, displayName: string }
   - メインフロー

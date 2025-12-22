@@ -34,7 +34,7 @@
     - 空文字でないこと
     - 255文字以内であること
   - 属性
-    - value: string - 社員ID文字列（Keycloakのpreferred_username）
+    - value: string - 社員ID文字列（Keycloakのpreferred_usernameまたはGitLabのusername）
   - 振る舞い
     - create: 文字列から社員IDを生成する
     - reconstruct: 既存の文字列から復元する
@@ -48,8 +48,8 @@
     - ユーザ名は空ではないこと
   - 属性
     - id: UserId - システム内部で利用する一意識別子（UUID）
-    - employeeId: EmployeeId - Keycloakから取得する社員ID（preferred_username）
-    - displayName: string - Keycloakから取得する表示名（display_name）
+    - employeeId: EmployeeId - KeycloakまたはGitLabから取得する社員ID（Keycloakのpreferred_usernameまたはGitLabのusername）
+    - displayName: string - KeycloakまたはGitLabから取得する表示名
     - createdAt: Date - 作成日時
     - updatedAt: Date - 更新日時
   - 振る舞い

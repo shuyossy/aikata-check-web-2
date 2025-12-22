@@ -1,11 +1,24 @@
 import { NextAuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
+import GitLabProvider from "next-auth/providers/gitlab";
 import { SyncUserService } from "@/application/user";
 import { UserRepository } from "@/infrastructure/adapter/db";
 
 /**
+ * GitLabのプロファイル型定義
+ */
+interface GitLabProfile {
+  id: number;
+  username: string;
+  name: string;
+  email?: string;
+  avatar_url?: string;
+  web_url?: string;
+}
+
+/**
  * NextAuth設定オプション
- * Keycloak OIDCプロバイダーを使用
+ * Keycloak OIDC および GitLab OAuth2 プロバイダーを使用
  */
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -29,6 +42,39 @@ export const authOptions: NextAuthOptions = {
         };
       },
     }),
+    // GitLabプロバイダー（環境変数が設定されている場合のみ有効）
+    ...(process.env.GITLAB_CLIENT_ID &&
+    process.env.GITLAB_CLIENT_SECRET &&
+    process.env.GITLAB_BASE_URL
+      ? [
+          GitLabProvider({
+            clientId: process.env.GITLAB_CLIENT_ID,
+            clientSecret: process.env.GITLAB_CLIENT_SECRET,
+            // セルフホスト型GitLab対応
+            authorization: {
+              url: `${process.env.GITLAB_BASE_URL}/oauth/authorize`,
+              params: { scope: "read_user" },
+            },
+            token: `${process.env.GITLAB_BASE_URL}/oauth/token`,
+            userinfo: `${process.env.GITLAB_BASE_URL}/api/v4/user`,
+            profile(profile: GitLabProfile) {
+              return {
+                id: String(profile.id),
+                // GitLabのusernameを社員IDとして使用
+                employeeId: profile.username,
+                // GitLabのnameを表示名として使用
+                displayName: profile.name || profile.username,
+                // 管理者フラグ（初期値、signInでDB値に更新される）
+                isAdmin: false,
+                // 標準属性
+                name: profile.name,
+                email: profile.email,
+                image: profile.avatar_url,
+              };
+            },
+          }),
+        ]
+      : []),
   ],
   session: {
     strategy: "jwt",

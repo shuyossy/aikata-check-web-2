@@ -52,25 +52,37 @@ function SignInContent() {
           </div>
 
           {/* SSO Options */}
-          <button
-            onClick={() => signIn("keycloak", { callbackUrl })}
-            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 font-medium flex items-center justify-center gap-2"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="space-y-3">
+            <button
+              onClick={() => signIn("keycloak", { callbackUrl })}
+              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 font-medium flex items-center justify-center gap-2"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
-              />
-            </svg>
-            Keycloakでログイン
-          </button>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+                />
+              </svg>
+              Keycloakでログイン
+            </button>
+
+            <button
+              onClick={() => signIn("gitlab", { callbackUrl })}
+              className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition duration-150 font-medium flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.955 13.587l-1.342-4.135-2.664-8.189a.455.455 0 00-.867 0L16.418 9.45H7.582L4.918 1.263a.455.455 0 00-.867 0L1.386 9.452.044 13.587a.924.924 0 00.331 1.023L12 23.054l11.625-8.443a.92.92 0 00.33-1.024" />
+              </svg>
+              GitLabでログイン
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -79,7 +91,7 @@ function SignInContent() {
 
 /**
  * サインインページ
- * Keycloak OIDCへのリダイレクト用ログインページ
+ * Keycloak OIDC / GitLab OAuth2 へのリダイレクト用ログインページ
  */
 export default function SignInPage() {
   return (

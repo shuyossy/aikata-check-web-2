@@ -109,6 +109,68 @@ describe("SyncUserService", () => {
     });
   });
 
+  describe("execute - GitLab連携", () => {
+    it("GitLab形式のusername（ハイフン含む）で新規ユーザが作成される", async () => {
+      // Arrange
+      const command: SyncUserCommand = {
+        employeeId: "gitlab-user-123",
+        displayName: "GitLab User",
+      };
+      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
+      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
+
+      // Act
+      const result = await syncUserService.execute(command);
+
+      // Assert
+      expect(result.employeeId).toBe("gitlab-user-123");
+      expect(result.displayName).toBe("GitLab User");
+      expect(result.id).toBeDefined();
+      expect(mockUserRepository.findByEmployeeId).toHaveBeenCalledTimes(1);
+      expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
+    });
+
+    it("GitLab形式のusername（アンダースコア含む）で新規ユーザが作成される", async () => {
+      // Arrange
+      const command: SyncUserCommand = {
+        employeeId: "gitlab_user_456",
+        displayName: "GitLab User 2",
+      };
+      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
+      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
+
+      // Act
+      const result = await syncUserService.execute(command);
+
+      // Assert
+      expect(result.employeeId).toBe("gitlab_user_456");
+      expect(result.displayName).toBe("GitLab User 2");
+      expect(result.id).toBeDefined();
+      expect(mockUserRepository.findByEmployeeId).toHaveBeenCalledTimes(1);
+      expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
+    });
+
+    it("GitLab形式のusername（ピリオド含む）で新規ユーザが作成される", async () => {
+      // Arrange
+      const command: SyncUserCommand = {
+        employeeId: "gitlab.user.789",
+        displayName: "GitLab User 3",
+      };
+      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
+      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
+
+      // Act
+      const result = await syncUserService.execute(command);
+
+      // Assert
+      expect(result.employeeId).toBe("gitlab.user.789");
+      expect(result.displayName).toBe("GitLab User 3");
+      expect(result.id).toBeDefined();
+      expect(mockUserRepository.findByEmployeeId).toHaveBeenCalledTimes(1);
+      expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe("execute - 異常系", () => {
     it("空の社員IDの場合はバリデーションエラーになる", async () => {
       // Arrange
