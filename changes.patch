@@ -1,0 +1,4258 @@
+diff --git a/PBI.md b/PBI.md
+index c5bdea8..068ab3d 100644
+--- a/PBI.md
++++ b/PBI.md
+@@ -8,3 +8,30 @@
+ - 注意事項
+ - 指摘事項（in progressの場合のみ）
+ ```
++
++# ID: 1
++- PBI名: GITLABのOAuth2認証でログインできるようにする
++- ステータス: done
++- 背景
++  - 現状は、keycloakの認証のみ可能だが、gitlabのoauth2認証でもログインできるようにしたい
++- 受け入れ基準
++  - ログイン画面にgitlabでログインというボタンが表示されている
++  - gitlabのusernameを社員IDとみなしてログイン時にDBのUserとsyncできている（DBに同一社員IDのユーザがいない場合は新規作成できている）
++- 注意事項
++  - next-authのgitlab provider(`https://next-auth.js.org/providers/gitlab`)を使うのが良さそうか
++
++# ID: 2
++- PBI名: アプリ独自の認証でログインできるようにする
++- ステータス: to do
++- 背景
++  - SSOだけでなく、SSOの認証基盤に登録されていないユーザは独自の認証でログインできるルートを確保したい
++- 受け入れ基準
++  - サインイン画面とサインアップ画面が作成されていること
++    - サインイン画面からサインアップ画面に遷移できること
++  - 社員IDとパスワードでサインインできること
++    - パスワードは環境変数`ENCRYPTION_KEY`で暗号化されていること
++  - 社員IDと名前とパスワードを指定してサインアップできること
++  - 独自認証でログインしたユーザとSSOでログインしたユーザが社員IDをキーにsyncできていること
++- 注意事項
++  - gitlabは社内のセルフホストを利用する
++  - 社員IDのプレースホルダは「PIT*/A*」としてください
+diff --git a/docs/config/env_val.md b/docs/config/env_val.md
+index ef2a71d..a837042 100644
+--- a/docs/config/env_val.md
++++ b/docs/config/env_val.md
+@@ -13,8 +13,11 @@
+ | 認証         | KEYCLOAK_ID      | Yes  | -      | Keycloak のクライアント ID                                                | auth.ts                                       |
+ | 認証         | KEYCLOAK_SECRET  | Yes  | -      | Keycloak のクライアントシークレット                                       | auth.ts                                       |
+ | 認証         | KEYCLOAK_ISSUER  | Yes  | -      | Keycloak の Issuer URL（例: https://keycloak.example.com/realms/myrealm） | auth.ts                                       |
++| 認証         | GITLAB_CLIENT_ID | 条件付き | - | GitLab OAuth のクライアント ID（GitLab 認証を使用する場合は必須） | auth.ts |
++| 認証         | GITLAB_CLIENT_SECRET | 条件付き | - | GitLab OAuth のクライアントシークレット（GitLab 認証を使用する場合は必須） | auth.ts |
++| 認証         | GITLAB_BASE_URL | 条件付き | - | セルフホスト型 GitLab のベース URL（例: https://gitlab.example.com）（GitLab 認証を使用する場合は必須） | auth.ts |
+ | ログ         | AIKATA_LOG_DEBUG | No   | -      | 設定されている場合、ログレベルを debug に強制設定                         | lib/server/logger.ts                          |
+-| セキュリティ | ENCRYPTION_KEY   | Yes  | -      | APIキー等の暗号化に使用するAES-256キー（64桁の16進数文字列）              | lib/server/encryption.ts                      |
++| セキュリティ | ENCRYPTION_KEY   | Yes  | -      | APIキー、独自認証パスワード等の暗号化に使用するAES-256キー（64桁の16進数文字列）              | lib/server/encryption.ts, infrastructure/adapter/service/PasswordService.ts |
+ | ファイルアップロード | FILE_UPLOAD_MAX_FILE_SIZE_MB | No | 50 | ファイルアップロード時のサイズ上限（MB）。チェックリストインポート、AIチェックリスト生成で共通利用 | lib/server/fileUploadConfig.ts |
+ | キャッシュ | REVIEW_CACHE_DIR | No | ./review_cache | レビュードキュメントキャッシュの保存先ディレクトリ。リトライ時にドキュメントの再処理を省略するために使用 | lib/server/reviewCacheHelper.ts |
+ | AIタスクキュー | AI_QUEUE_CONCURRENCY | No | 1 | APIキー毎のAIタスク並列実行数。流量制限を考慮して設定 | application/aiTask/AiTaskWorkerPool.ts |
+diff --git a/docs/db/schema.md b/docs/db/schema.md
+index f269fdb..285ac1e 100644
+--- a/docs/db/schema.md
++++ b/docs/db/schema.md
+@@ -7,14 +7,15 @@
+ 
+ ## users テーブル
+ 
+-ユーザ情報を管理するテーブル。Keycloakで認証されたユーザの初回ログイン時に自動作成される。
++ユーザ情報を管理するテーブル。SSO（KeycloakまたはGitLab）で認証されたユーザの初回ログイン時、または独自認証でのサインアップ時に自動作成される。
+ 
+ | カラム名 | 型 | NULL | デフォルト | 説明 |
+ |---------|------|------|-----------|------|
+ | id | UUID | NOT NULL | gen_random_uuid() | システム内部ID（PK） |
+-| employee_id | VARCHAR(255) | NOT NULL | - | Keycloakのpreferred_username（社員ID）。UNIQUE制約 |
+-| display_name | VARCHAR(255) | NOT NULL | - | Keycloakのdisplay_name（表示名） |
++| employee_id | VARCHAR(255) | NOT NULL | - | Keycloakのpreferred_usernameまたはGitLabのusername（社員ID）。UNIQUE制約 |
++| display_name | VARCHAR(255) | NOT NULL | - | KeycloakまたはGitLabから取得する表示名、または独自認証でのサインアップ時に指定した名前 |
+ | is_admin | BOOLEAN | NOT NULL | false | 管理者フラグ |
++| password_hash | TEXT | NULL | - | AES-256-GCMで暗号化されたパスワード。独自認証ユーザのみ設定される |
+ | created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
+ | updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
+ 
+@@ -24,13 +25,15 @@
+ 
+ ### 設計思想
+ - **id**: UUIDを採用し、外部キーとして他テーブルから参照される想定。UUIDを使用することで分散環境でもIDの衝突を回避できる。
+-- **employee_id**: Keycloakから取得する社員ID（preferred_username）。外部システムKeycloakへの依存を明確化。UNIQUE制約により社員IDの一意性を保証し、重複登録を防止する。
+-- **display_name**: Keycloakから取得する表示名（display_name）。UIでユーザを識別する目的に使用（Keycloak側で変更された場合はログイン時に同期される）。
++- **employee_id**: KeycloakまたはGitLabから取得する社員ID（Keycloakのpreferred_usernameまたはGitLabのusername）、または独自認証でのサインアップ時に指定した社員ID。UNIQUE制約により社員IDの一意性を保証し、重複登録を防止する。
++- **display_name**: KeycloakまたはGitLabから取得する表示名、または独自認証でのサインアップ時に指定した名前。UIでユーザを識別する目的に使用（SSOログイン時は認証プロバイダー側で変更された場合に同期される）。
+ - **is_admin**: システム管理者フラグ。trueの場合、管理者画面へのアクセス、全プロジェクトへのアクセス、システム設定の編集が可能になる。初期状態ではfalse。管理者権限の付与はDB直接操作または既存の管理者による操作で行う。
++- **password_hash**: 独自認証用のパスワード。AES-256-GCM暗号化されて保存される。SSOユーザはNULL（独自認証が利用不可）、独自認証ユーザは値が設定されている（独自認証が可能）。独自認証ユーザが後からSSOでログインした場合でも、パスワードは維持される（両方の認証方式が利用可能）。
+ - **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。タイムゾーン付きで国際化に対応する。
+ 
+ ### 備考
+ - NextAuthのAccountやSessionテーブルは作成しない（JWTセッション戦略を採用するため）。
++- 認証方式の判断：password_hashがNULLの場合はSSOのみ、値がある場合は独自認証（およびSSO）が可能。
+ 
+ ---
+ 
+diff --git a/docs/design_mock/01-login.html b/docs/design_mock/01-login.html
+index bc8d8b7..294e12b 100644
+--- a/docs/design_mock/01-login.html
++++ b/docs/design_mock/01-login.html
+@@ -102,13 +102,19 @@
+       </div>
+ 
+       <!-- SSO Options -->
+-      <div>
++      <div class="space-y-3">
+         <button class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 font-medium flex items-center justify-center gap-2">
+           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+           </svg>
+           Keycloakでログイン
+         </button>
++        <button class="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition duration-150 font-medium flex items-center justify-center gap-2">
++          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
++            <path d="M23.955 13.587l-1.342-4.135-2.664-8.189a.455.455 0 00-.867 0L16.418 9.45H7.582L4.918 1.263a.455.455 0 00-.867 0L1.386 9.452.044 13.587a.924.924 0 00.331 1.023L12 23.054l11.625-8.443a.92.92 0 00.33-1.024"/>
++          </svg>
++          GitLabでログイン
++        </button>
+       </div>
+     </div>
+   </div>
+diff --git a/docs/domain/entity.md b/docs/domain/entity.md
+index 5f225b3..e72079a 100644
+--- a/docs/domain/entity.md
++++ b/docs/domain/entity.md
+@@ -34,7 +34,7 @@
+     - 空文字でないこと
+     - 255文字以内であること
+   - 属性
+-    - value: string - 社員ID文字列（Keycloakのpreferred_username）
++    - value: string - 社員ID文字列（Keycloakのpreferred_usernameまたはGitLabのusername）
+   - 振る舞い
+     - create: 文字列から社員IDを生成する
+     - reconstruct: 既存の文字列から復元する
+@@ -48,8 +48,8 @@
+     - ユーザ名は空ではないこと
+   - 属性
+     - id: UserId - システム内部で利用する一意識別子（UUID）
+-    - employeeId: EmployeeId - Keycloakから取得する社員ID（preferred_username）
+-    - displayName: string - Keycloakから取得する表示名（display_name）
++    - employeeId: EmployeeId - KeycloakまたはGitLabから取得する社員ID（Keycloakのpreferred_usernameまたはGitLabのusername）
++    - displayName: string - KeycloakまたはGitLabから取得する表示名
+     - createdAt: Date - 作成日時
+     - updatedAt: Date - 更新日時
+   - 振る舞い
+diff --git a/docs/domain/usecase.md b/docs/domain/usecase.md
+index b8af1ea..be926af 100644
+--- a/docs/domain/usecase.md
++++ b/docs/domain/usecase.md
+@@ -24,7 +24,7 @@
+ - ユーザ同期
+   - 識別子: SyncUserService
+   - 前提条件
+-    - Keycloakで認証済みであること
++    - KeycloakまたはGitLabで認証済みであること
+   - 入力: SyncUserCommand { employeeId: string, displayName: string }
+   - 出力: UserDto { id: string, employeeId: string, displayName: string }
+   - メインフロー
+diff --git a/next-server/app/(public)/auth/signin/__tests__/page.test.tsx b/next-server/app/(public)/auth/signin/__tests__/page.test.tsx
+new file mode 100644
+index 0000000..0022a6f
+--- /dev/null
++++ b/next-server/app/(public)/auth/signin/__tests__/page.test.tsx
+@@ -0,0 +1,367 @@
++import { describe, it, expect, vi, beforeEach } from "vitest";
++import { render, screen, fireEvent, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import SignInPage from "../page";
++
++// next-auth/react のモック
++const mockSignIn = vi.fn();
++vi.mock("next-auth/react", () => ({
++  signIn: (
++    provider: string,
++    options: { callbackUrl?: string; redirect?: boolean },
++  ) => mockSignIn(provider, options),
++}));
++
++// next/navigation のモック
++const mockGet = vi.fn();
++const mockPush = vi.fn();
++vi.mock("next/navigation", () => ({
++  useSearchParams: () => ({
++    get: mockGet,
++  }),
++  useRouter: () => ({
++    push: mockPush,
++  }),
++}));
++
++describe("SignInPage", () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    // デフォルトのモック設定
++    mockGet.mockImplementation((key: string) => {
++      if (key === "callbackUrl") return "/dashboard";
++      if (key === "error") return null;
++      return null;
++    });
++  });
++
++  describe("正常系 - SSO認証", () => {
++    it("Keycloakログインボタンが表示される", () => {
++      render(<SignInPage />);
++      expect(screen.getByText("Keycloakでログイン")).toBeInTheDocument();
++    });
++
++    it("GitLabログインボタンが表示される", () => {
++      render(<SignInPage />);
++      expect(screen.getByText("GitLabでログイン")).toBeInTheDocument();
++    });
++
++    it("AIKATAのロゴとキャッチフレーズが表示される", () => {
++      render(<SignInPage />);
++      expect(screen.getByText("AIKATA")).toBeInTheDocument();
++      expect(screen.getByText("AIレビュープラットフォーム")).toBeInTheDocument();
++    });
++
++    it("ログインカードのタイトルと説明が表示される", () => {
++      render(<SignInPage />);
++      expect(
++        screen.getByRole("heading", { name: "ログイン" }),
++      ).toBeInTheDocument();
++      expect(
++        screen.getByText("アカウントにログインしてください"),
++      ).toBeInTheDocument();
++    });
++
++    it("KeycloakログインボタンをクリックするとsignIn('keycloak')が呼ばれる", () => {
++      render(<SignInPage />);
++
++      const keycloakButton = screen.getByText("Keycloakでログイン");
++      fireEvent.click(keycloakButton);
++
++      expect(mockSignIn).toHaveBeenCalledWith("keycloak", {
++        callbackUrl: "/dashboard",
++      });
++    });
++
++    it("GitLabログインボタンをクリックするとsignIn('gitlab')が呼ばれる", () => {
++      render(<SignInPage />);
++
++      const gitlabButton = screen.getByText("GitLabでログイン");
++      fireEvent.click(gitlabButton);
++
++      expect(mockSignIn).toHaveBeenCalledWith("gitlab", {
++        callbackUrl: "/dashboard",
++      });
++    });
++
++    it("callbackUrlパラメータが指定されていない場合はルートがデフォルトになる", () => {
++      mockGet.mockImplementation((key: string) => {
++        if (key === "callbackUrl") return null;
++        if (key === "error") return null;
++        return null;
++      });
++
++      render(<SignInPage />);
++
++      const keycloakButton = screen.getByText("Keycloakでログイン");
++      fireEvent.click(keycloakButton);
++
++      expect(mockSignIn).toHaveBeenCalledWith("keycloak", {
++        callbackUrl: "/",
++      });
++    });
++  });
++
++  describe("正常系 - 独自認証", () => {
++    it("社員ID入力フィールドが表示される", () => {
++      render(<SignInPage />);
++      expect(screen.getByLabelText("社員ID")).toBeInTheDocument();
++    });
++
++    it("パスワード入力フィールドが表示される", () => {
++      render(<SignInPage />);
++      expect(screen.getByLabelText("パスワード")).toBeInTheDocument();
++    });
++
++    it("ログインボタンが表示される", () => {
++      render(<SignInPage />);
++      expect(
++        screen.getByRole("button", { name: "ログイン" }),
++      ).toBeInTheDocument();
++    });
++
++    it("新規登録リンクが表示される", () => {
++      render(<SignInPage />);
++      expect(screen.getByText("新規登録")).toBeInTheDocument();
++      expect(screen.getByText("新規登録")).toHaveAttribute(
++        "href",
++        "/auth/signup",
++      );
++    });
++
++    it("社員IDのプレースホルダーがPIT*/A*で表示される", () => {
++      render(<SignInPage />);
++      expect(screen.getByPlaceholderText("PIT*/A*")).toBeInTheDocument();
++    });
++
++    it("入力が空の場合、ログインボタンが無効になる", () => {
++      render(<SignInPage />);
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++      expect(loginButton).toBeDisabled();
++    });
++
++    it("社員IDとパスワードを入力するとログインボタンが有効になる", async () => {
++      const user = userEvent.setup();
++      render(<SignInPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(passwordInput, "password123");
++
++      expect(loginButton).not.toBeDisabled();
++    });
++
++    it("ログインフォーム送信時にsignIn('credentials')が呼ばれる", async () => {
++      const user = userEvent.setup();
++      mockSignIn.mockResolvedValue({ ok: true, error: null });
++      render(<SignInPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(passwordInput, "password123");
++      await user.click(loginButton);
++
++      await waitFor(() => {
++        expect(mockSignIn).toHaveBeenCalledWith("credentials", {
++          employeeId: "PIT001",
++          password: "password123",
++          redirect: false,
++        });
++      });
++    });
++
++    it("ログイン成功時にcallbackUrlにリダイレクトされる", async () => {
++      const user = userEvent.setup();
++      mockSignIn.mockResolvedValue({ ok: true, error: null });
++      render(<SignInPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(passwordInput, "password123");
++      await user.click(loginButton);
++
++      await waitFor(() => {
++        expect(mockPush).toHaveBeenCalledWith("/dashboard");
++      });
++    });
++  });
++
++  describe("異常系 - SSO認証", () => {
++    it("UserSyncFailedエラー時にエラーメッセージが表示される", () => {
++      mockGet.mockImplementation((key: string) => {
++        if (key === "error") return "UserSyncFailed";
++        if (key === "callbackUrl") return "/dashboard";
++        return null;
++      });
++
++      render(<SignInPage />);
++      expect(
++        screen.getByText(
++          "システムに問題が発生しており、ログイン処理を完了できません",
++        ),
++      ).toBeInTheDocument();
++    });
++
++    it("OAuthCallbackエラー時に汎用エラーメッセージが表示される", () => {
++      mockGet.mockImplementation((key: string) => {
++        if (key === "error") return "OAuthCallback";
++        if (key === "callbackUrl") return "/dashboard";
++        return null;
++      });
++
++      render(<SignInPage />);
++      expect(screen.getByText("ログインに失敗しました")).toBeInTheDocument();
++    });
++
++    it("その他のエラー時に汎用エラーメッセージが表示される", () => {
++      mockGet.mockImplementation((key: string) => {
++        if (key === "error") return "UnknownError";
++        if (key === "callbackUrl") return "/dashboard";
++        return null;
++      });
++
++      render(<SignInPage />);
++      expect(screen.getByText("ログインに失敗しました")).toBeInTheDocument();
++    });
++
++    it("エラーがない場合はエラーメッセージが表示されない", () => {
++      mockGet.mockImplementation((key: string) => {
++        if (key === "error") return null;
++        if (key === "callbackUrl") return "/dashboard";
++        return null;
++      });
++
++      render(<SignInPage />);
++      expect(
++        screen.queryByText(
++          "システムに問題が発生しており、ログイン処理を完了できません",
++        ),
++      ).not.toBeInTheDocument();
++      expect(
++        screen.queryByText("ログインに失敗しました"),
++      ).not.toBeInTheDocument();
++    });
++  });
++
++  describe("異常系 - 独自認証", () => {
++    it("CredentialsSigninエラー時に認証エラーメッセージが表示される", () => {
++      mockGet.mockImplementation((key: string) => {
++        if (key === "error") return "CredentialsSignin";
++        if (key === "callbackUrl") return "/dashboard";
++        return null;
++      });
++
++      render(<SignInPage />);
++      expect(
++        screen.getByText("社員IDまたはパスワードが正しくありません"),
++      ).toBeInTheDocument();
++    });
++
++    it("認証失敗時にエラーメッセージが表示される", async () => {
++      const user = userEvent.setup();
++      mockSignIn.mockResolvedValue({ ok: false, error: "CredentialsSignin" });
++      render(<SignInPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(passwordInput, "wrongpassword");
++      await user.click(loginButton);
++
++      await waitFor(() => {
++        expect(
++          screen.getByText("社員IDまたはパスワードが正しくありません"),
++        ).toBeInTheDocument();
++      });
++    });
++
++    it("ログイン処理中はローディング状態が表示される", async () => {
++      const user = userEvent.setup();
++      // signInが解決されないようにする
++      mockSignIn.mockImplementation(
++        () => new Promise((resolve) => setTimeout(resolve, 1000)),
++      );
++      render(<SignInPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(passwordInput, "password123");
++      await user.click(loginButton);
++
++      expect(screen.getByText("ログイン中...")).toBeInTheDocument();
++    });
++
++    it("ログイン処理中は入力フィールドが無効になる", async () => {
++      const user = userEvent.setup();
++      mockSignIn.mockImplementation(
++        () => new Promise((resolve) => setTimeout(resolve, 1000)),
++      );
++      render(<SignInPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(passwordInput, "password123");
++      await user.click(loginButton);
++
++      expect(employeeIdInput).toBeDisabled();
++      expect(passwordInput).toBeDisabled();
++    });
++
++    it("ログイン処理中に例外が発生した場合はエラーメッセージが表示される", async () => {
++      const user = userEvent.setup();
++      mockSignIn.mockRejectedValue(new Error("Network error"));
++      render(<SignInPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(passwordInput, "password123");
++      await user.click(loginButton);
++
++      await waitFor(() => {
++        expect(
++          screen.getByText("ログイン処理中にエラーが発生しました"),
++        ).toBeInTheDocument();
++      });
++    });
++
++    it("例外発生後にローディング状態が解除される", async () => {
++      const user = userEvent.setup();
++      mockSignIn.mockRejectedValue(new Error("Network error"));
++      render(<SignInPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const loginButton = screen.getByRole("button", { name: "ログイン" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(passwordInput, "password123");
++      await user.click(loginButton);
++
++      await waitFor(() => {
++        expect(employeeIdInput).not.toBeDisabled();
++        expect(passwordInput).not.toBeDisabled();
++        expect(screen.queryByText("ログイン中...")).not.toBeInTheDocument();
++      });
++    });
++  });
++});
+diff --git a/next-server/app/(public)/auth/signin/page.tsx b/next-server/app/(public)/auth/signin/page.tsx
+index 8a2326f..a43472e 100644
+--- a/next-server/app/(public)/auth/signin/page.tsx
++++ b/next-server/app/(public)/auth/signin/page.tsx
+@@ -1,8 +1,13 @@
+ "use client";
+ 
+ import { signIn } from "next-auth/react";
+-import { useSearchParams } from "next/navigation";
+-import { Suspense } from "react";
++import { useSearchParams, useRouter } from "next/navigation";
++import { Suspense, useState } from "react";
++import Link from "next/link";
++import { Input } from "@/components/ui/input";
++import { Button } from "@/components/ui/button";
++import { Label } from "@/components/ui/label";
++import { Loader2 } from "lucide-react";
+ 
+ /**
+  * サインインページコンテンツ
+@@ -10,9 +15,42 @@ import { Suspense } from "react";
+  */
+ function SignInContent() {
+   const searchParams = useSearchParams();
++  const router = useRouter();
+   const callbackUrl = searchParams.get("callbackUrl") || "/";
+   const error = searchParams.get("error");
+ 
++  const [employeeId, setEmployeeId] = useState("");
++  const [password, setPassword] = useState("");
++  const [isLoading, setIsLoading] = useState(false);
++  const [credentialsError, setCredentialsError] = useState<string | null>(null);
++
++  /**
++   * 独自認証でのサインイン処理
++   */
++  const handleCredentialsSignIn = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setIsLoading(true);
++    setCredentialsError(null);
++
++    try {
++      const result = await signIn("credentials", {
++        employeeId,
++        password,
++        redirect: false,
++      });
++
++      if (result?.error) {
++        setCredentialsError("社員IDまたはパスワードが正しくありません");
++      } else if (result?.ok) {
++        router.push(callbackUrl);
++      }
++    } catch {
++      setCredentialsError("ログイン処理中にエラーが発生しました");
++    } finally {
++      setIsLoading(false);
++    }
++  };
++
+   return (
+     <div className="h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-100 px-4">
+       <div className="w-full max-w-md">
+@@ -35,10 +73,74 @@ function SignInContent() {
+             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+               {error === "UserSyncFailed"
+                 ? "システムに問題が発生しており、ログイン処理を完了できません"
+-                : "ログインに失敗しました"}
++                : error === "CredentialsSignin"
++                  ? "社員IDまたはパスワードが正しくありません"
++                  : "ログインに失敗しました"}
++            </div>
++          )}
++
++          {credentialsError && (
++            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
++              {credentialsError}
+             </div>
+           )}
+ 
++          {/* Credentials Login Form */}
++          <form onSubmit={handleCredentialsSignIn} className="space-y-4">
++            <div className="space-y-2">
++              <Label htmlFor="employeeId">社員ID</Label>
++              <Input
++                id="employeeId"
++                type="text"
++                placeholder="PIT*/A*"
++                value={employeeId}
++                onChange={(e) => setEmployeeId(e.target.value)}
++                disabled={isLoading}
++                required
++              />
++            </div>
++
++            <div className="space-y-2">
++              <Label htmlFor="password">パスワード</Label>
++              <Input
++                id="password"
++                type="password"
++                value={password}
++                onChange={(e) => setPassword(e.target.value)}
++                disabled={isLoading}
++                required
++              />
++            </div>
++
++            <Button
++              type="submit"
++              className="w-full"
++              disabled={isLoading || !employeeId || !password}
++            >
++              {isLoading ? (
++                <>
++                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
++                  ログイン中...
++                </>
++              ) : (
++                "ログイン"
++              )}
++            </Button>
++          </form>
++
++          {/* Sign Up Link */}
++          <div className="mt-4 text-center">
++            <span className="text-sm text-gray-600">
++              アカウントをお持ちでない方は{" "}
++              <Link
++                href="/auth/signup"
++                className="text-primary-600 hover:text-primary-700 font-medium"
++              >
++                新規登録
++              </Link>
++            </span>
++          </div>
++
+           {/* Divider */}
+           <div className="relative my-6">
+             <div className="absolute inset-0 flex items-center">
+@@ -52,25 +154,37 @@ function SignInContent() {
+           </div>
+ 
+           {/* SSO Options */}
+-          <button
+-            onClick={() => signIn("keycloak", { callbackUrl })}
+-            className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 font-medium flex items-center justify-center gap-2"
+-          >
+-            <svg
+-              className="w-5 h-5"
+-              fill="none"
+-              stroke="currentColor"
+-              viewBox="0 0 24 24"
++          <div className="space-y-3">
++            <button
++              onClick={() => signIn("keycloak", { callbackUrl })}
++              className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-150 font-medium flex items-center justify-center gap-2"
+             >
+-              <path
+-                strokeLinecap="round"
+-                strokeLinejoin="round"
+-                strokeWidth={2}
+-                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+-              />
+-            </svg>
+-            Keycloakでログイン
+-          </button>
++              <svg
++                className="w-5 h-5"
++                fill="none"
++                stroke="currentColor"
++                viewBox="0 0 24 24"
++              >
++                <path
++                  strokeLinecap="round"
++                  strokeLinejoin="round"
++                  strokeWidth={2}
++                  d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
++                />
++              </svg>
++              Keycloakでログイン
++            </button>
++
++            <button
++              onClick={() => signIn("gitlab", { callbackUrl })}
++              className="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition duration-150 font-medium flex items-center justify-center gap-2"
++            >
++              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
++                <path d="M23.955 13.587l-1.342-4.135-2.664-8.189a.455.455 0 00-.867 0L16.418 9.45H7.582L4.918 1.263a.455.455 0 00-.867 0L1.386 9.452.044 13.587a.924.924 0 00.331 1.023L12 23.054l11.625-8.443a.92.92 0 00.33-1.024" />
++              </svg>
++              GitLabでログイン
++            </button>
++          </div>
+         </div>
+       </div>
+     </div>
+@@ -79,7 +193,7 @@ function SignInContent() {
+ 
+ /**
+  * サインインページ
+- * Keycloak OIDCへのリダイレクト用ログインページ
++ * 独自認証（社員ID・パスワード）およびKeycloak OIDC / GitLab OAuth2へのリダイレクト
+  */
+ export default function SignInPage() {
+   return (
+diff --git a/next-server/app/(public)/auth/signup/__tests__/page.test.tsx b/next-server/app/(public)/auth/signup/__tests__/page.test.tsx
+new file mode 100644
+index 0000000..d0812e0
+--- /dev/null
++++ b/next-server/app/(public)/auth/signup/__tests__/page.test.tsx
+@@ -0,0 +1,348 @@
++import { describe, it, expect, vi, beforeEach } from "vitest";
++import { render, screen, waitFor } from "@testing-library/react";
++import userEvent from "@testing-library/user-event";
++import SignUpPage from "../page";
++import { showError, showSuccess } from "@/lib/client/toast";
++
++// onSuccessとonErrorのコールバックを保持する変数
++let capturedCallbacks: {
++  onSuccess?: (result: unknown) => void;
++  onError?: (error: unknown) => void;
++} = {};
++
++// next-safe-action/hooks のモック
++const mockExecute = vi.fn();
++const mockIsPending = vi.fn(() => false);
++vi.mock("next-safe-action/hooks", () => ({
++  useAction: (
++    _action: unknown,
++    callbacks: { onSuccess?: (result: unknown) => void; onError?: (error: unknown) => void },
++  ) => {
++    // コールバックを保存してテストから呼び出せるようにする
++    capturedCallbacks = callbacks;
++    return {
++      execute: mockExecute,
++      isPending: mockIsPending(),
++    };
++  },
++}));
++
++// next/navigation のモック
++const mockPush = vi.fn();
++vi.mock("next/navigation", () => ({
++  useRouter: () => ({
++    push: mockPush,
++  }),
++}));
++
++// toast のモック
++vi.mock("@/lib/client/toast", () => ({
++  showError: vi.fn(),
++  showSuccess: vi.fn(),
++}));
++
++// messages のモック
++vi.mock("@/lib/client/messages", () => ({
++  getMessage: vi.fn().mockImplementation((code) => {
++    if (code === "SIGNUP_SUCCESS") return "アカウントを作成しました。サインインしてください。";
++    return code;
++  }),
++}));
++
++describe("SignUpPage", () => {
++  beforeEach(() => {
++    vi.clearAllMocks();
++    mockIsPending.mockReturnValue(false);
++    capturedCallbacks = {};
++  });
++
++  describe("正常系", () => {
++    it("AIKATAのロゴとキャッチフレーズが表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByText("AIKATA")).toBeInTheDocument();
++      expect(screen.getByText("AIレビュープラットフォーム")).toBeInTheDocument();
++    });
++
++    it("アカウント登録のタイトルと説明が表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByText("アカウント登録")).toBeInTheDocument();
++      expect(
++        screen.getByText("新規アカウントを作成してください"),
++      ).toBeInTheDocument();
++    });
++
++    it("社員ID入力フィールドが表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByLabelText("社員ID")).toBeInTheDocument();
++    });
++
++    it("社員IDのプレースホルダーがPIT*/A*で表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByPlaceholderText("PIT*/A*")).toBeInTheDocument();
++    });
++
++    it("名前入力フィールドが表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByLabelText("名前")).toBeInTheDocument();
++    });
++
++    it("名前のプレースホルダーが山田太郎で表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByPlaceholderText("山田太郎")).toBeInTheDocument();
++    });
++
++    it("パスワード入力フィールドが表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByLabelText("パスワード")).toBeInTheDocument();
++    });
++
++    it("パスワード確認入力フィールドが表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByLabelText("パスワード（確認）")).toBeInTheDocument();
++    });
++
++    it("登録ボタンが表示される", () => {
++      render(<SignUpPage />);
++      expect(
++        screen.getByRole("button", { name: "登録" }),
++      ).toBeInTheDocument();
++    });
++
++    it("ログインリンクが表示される", () => {
++      render(<SignUpPage />);
++      expect(screen.getByText("ログイン")).toBeInTheDocument();
++      expect(screen.getByText("ログイン")).toHaveAttribute(
++        "href",
++        "/auth/signin",
++      );
++    });
++
++    it("入力が空の場合、登録ボタンが無効になる", () => {
++      render(<SignUpPage />);
++      const submitButton = screen.getByRole("button", { name: "登録" });
++      expect(submitButton).toBeDisabled();
++    });
++
++    it("全てのフィールドを入力すると登録ボタンが有効になる", async () => {
++      const user = userEvent.setup();
++      render(<SignUpPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const displayNameInput = screen.getByLabelText("名前");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const confirmPasswordInput = screen.getByLabelText("パスワード（確認）");
++      const submitButton = screen.getByRole("button", { name: "登録" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(displayNameInput, "山田太郎");
++      await user.type(passwordInput, "password123");
++      await user.type(confirmPasswordInput, "password123");
++
++      expect(submitButton).not.toBeDisabled();
++    });
++
++    it("フォーム送信時にsignupActionが正しい引数で呼ばれる", async () => {
++      const user = userEvent.setup();
++      render(<SignUpPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const displayNameInput = screen.getByLabelText("名前");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const confirmPasswordInput = screen.getByLabelText("パスワード（確認）");
++      const submitButton = screen.getByRole("button", { name: "登録" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(displayNameInput, "山田太郎");
++      await user.type(passwordInput, "password123");
++      await user.type(confirmPasswordInput, "password123");
++      await user.click(submitButton);
++
++      await waitFor(() => {
++        expect(mockExecute).toHaveBeenCalledWith({
++          employeeId: "PIT001",
++          displayName: "山田太郎",
++          password: "password123",
++        });
++      });
++    });
++  });
++
++  describe("異常系", () => {
++    it("パスワードが一致しない場合はエラーメッセージが表示される", async () => {
++      const user = userEvent.setup();
++      render(<SignUpPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const displayNameInput = screen.getByLabelText("名前");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const confirmPasswordInput = screen.getByLabelText("パスワード（確認）");
++      const submitButton = screen.getByRole("button", { name: "登録" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(displayNameInput, "山田太郎");
++      await user.type(passwordInput, "password123");
++      await user.type(confirmPasswordInput, "differentpassword");
++      await user.click(submitButton);
++
++      await waitFor(() => {
++        expect(
++          screen.getByText("パスワードが一致しません"),
++        ).toBeInTheDocument();
++      });
++
++      // アクションは呼ばれない
++      expect(mockExecute).not.toHaveBeenCalled();
++    });
++
++    it("登録処理中はローディング状態が表示される", async () => {
++      mockIsPending.mockReturnValue(true);
++      render(<SignUpPage />);
++
++      expect(screen.getByText("登録中...")).toBeInTheDocument();
++    });
++
++    it("登録処理中は入力フィールドが無効になる", async () => {
++      mockIsPending.mockReturnValue(true);
++      render(<SignUpPage />);
++
++      expect(screen.getByLabelText("社員ID")).toBeDisabled();
++      expect(screen.getByLabelText("名前")).toBeDisabled();
++      expect(screen.getByLabelText("パスワード")).toBeDisabled();
++      expect(screen.getByLabelText("パスワード（確認）")).toBeDisabled();
++    });
++
++    it("サーバーエラー（メッセージあり）の場合はエラーメッセージがtoast表示される", async () => {
++      const user = userEvent.setup();
++      render(<SignUpPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const displayNameInput = screen.getByLabelText("名前");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const confirmPasswordInput = screen.getByLabelText("パスワード（確認）");
++      const submitButton = screen.getByRole("button", { name: "登録" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(displayNameInput, "山田太郎");
++      await user.type(passwordInput, "password123");
++      await user.type(confirmPasswordInput, "password123");
++      await user.click(submitButton);
++
++      // onErrorコールバックを呼び出す
++      capturedCallbacks.onError?.({
++        error: { serverError: { message: "この社員IDは既に登録されています" } },
++      });
++
++      await waitFor(() => {
++        expect(showError).toHaveBeenCalledWith(
++          "この社員IDは既に登録されています",
++        );
++      });
++    });
++
++    it("サーバーエラー（メッセージなし）の場合は汎用エラーメッセージがtoast表示される", async () => {
++      const user = userEvent.setup();
++      render(<SignUpPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const displayNameInput = screen.getByLabelText("名前");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const confirmPasswordInput = screen.getByLabelText("パスワード（確認）");
++      const submitButton = screen.getByRole("button", { name: "登録" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(displayNameInput, "山田太郎");
++      await user.type(passwordInput, "password123");
++      await user.type(confirmPasswordInput, "password123");
++      await user.click(submitButton);
++
++      // serverErrorはあるがmessageがない場合
++      capturedCallbacks.onError?.({
++        error: { serverError: {} },
++      });
++
++      await waitFor(() => {
++        expect(showError).toHaveBeenCalledWith("登録に失敗しました");
++      });
++    });
++
++    it("サーバーエラー（serverErrorなし）の場合は汎用エラーメッセージがtoast表示される", async () => {
++      const user = userEvent.setup();
++      render(<SignUpPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const displayNameInput = screen.getByLabelText("名前");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const confirmPasswordInput = screen.getByLabelText("パスワード（確認）");
++      const submitButton = screen.getByRole("button", { name: "登録" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(displayNameInput, "山田太郎");
++      await user.type(passwordInput, "password123");
++      await user.type(confirmPasswordInput, "password123");
++      await user.click(submitButton);
++
++      // serverErrorがない場合
++      capturedCallbacks.onError?.({
++        error: {},
++      });
++
++      await waitFor(() => {
++        expect(showError).toHaveBeenCalledWith("登録に失敗しました");
++      });
++    });
++
++    it("登録成功時にサインイン画面へリダイレクトされる", async () => {
++      const user = userEvent.setup();
++      render(<SignUpPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const displayNameInput = screen.getByLabelText("名前");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const confirmPasswordInput = screen.getByLabelText("パスワード（確認）");
++      const submitButton = screen.getByRole("button", { name: "登録" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(displayNameInput, "山田太郎");
++      await user.type(passwordInput, "password123");
++      await user.type(confirmPasswordInput, "password123");
++      await user.click(submitButton);
++
++      // onSuccessコールバックを呼び出す
++      capturedCallbacks.onSuccess?.({
++        data: { success: true, messageCode: "SIGNUP_SUCCESS" },
++      });
++
++      await waitFor(() => {
++        expect(mockPush).toHaveBeenCalledWith("/auth/signin");
++      });
++    });
++
++    it("登録成功時にtoastで成功メッセージが表示される", async () => {
++      const user = userEvent.setup();
++      render(<SignUpPage />);
++
++      const employeeIdInput = screen.getByLabelText("社員ID");
++      const displayNameInput = screen.getByLabelText("名前");
++      const passwordInput = screen.getByLabelText("パスワード");
++      const confirmPasswordInput = screen.getByLabelText("パスワード（確認）");
++      const submitButton = screen.getByRole("button", { name: "登録" });
++
++      await user.type(employeeIdInput, "PIT001");
++      await user.type(displayNameInput, "山田太郎");
++      await user.type(passwordInput, "password123");
++      await user.type(confirmPasswordInput, "password123");
++      await user.click(submitButton);
++
++      // onSuccessコールバックを呼び出す
++      capturedCallbacks.onSuccess?.({
++        data: { success: true, messageCode: "SIGNUP_SUCCESS" },
++      });
++
++      await waitFor(() => {
++        expect(showSuccess).toHaveBeenCalledWith(
++          "アカウントを作成しました。サインインしてください。",
++        );
++      });
++    });
++  });
++});
+diff --git a/next-server/app/(public)/auth/signup/actions/signupAction.ts b/next-server/app/(public)/auth/signup/actions/signupAction.ts
+new file mode 100644
+index 0000000..badf80c
+--- /dev/null
++++ b/next-server/app/(public)/auth/signup/actions/signupAction.ts
+@@ -0,0 +1,43 @@
++"use server";
++
++import { z } from "zod";
++import { publicAction } from "@/lib/server/baseAction";
++import { RegisterUserService } from "@/application/user";
++import { UserRepository } from "@/infrastructure/adapter/db";
++import { PasswordService } from "@/infrastructure/adapter/service";
++import { MessageCode } from "@/types";
++
++/**
++ * サインアップ入力スキーマ
++ */
++const signupSchema = z.object({
++  employeeId: z.string().min(1),
++  displayName: z.string().min(1),
++  password: z.string().min(1),
++});
++
++/**
++ * サインアップアクション
++ * 独自認証用のユーザ登録を行う
++ */
++export const signupAction = publicAction
++  .schema(signupSchema)
++  .action(async ({ parsedInput }): Promise<{ success: boolean; messageCode: MessageCode }> => {
++    const { employeeId, displayName, password } = parsedInput;
++
++    const registerUserService = new RegisterUserService(
++      new UserRepository(),
++      new PasswordService(),
++    );
++
++    await registerUserService.execute({
++      employeeId,
++      displayName,
++      password,
++    });
++
++    return {
++      success: true,
++      messageCode: "SIGNUP_SUCCESS",
++    };
++  });
+diff --git a/next-server/app/(public)/auth/signup/page.tsx b/next-server/app/(public)/auth/signup/page.tsx
+new file mode 100644
+index 0000000..6becb7d
+--- /dev/null
++++ b/next-server/app/(public)/auth/signup/page.tsx
+@@ -0,0 +1,184 @@
++"use client";
++
++import { useRouter } from "next/navigation";
++import { useState } from "react";
++import Link from "next/link";
++import { useAction } from "next-safe-action/hooks";
++import { Input } from "@/components/ui/input";
++import { Button } from "@/components/ui/button";
++import { Label } from "@/components/ui/label";
++import { Loader2 } from "lucide-react";
++import { signupAction } from "./actions/signupAction";
++import { showError, showSuccess } from "@/lib/client/toast";
++import { getMessage } from "@/lib/client/messages";
++
++/**
++ * サインアップページ
++ * 独自認証用のユーザ登録画面
++ */
++export default function SignUpPage() {
++  const router = useRouter();
++
++  const [employeeId, setEmployeeId] = useState("");
++  const [displayName, setDisplayName] = useState("");
++  const [password, setPassword] = useState("");
++  const [confirmPassword, setConfirmPassword] = useState("");
++  const [validationError, setValidationError] = useState<string | null>(null);
++
++  const { execute: executeSignup, isPending: isLoading } = useAction(
++    signupAction,
++    {
++      onSuccess: ({ data }) => {
++        if (data?.success) {
++          showSuccess(getMessage(data.messageCode));
++          router.push("/auth/signin");
++        }
++      },
++      onError: ({ error }) => {
++        if (error.serverError) {
++          const serverError = error.serverError as { message?: string };
++          showError(serverError.message || "登録に失敗しました");
++        } else {
++          showError("登録に失敗しました");
++        }
++      },
++    },
++  );
++
++  /**
++   * サインアップ処理
++   */
++  const handleSignUp = async (e: React.FormEvent) => {
++    e.preventDefault();
++    setValidationError(null);
++
++    // パスワード確認
++    if (password !== confirmPassword) {
++      setValidationError("パスワードが一致しません");
++      return;
++    }
++
++    executeSignup({
++      employeeId,
++      displayName,
++      password,
++    });
++  };
++
++  return (
++    <div className="h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-100 px-4">
++      <div className="w-full max-w-md">
++        {/* Logo/Brand */}
++        <div className="text-center mb-8">
++          <h1 className="text-4xl font-bold text-primary-700 mb-2">AIKATA</h1>
++          <p className="text-gray-600">AIレビュープラットフォーム</p>
++        </div>
++
++        {/* Signup Card */}
++        <div className="bg-white rounded-xl shadow-xl p-8">
++          <div className="mb-6">
++            <h2 className="text-2xl font-bold text-gray-900 mb-2">
++              アカウント登録
++            </h2>
++            <p className="text-sm text-gray-600">
++              新規アカウントを作成してください
++            </p>
++          </div>
++
++          {validationError && (
++            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
++              {validationError}
++            </div>
++          )}
++
++          {/* Signup Form */}
++          <form onSubmit={handleSignUp} className="space-y-4">
++            <div className="space-y-2">
++              <Label htmlFor="employeeId">社員ID</Label>
++              <Input
++                id="employeeId"
++                type="text"
++                placeholder="PIT*/A*"
++                value={employeeId}
++                onChange={(e) => setEmployeeId(e.target.value)}
++                disabled={isLoading}
++                required
++              />
++            </div>
++
++            <div className="space-y-2">
++              <Label htmlFor="displayName">名前</Label>
++              <Input
++                id="displayName"
++                type="text"
++                placeholder="山田太郎"
++                value={displayName}
++                onChange={(e) => setDisplayName(e.target.value)}
++                disabled={isLoading}
++                required
++              />
++            </div>
++
++            <div className="space-y-2">
++              <Label htmlFor="password">パスワード</Label>
++              <Input
++                id="password"
++                type="password"
++                value={password}
++                onChange={(e) => setPassword(e.target.value)}
++                disabled={isLoading}
++                required
++              />
++            </div>
++
++            <div className="space-y-2">
++              <Label htmlFor="confirmPassword">パスワード（確認）</Label>
++              <Input
++                id="confirmPassword"
++                type="password"
++                value={confirmPassword}
++                onChange={(e) => setConfirmPassword(e.target.value)}
++                disabled={isLoading}
++                required
++              />
++            </div>
++
++            <Button
++              type="submit"
++              className="w-full"
++              disabled={
++                isLoading ||
++                !employeeId ||
++                !displayName ||
++                !password ||
++                !confirmPassword
++              }
++            >
++              {isLoading ? (
++                <>
++                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
++                  登録中...
++                </>
++              ) : (
++                "登録"
++              )}
++            </Button>
++          </form>
++
++          {/* Sign In Link */}
++          <div className="mt-4 text-center">
++            <span className="text-sm text-gray-600">
++              既にアカウントをお持ちの方は{" "}
++              <Link
++                href="/auth/signin"
++                className="text-primary-600 hover:text-primary-700 font-medium"
++              >
++                ログイン
++              </Link>
++            </span>
++          </div>
++        </div>
++      </div>
++    </div>
++  );
++}
+diff --git a/next-server/application/shared/port/service/IPasswordService.ts b/next-server/application/shared/port/service/IPasswordService.ts
+new file mode 100644
+index 0000000..247c864
+--- /dev/null
++++ b/next-server/application/shared/port/service/IPasswordService.ts
+@@ -0,0 +1,20 @@
++/**
++ * パスワードサービスインターフェース
++ * パスワードの暗号化と検証を行う
++ */
++export interface IPasswordService {
++  /**
++   * 平文パスワードを暗号化する
++   * @param plainPassword - 暗号化する平文パスワード
++   * @returns 暗号化されたパスワード
++   */
++  encrypt(plainPassword: string): string;
++
++  /**
++   * パスワードを検証する
++   * @param plainPassword - 検証する平文パスワード
++   * @param encryptedPassword - 暗号化されたパスワード
++   * @returns パスワードが一致する場合はtrue
++   */
++  verify(plainPassword: string, encryptedPassword: string): boolean;
++}
+diff --git a/next-server/application/shared/port/service/index.ts b/next-server/application/shared/port/service/index.ts
+new file mode 100644
+index 0000000..44cf5ed
+--- /dev/null
++++ b/next-server/application/shared/port/service/index.ts
+@@ -0,0 +1,3 @@
++// サービスポートのエントリーポイント
++
++export type { IPasswordService } from "./IPasswordService";
+diff --git a/next-server/application/user/AuthenticateUserService.ts b/next-server/application/user/AuthenticateUserService.ts
+new file mode 100644
+index 0000000..9d68177
+--- /dev/null
++++ b/next-server/application/user/AuthenticateUserService.ts
+@@ -0,0 +1,76 @@
++import { IUserRepository } from "@/application/shared/port/repository";
++import { IPasswordService } from "@/application/shared/port/service";
++import { EmployeeId, Password, UserDto } from "@/domain/user";
++import { AppError } from "@/lib/server/error";
++
++/**
++ * ユーザ認証コマンド
++ */
++export interface AuthenticateUserCommand {
++  /** 社員ID */
++  employeeId: string;
++  /** パスワード（平文） */
++  password: string;
++}
++
++/**
++ * ユーザ認証サービス
++ * 独自認証でユーザを認証する
++ */
++export class AuthenticateUserService {
++  constructor(
++    private readonly userRepository: IUserRepository,
++    private readonly passwordService: IPasswordService,
++  ) {}
++
++  /**
++   * ユーザ認証を実行
++   * @param command 認証コマンド
++   * @returns ユーザDTO
++   * @throws AppError - 認証に失敗した場合（INVALID_CREDENTIALS）
++   * @throws ドメインバリデーションエラー - 社員ID、パスワードが不正な場合
++   */
++  async execute(command: AuthenticateUserCommand): Promise<UserDto> {
++    const { employeeId, password } = command;
++
++    // 社員IDの値オブジェクト生成（バリデーション含む）
++    const employeeIdVo = EmployeeId.create(employeeId);
++
++    // パスワードの値オブジェクト生成（バリデーション含む）
++    Password.create(password);
++
++    // ユーザの検索
++    const user = await this.userRepository.findByEmployeeId(employeeIdVo);
++
++    // ユーザが存在しない場合はエラー
++    if (!user) {
++      throw new AppError("UNAUTHORIZED", {
++        expose: true,
++        messageCode: "INVALID_CREDENTIALS",
++      });
++    }
++
++    // SSOユーザ（passwordHashがない）の場合はエラー
++    if (!user.hasPasswordHash()) {
++      throw new AppError("UNAUTHORIZED", {
++        expose: true,
++        messageCode: "INVALID_CREDENTIALS",
++      });
++    }
++
++    // パスワードを検証
++    const isValidPassword = this.passwordService.verify(
++      password,
++      user.passwordHash!,
++    );
++
++    if (!isValidPassword) {
++      throw new AppError("UNAUTHORIZED", {
++        expose: true,
++        messageCode: "INVALID_CREDENTIALS",
++      });
++    }
++
++    return user.toDto();
++  }
++}
+diff --git a/next-server/application/user/RegisterUserService.ts b/next-server/application/user/RegisterUserService.ts
+new file mode 100644
+index 0000000..b3e6f14
+--- /dev/null
++++ b/next-server/application/user/RegisterUserService.ts
+@@ -0,0 +1,71 @@
++import { IUserRepository } from "@/application/shared/port/repository";
++import { IPasswordService } from "@/application/shared/port/service";
++import { User, EmployeeId, Password, UserDto } from "@/domain/user";
++import { AppError } from "@/lib/server/error";
++
++/**
++ * ユーザ登録コマンド
++ */
++export interface RegisterUserCommand {
++  /** 社員ID */
++  employeeId: string;
++  /** 表示名 */
++  displayName: string;
++  /** パスワード（平文） */
++  password: string;
++}
++
++/**
++ * ユーザ登録サービス
++ * 独自認証用のユーザ登録を行う
++ */
++export class RegisterUserService {
++  constructor(
++    private readonly userRepository: IUserRepository,
++    private readonly passwordService: IPasswordService,
++  ) {}
++
++  /**
++   * ユーザ登録を実行
++   * @param command 登録コマンド
++   * @returns ユーザDTO
++   * @throws AppError - 既にユーザが存在する場合（USER_ALREADY_EXISTS）
++   * @throws ドメインバリデーションエラー - 社員ID、表示名、パスワードが不正な場合
++   */
++  async execute(command: RegisterUserCommand): Promise<UserDto> {
++    const { employeeId, displayName, password } = command;
++
++    // 社員IDの値オブジェクト生成（バリデーション含む）
++    const employeeIdVo = EmployeeId.create(employeeId);
++
++    // パスワードの値オブジェクト生成（バリデーション含む）
++    Password.create(password);
++
++    // 既存ユーザの検索
++    const existingUser =
++      await this.userRepository.findByEmployeeId(employeeIdVo);
++
++    if (existingUser) {
++      // 既にユーザが存在する場合はエラー
++      throw new AppError("BAD_REQUEST", {
++        expose: true,
++        messageCode: "USER_ALREADY_EXISTS",
++      });
++    }
++
++    // パスワードを暗号化
++    const encryptedPassword = this.passwordService.encrypt(password);
++
++    // ローカルユーザを作成
++    const newUser = User.createLocalUser({
++      employeeId,
++      displayName,
++      passwordHash: encryptedPassword,
++    });
++
++    // 保存
++    await this.userRepository.save(newUser);
++
++    return newUser.toDto();
++  }
++}
+diff --git a/next-server/application/user/__tests__/AuthenticateUserService.test.ts b/next-server/application/user/__tests__/AuthenticateUserService.test.ts
+new file mode 100644
+index 0000000..6e82b55
+--- /dev/null
++++ b/next-server/application/user/__tests__/AuthenticateUserService.test.ts
+@@ -0,0 +1,254 @@
++import { describe, it, expect, beforeEach, vi } from "vitest";
++import {
++  AuthenticateUserService,
++  AuthenticateUserCommand,
++} from "../AuthenticateUserService";
++import { IUserRepository } from "@/application/shared/port/repository";
++import { IPasswordService } from "@/application/shared/port/service";
++import { User } from "@/domain/user";
++
++describe("AuthenticateUserService", () => {
++  let mockUserRepository: IUserRepository;
++  let mockPasswordService: IPasswordService;
++  let authenticateUserService: AuthenticateUserService;
++
++  // テスト用の固定日時
++  const fixedDate = new Date("2024-01-01T00:00:00.000Z");
++
++  beforeEach(() => {
++    vi.useFakeTimers();
++    vi.setSystemTime(fixedDate);
++
++    // リポジトリのモック
++    mockUserRepository = {
++      findByEmployeeId: vi.fn(),
++      findById: vi.fn(),
++      findByIds: vi.fn(),
++      searchUsers: vi.fn(),
++      countSearchUsers: vi.fn(),
++      save: vi.fn(),
++      findAllAdmins: vi.fn(),
++      countAdmins: vi.fn(),
++      findAll: vi.fn(),
++      countAll: vi.fn(),
++    };
++
++    // パスワードサービスのモック
++    mockPasswordService = {
++      encrypt: vi.fn(),
++      verify: vi.fn(),
++    };
++
++    authenticateUserService = new AuthenticateUserService(
++      mockUserRepository,
++      mockPasswordService,
++    );
++  });
++
++  describe("execute - 正常系", () => {
++    it("正しい社員IDとパスワードで認証に成功する", async () => {
++      // Arrange
++      const localUser = User.createLocalUser({
++        employeeId: "PIT001",
++        displayName: "山田太郎",
++        passwordHash: "encrypted_hash",
++      });
++      const command: AuthenticateUserCommand = {
++        employeeId: "PIT001",
++        password: "password123",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(
++        localUser,
++      );
++      vi.mocked(mockPasswordService.verify).mockReturnValue(true);
++
++      // Act
++      const result = await authenticateUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("PIT001");
++      expect(result.displayName).toBe("山田太郎");
++      expect(result.id).toBe(localUser.id.value);
++      expect(mockUserRepository.findByEmployeeId).toHaveBeenCalledTimes(1);
++      expect(mockPasswordService.verify).toHaveBeenCalledWith(
++        "password123",
++        "encrypted_hash",
++      );
++    });
++
++    it("PIT形式の社員IDで認証に成功する", async () => {
++      // Arrange
++      const localUser = User.createLocalUser({
++        employeeId: "PIT999",
++        displayName: "テスト太郎",
++        passwordHash: "hash",
++      });
++      const command: AuthenticateUserCommand = {
++        employeeId: "PIT999",
++        password: "pass",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(
++        localUser,
++      );
++      vi.mocked(mockPasswordService.verify).mockReturnValue(true);
++
++      // Act
++      const result = await authenticateUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("PIT999");
++    });
++
++    it("A形式の社員IDで認証に成功する", async () => {
++      // Arrange
++      const localUser = User.createLocalUser({
++        employeeId: "A001",
++        displayName: "テスト太郎",
++        passwordHash: "hash",
++      });
++      const command: AuthenticateUserCommand = {
++        employeeId: "A001",
++        password: "pass",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(
++        localUser,
++      );
++      vi.mocked(mockPasswordService.verify).mockReturnValue(true);
++
++      // Act
++      const result = await authenticateUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("A001");
++    });
++  });
++
++  describe("execute - 異常系", () => {
++    it("ユーザが存在しない場合はエラーになる", async () => {
++      // Arrange
++      const command: AuthenticateUserCommand = {
++        employeeId: "PIT001",
++        password: "password123",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++
++      // Act & Assert
++      await expect(
++        authenticateUserService.execute(command),
++      ).rejects.toMatchObject({
++        messageCode: "INVALID_CREDENTIALS",
++      });
++      expect(mockPasswordService.verify).not.toHaveBeenCalled();
++    });
++
++    it("SSOユーザ（passwordHashがない）の場合はエラーになる", async () => {
++      // Arrange
++      const ssoUser = User.create({
++        employeeId: "PIT001",
++        displayName: "SSO太郎",
++      });
++      const command: AuthenticateUserCommand = {
++        employeeId: "PIT001",
++        password: "password123",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(ssoUser);
++
++      // Act & Assert
++      await expect(
++        authenticateUserService.execute(command),
++      ).rejects.toMatchObject({
++        messageCode: "INVALID_CREDENTIALS",
++      });
++      expect(mockPasswordService.verify).not.toHaveBeenCalled();
++    });
++
++    it("パスワードが間違っている場合はエラーになる", async () => {
++      // Arrange
++      const localUser = User.createLocalUser({
++        employeeId: "PIT001",
++        displayName: "山田太郎",
++        passwordHash: "encrypted_hash",
++      });
++      const command: AuthenticateUserCommand = {
++        employeeId: "PIT001",
++        password: "wrongpassword",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(
++        localUser,
++      );
++      vi.mocked(mockPasswordService.verify).mockReturnValue(false);
++
++      // Act & Assert
++      await expect(
++        authenticateUserService.execute(command),
++      ).rejects.toMatchObject({
++        messageCode: "INVALID_CREDENTIALS",
++      });
++    });
++
++    it("空の社員IDの場合はバリデーションエラーになる", async () => {
++      // Arrange
++      const command: AuthenticateUserCommand = {
++        employeeId: "",
++        password: "password123",
++      };
++
++      // Act & Assert
++      await expect(
++        authenticateUserService.execute(command),
++      ).rejects.toMatchObject({
++        messageCode: "EMPLOYEE_ID_EMPTY",
++      });
++      expect(mockUserRepository.findByEmployeeId).not.toHaveBeenCalled();
++    });
++
++    it("空のパスワードの場合はバリデーションエラーになる", async () => {
++      // Arrange
++      const command: AuthenticateUserCommand = {
++        employeeId: "PIT001",
++        password: "",
++      };
++
++      // Act & Assert
++      await expect(
++        authenticateUserService.execute(command),
++      ).rejects.toMatchObject({
++        messageCode: "PASSWORD_EMPTY",
++      });
++      expect(mockUserRepository.findByEmployeeId).not.toHaveBeenCalled();
++    });
++
++    it("空白のみのパスワードの場合はバリデーションエラーになる", async () => {
++      // Arrange
++      const command: AuthenticateUserCommand = {
++        employeeId: "PIT001",
++        password: "   ",
++      };
++
++      // Act & Assert
++      await expect(
++        authenticateUserService.execute(command),
++      ).rejects.toMatchObject({
++        messageCode: "PASSWORD_EMPTY",
++      });
++      expect(mockUserRepository.findByEmployeeId).not.toHaveBeenCalled();
++    });
++
++    it("リポジトリのfindByEmployeeIdでエラー発生時は適切にエラーがスローされる", async () => {
++      // Arrange
++      const command: AuthenticateUserCommand = {
++        employeeId: "PIT001",
++        password: "password123",
++      };
++      const repositoryError = new Error("Database connection failed");
++      vi.mocked(mockUserRepository.findByEmployeeId).mockRejectedValue(
++        repositoryError,
++      );
++
++      // Act & Assert
++      await expect(authenticateUserService.execute(command)).rejects.toThrow(
++        "Database connection failed",
++      );
++    });
++  });
++});
+diff --git a/next-server/application/user/__tests__/RegisterUserService.test.ts b/next-server/application/user/__tests__/RegisterUserService.test.ts
+new file mode 100644
+index 0000000..ff1d9cc
+--- /dev/null
++++ b/next-server/application/user/__tests__/RegisterUserService.test.ts
+@@ -0,0 +1,238 @@
++import { describe, it, expect, beforeEach, vi } from "vitest";
++import {
++  RegisterUserService,
++  RegisterUserCommand,
++} from "../RegisterUserService";
++import { IUserRepository } from "@/application/shared/port/repository";
++import { IPasswordService } from "@/application/shared/port/service";
++import { User, EmployeeId } from "@/domain/user";
++
++describe("RegisterUserService", () => {
++  let mockUserRepository: IUserRepository;
++  let mockPasswordService: IPasswordService;
++  let registerUserService: RegisterUserService;
++
++  // テスト用の固定日時
++  const fixedDate = new Date("2024-01-01T00:00:00.000Z");
++
++  beforeEach(() => {
++    vi.useFakeTimers();
++    vi.setSystemTime(fixedDate);
++
++    // リポジトリのモック
++    mockUserRepository = {
++      findByEmployeeId: vi.fn(),
++      findById: vi.fn(),
++      findByIds: vi.fn(),
++      searchUsers: vi.fn(),
++      countSearchUsers: vi.fn(),
++      save: vi.fn(),
++      findAllAdmins: vi.fn(),
++      countAdmins: vi.fn(),
++      findAll: vi.fn(),
++      countAll: vi.fn(),
++    };
++
++    // パスワードサービスのモック
++    mockPasswordService = {
++      encrypt: vi.fn(),
++      verify: vi.fn(),
++    };
++
++    registerUserService = new RegisterUserService(
++      mockUserRepository,
++      mockPasswordService,
++    );
++  });
++
++  describe("execute - 正常系", () => {
++    it("新規ユーザが正常に登録される", async () => {
++      // Arrange
++      const command: RegisterUserCommand = {
++        employeeId: "PIT001",
++        displayName: "山田太郎",
++        password: "password123",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      vi.mocked(mockPasswordService.encrypt).mockReturnValue("encrypted_hash");
++      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
++
++      // Act
++      const result = await registerUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("PIT001");
++      expect(result.displayName).toBe("山田太郎");
++      expect(result.id).toBeDefined();
++      expect(mockUserRepository.findByEmployeeId).toHaveBeenCalledTimes(1);
++      expect(mockPasswordService.encrypt).toHaveBeenCalledWith("password123");
++      expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
++
++      // 保存されたユーザにパスワードハッシュが設定されていることを確認
++      const savedUser = vi.mocked(mockUserRepository.save).mock.calls[0][0];
++      expect(savedUser.passwordHash).toBe("encrypted_hash");
++    });
++
++    it("社員IDがPIT形式の場合に正常に登録される", async () => {
++      // Arrange
++      const command: RegisterUserCommand = {
++        employeeId: "PIT123",
++        displayName: "テストユーザ",
++        password: "p",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      vi.mocked(mockPasswordService.encrypt).mockReturnValue("hash");
++      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
++
++      // Act
++      const result = await registerUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("PIT123");
++      expect(mockPasswordService.encrypt).toHaveBeenCalledWith("p");
++    });
++
++    it("社員IDがA形式の場合に正常に登録される", async () => {
++      // Arrange
++      const command: RegisterUserCommand = {
++        employeeId: "A001",
++        displayName: "テストユーザ",
++        password: "password",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      vi.mocked(mockPasswordService.encrypt).mockReturnValue("hash");
++      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
++
++      // Act
++      const result = await registerUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("A001");
++    });
++  });
++
++  describe("execute - 異常系", () => {
++    it("既存ユーザが存在する場合はエラーになる", async () => {
++      // Arrange
++      const existingUser = User.create({
++        employeeId: "PIT001",
++        displayName: "既存ユーザ",
++      });
++      const command: RegisterUserCommand = {
++        employeeId: "PIT001",
++        displayName: "山田太郎",
++        password: "password123",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(
++        existingUser,
++      );
++
++      // Act & Assert
++      await expect(registerUserService.execute(command)).rejects.toMatchObject({
++        messageCode: "USER_ALREADY_EXISTS",
++      });
++      expect(mockPasswordService.encrypt).not.toHaveBeenCalled();
++      expect(mockUserRepository.save).not.toHaveBeenCalled();
++    });
++
++    it("空の社員IDの場合はバリデーションエラーになる", async () => {
++      // Arrange
++      const command: RegisterUserCommand = {
++        employeeId: "",
++        displayName: "山田太郎",
++        password: "password123",
++      };
++
++      // Act & Assert
++      await expect(registerUserService.execute(command)).rejects.toMatchObject({
++        messageCode: "EMPLOYEE_ID_EMPTY",
++      });
++      expect(mockUserRepository.findByEmployeeId).not.toHaveBeenCalled();
++      expect(mockUserRepository.save).not.toHaveBeenCalled();
++    });
++
++    it("空の表示名の場合はバリデーションエラーになる", async () => {
++      // Arrange
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      const command: RegisterUserCommand = {
++        employeeId: "PIT001",
++        displayName: "",
++        password: "password123",
++      };
++
++      // Act & Assert
++      await expect(registerUserService.execute(command)).rejects.toMatchObject({
++        messageCode: "DISPLAY_NAME_EMPTY",
++      });
++      expect(mockUserRepository.save).not.toHaveBeenCalled();
++    });
++
++    it("空のパスワードの場合はバリデーションエラーになる", async () => {
++      // Arrange
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      const command: RegisterUserCommand = {
++        employeeId: "PIT001",
++        displayName: "山田太郎",
++        password: "",
++      };
++
++      // Act & Assert
++      await expect(registerUserService.execute(command)).rejects.toMatchObject({
++        messageCode: "PASSWORD_EMPTY",
++      });
++      expect(mockUserRepository.save).not.toHaveBeenCalled();
++    });
++
++    it("空白のみのパスワードの場合はバリデーションエラーになる", async () => {
++      // Arrange
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      const command: RegisterUserCommand = {
++        employeeId: "PIT001",
++        displayName: "山田太郎",
++        password: "   ",
++      };
++
++      // Act & Assert
++      await expect(registerUserService.execute(command)).rejects.toMatchObject({
++        messageCode: "PASSWORD_EMPTY",
++      });
++      expect(mockUserRepository.save).not.toHaveBeenCalled();
++    });
++
++    it("リポジトリのfindByEmployeeIdでエラー発生時は適切にエラーがスローされる", async () => {
++      // Arrange
++      const command: RegisterUserCommand = {
++        employeeId: "PIT001",
++        displayName: "山田太郎",
++        password: "password123",
++      };
++      const repositoryError = new Error("Database connection failed");
++      vi.mocked(mockUserRepository.findByEmployeeId).mockRejectedValue(
++        repositoryError,
++      );
++
++      // Act & Assert
++      await expect(registerUserService.execute(command)).rejects.toThrow(
++        "Database connection failed",
++      );
++    });
++
++    it("リポジトリのsaveでエラー発生時は適切にエラーがスローされる", async () => {
++      // Arrange
++      const command: RegisterUserCommand = {
++        employeeId: "PIT001",
++        displayName: "山田太郎",
++        password: "password123",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      vi.mocked(mockPasswordService.encrypt).mockReturnValue("encrypted_hash");
++      const repositoryError = new Error("Failed to save user");
++      vi.mocked(mockUserRepository.save).mockRejectedValue(repositoryError);
++
++      // Act & Assert
++      await expect(registerUserService.execute(command)).rejects.toThrow(
++        "Failed to save user",
++      );
++    });
++  });
++});
+diff --git a/next-server/application/user/__tests__/SyncUserService.test.ts b/next-server/application/user/__tests__/SyncUserService.test.ts
+index f9dc154..885b08c 100644
+--- a/next-server/application/user/__tests__/SyncUserService.test.ts
++++ b/next-server/application/user/__tests__/SyncUserService.test.ts
+@@ -109,6 +109,68 @@ describe("SyncUserService", () => {
+     });
+   });
+ 
++  describe("execute - GitLab連携", () => {
++    it("GitLab形式のusername（ハイフン含む）で新規ユーザが作成される", async () => {
++      // Arrange
++      const command: SyncUserCommand = {
++        employeeId: "gitlab-user-123",
++        displayName: "GitLab User",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
++
++      // Act
++      const result = await syncUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("gitlab-user-123");
++      expect(result.displayName).toBe("GitLab User");
++      expect(result.id).toBeDefined();
++      expect(mockUserRepository.findByEmployeeId).toHaveBeenCalledTimes(1);
++      expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
++    });
++
++    it("GitLab形式のusername（アンダースコア含む）で新規ユーザが作成される", async () => {
++      // Arrange
++      const command: SyncUserCommand = {
++        employeeId: "gitlab_user_456",
++        displayName: "GitLab User 2",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
++
++      // Act
++      const result = await syncUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("gitlab_user_456");
++      expect(result.displayName).toBe("GitLab User 2");
++      expect(result.id).toBeDefined();
++      expect(mockUserRepository.findByEmployeeId).toHaveBeenCalledTimes(1);
++      expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
++    });
++
++    it("GitLab形式のusername（ピリオド含む）で新規ユーザが作成される", async () => {
++      // Arrange
++      const command: SyncUserCommand = {
++        employeeId: "gitlab.user.789",
++        displayName: "GitLab User 3",
++      };
++      vi.mocked(mockUserRepository.findByEmployeeId).mockResolvedValue(null);
++      vi.mocked(mockUserRepository.save).mockResolvedValue(undefined);
++
++      // Act
++      const result = await syncUserService.execute(command);
++
++      // Assert
++      expect(result.employeeId).toBe("gitlab.user.789");
++      expect(result.displayName).toBe("GitLab User 3");
++      expect(result.id).toBeDefined();
++      expect(mockUserRepository.findByEmployeeId).toHaveBeenCalledTimes(1);
++      expect(mockUserRepository.save).toHaveBeenCalledTimes(1);
++    });
++  });
++
+   describe("execute - 異常系", () => {
+     it("空の社員IDの場合はバリデーションエラーになる", async () => {
+       // Arrange
+diff --git a/next-server/application/user/index.ts b/next-server/application/user/index.ts
+index 5cc9d1b..af54261 100644
+--- a/next-server/application/user/index.ts
++++ b/next-server/application/user/index.ts
+@@ -1,3 +1,11 @@
+ // ユーザアプリケーションサービスのエントリーポイント
+ 
+ export { SyncUserService, type SyncUserCommand } from "./SyncUserService";
++export {
++  RegisterUserService,
++  type RegisterUserCommand,
++} from "./RegisterUserService";
++export {
++  AuthenticateUserService,
++  type AuthenticateUserCommand,
++} from "./AuthenticateUserService";
+diff --git a/next-server/auth.ts b/next-server/auth.ts
+index daba4fe..2d15643 100644
+--- a/next-server/auth.ts
++++ b/next-server/auth.ts
+@@ -1,11 +1,26 @@
+ import { NextAuthOptions } from "next-auth";
+ import KeycloakProvider from "next-auth/providers/keycloak";
+-import { SyncUserService } from "@/application/user";
++import GitLabProvider from "next-auth/providers/gitlab";
++import CredentialsProvider from "next-auth/providers/credentials";
++import { SyncUserService, AuthenticateUserService } from "@/application/user";
+ import { UserRepository } from "@/infrastructure/adapter/db";
++import { PasswordService } from "@/infrastructure/adapter/service";
++
++/**
++ * GitLabのプロファイル型定義
++ */
++interface GitLabProfile {
++  id: number;
++  username: string;
++  name: string;
++  email?: string;
++  avatar_url?: string;
++  web_url?: string;
++}
+ 
+ /**
+  * NextAuth設定オプション
+- * Keycloak OIDCプロバイダーを使用
++ * Keycloak OIDC および GitLab OAuth2 プロバイダーを使用
+  */
+ export const authOptions: NextAuthOptions = {
+   providers: [
+@@ -29,6 +44,85 @@ export const authOptions: NextAuthOptions = {
+         };
+       },
+     }),
++    // GitLabプロバイダー（環境変数が設定されている場合のみ有効）
++    ...(process.env.GITLAB_CLIENT_ID &&
++    process.env.GITLAB_CLIENT_SECRET &&
++    process.env.GITLAB_BASE_URL
++      ? [
++          GitLabProvider({
++            clientId: process.env.GITLAB_CLIENT_ID,
++            clientSecret: process.env.GITLAB_CLIENT_SECRET,
++            // セルフホスト型GitLab対応
++            authorization: {
++              url: `${process.env.GITLAB_BASE_URL}/oauth/authorize`,
++              params: { scope: "read_user" },
++            },
++            token: `${process.env.GITLAB_BASE_URL}/oauth/token`,
++            userinfo: `${process.env.GITLAB_BASE_URL}/api/v4/user`,
++            profile(profile: GitLabProfile) {
++              return {
++                id: String(profile.id),
++                // GitLabのusernameを社員IDとして使用
++                employeeId: profile.username,
++                // GitLabのnameを表示名として使用
++                displayName: profile.name || profile.username,
++                // 管理者フラグ（初期値、signInでDB値に更新される）
++                isAdmin: false,
++                // 標準属性
++                name: profile.name,
++                email: profile.email,
++                image: profile.avatar_url,
++              };
++            },
++          }),
++        ]
++      : []),
++    // 独自認証プロバイダー（社員ID + パスワード）
++    CredentialsProvider({
++      id: "credentials",
++      name: "社員ID・パスワード",
++      credentials: {
++        employeeId: {
++          label: "社員ID",
++          type: "text",
++          placeholder: "PIT*/A*",
++        },
++        password: {
++          label: "パスワード",
++          type: "password",
++        },
++      },
++      async authorize(credentials) {
++        if (!credentials?.employeeId || !credentials?.password) {
++          return null;
++        }
++
++        try {
++          const authenticateUserService = new AuthenticateUserService(
++            new UserRepository(),
++            new PasswordService(),
++          );
++          const userDto = await authenticateUserService.execute({
++            employeeId: credentials.employeeId,
++            password: credentials.password,
++          });
++
++          // next-authが期待するユーザー形式で返却
++          return {
++            id: userDto.id,
++            employeeId: userDto.employeeId,
++            displayName: userDto.displayName,
++            isAdmin: userDto.isAdmin,
++            name: userDto.displayName,
++            email: null,
++            image: null,
++          };
++        } catch {
++          // 認証失敗時はnullを返す
++          return null;
++        }
++      },
++    }),
+   ],
+   session: {
+     strategy: "jwt",
+@@ -63,7 +157,14 @@ export const authOptions: NextAuthOptions = {
+     /**
+      * サインイン時にDBにユーザを同期
+      */
+-    async signIn({ user }) {
++    async signIn({ user, account }) {
++      // 独自認証の場合は、authorize関数で既に認証済みなのでそのまま許可
++      if (account?.provider === "credentials") {
++        // userオブジェクトには既にDBのユーザー情報が設定されている
++        return true;
++      }
++
++      // SSO認証の場合はDBにユーザを同期
+       try {
+         const syncUserService = new SyncUserService(new UserRepository());
+         const syncedUser = await syncUserService.execute({
+diff --git a/next-server/domain/user/Password.ts b/next-server/domain/user/Password.ts
+new file mode 100644
+index 0000000..dc3cc64
+--- /dev/null
++++ b/next-server/domain/user/Password.ts
+@@ -0,0 +1,46 @@
++import { domainValidationError } from "@/lib/server/error";
++
++/**
++ * パスワード値オブジェクト
++ * 平文パスワードを表現する値オブジェクト
++ */
++export class Password {
++  private readonly _value: string;
++
++  private constructor(value: string) {
++    this._value = value;
++  }
++
++  /**
++   * パスワードを作成する
++   * @throws ドメインバリデーションエラー - パスワードが空の場合
++   */
++  static create(password: string): Password {
++    Password.validate(password);
++    return new Password(password);
++  }
++
++  /**
++   * パスワードのバリデーション
++   * @throws ドメインバリデーションエラー - パスワードが空の場合
++   */
++  private static validate(password: string): void {
++    if (!password || !password.trim()) {
++      throw domainValidationError("PASSWORD_EMPTY");
++    }
++  }
++
++  /**
++   * パスワードの値を取得
++   */
++  get value(): string {
++    return this._value;
++  }
++
++  /**
++   * 他のPasswordと等しいかどうかを判定
++   */
++  equals(other: Password): boolean {
++    return this._value === other._value;
++  }
++}
+diff --git a/next-server/domain/user/User.ts b/next-server/domain/user/User.ts
+index b50a1e8..d0b2625 100644
+--- a/next-server/domain/user/User.ts
++++ b/next-server/domain/user/User.ts
+@@ -14,7 +14,7 @@ export interface UserDto {
+ }
+ 
+ /**
+- * ユーザ作成用パラメータ
++ * SSOユーザ作成用パラメータ
+  */
+ export interface CreateUserParams {
+   employeeId: string;
+@@ -22,6 +22,16 @@ export interface CreateUserParams {
+   isAdmin?: boolean;
+ }
+ 
++/**
++ * ローカル認証ユーザ作成用パラメータ
++ */
++export interface CreateLocalUserParams {
++  employeeId: string;
++  displayName: string;
++  passwordHash: string;
++  isAdmin?: boolean;
++}
++
+ /**
+  * ユーザ復元用パラメータ
+  */
+@@ -30,19 +40,21 @@ export interface ReconstructUserParams {
+   employeeId: string;
+   displayName: string;
+   isAdmin: boolean;
++  passwordHash?: string;
+   createdAt: Date;
+   updatedAt: Date;
+ }
+ 
+ /**
+  * ユーザエンティティ（集約ルート）
+- * Keycloakで認証されたユーザを表現
++ * SSO認証またはローカル認証されたユーザを表現
+  */
+ export class User {
+   private readonly _id: UserId;
+   private readonly _employeeId: EmployeeId;
+   private readonly _displayName: string;
+   private readonly _isAdmin: boolean;
++  private readonly _passwordHash?: string;
+   private readonly _createdAt: Date;
+   private readonly _updatedAt: Date;
+ 
+@@ -53,6 +65,7 @@ export class User {
+     isAdmin: boolean,
+     createdAt: Date,
+     updatedAt: Date,
++    passwordHash?: string,
+   ) {
+     this._id = id;
+     this._employeeId = employeeId;
+@@ -60,10 +73,11 @@ export class User {
+     this._isAdmin = isAdmin;
+     this._createdAt = createdAt;
+     this._updatedAt = updatedAt;
++    this._passwordHash = passwordHash;
+   }
+ 
+   /**
+-   * 新規ユーザを作成する
++   * 新規SSOユーザを作成する
+    * @throws ドメインバリデーションエラー - バリデーション失敗時
+    */
+   static create(params: CreateUserParams): User {
+@@ -80,6 +94,29 @@ export class User {
+       isAdmin,
+       now,
+       now,
++      undefined,
++    );
++  }
++
++  /**
++   * 新規ローカル認証ユーザを作成する
++   * @throws ドメインバリデーションエラー - バリデーション失敗時
++   */
++  static createLocalUser(params: CreateLocalUserParams): User {
++    const { employeeId, displayName, passwordHash, isAdmin = false } = params;
++
++    // 表示名のバリデーション
++    User.validateDisplayName(displayName);
++
++    const now = new Date();
++    return new User(
++      UserId.create(),
++      EmployeeId.create(employeeId),
++      displayName,
++      isAdmin,
++      now,
++      now,
++      passwordHash,
+     );
+   }
+ 
+@@ -88,8 +125,15 @@ export class User {
+    * @throws ドメインバリデーションエラー - バリデーション失敗時
+    */
+   static reconstruct(params: ReconstructUserParams): User {
+-    const { id, employeeId, displayName, isAdmin, createdAt, updatedAt } =
+-      params;
++    const {
++      id,
++      employeeId,
++      displayName,
++      isAdmin,
++      passwordHash,
++      createdAt,
++      updatedAt,
++    } = params;
+ 
+     // 表示名のバリデーション
+     User.validateDisplayName(displayName);
+@@ -101,6 +145,7 @@ export class User {
+       isAdmin,
+       createdAt,
+       updatedAt,
++      passwordHash,
+     );
+   }
+ 
+@@ -127,6 +172,7 @@ export class User {
+       this._isAdmin,
+       this._createdAt,
+       new Date(),
++      this._passwordHash,
+     );
+   }
+ 
+@@ -142,6 +188,7 @@ export class User {
+       isAdmin,
+       this._createdAt,
+       new Date(),
++      this._passwordHash,
+     );
+   }
+ 
+@@ -188,4 +235,16 @@ export class User {
+   get updatedAt(): Date {
+     return this._updatedAt;
+   }
++
++  get passwordHash(): string | undefined {
++    return this._passwordHash;
++  }
++
++  /**
++   * パスワードハッシュが設定されているかを判定
++   * trueの場合、ローカル認証が可能
++   */
++  hasPasswordHash(): boolean {
++    return this._passwordHash !== undefined && this._passwordHash !== null;
++  }
+ }
+diff --git a/next-server/domain/user/__tests__/Password.test.ts b/next-server/domain/user/__tests__/Password.test.ts
+new file mode 100644
+index 0000000..0c9195b
+--- /dev/null
++++ b/next-server/domain/user/__tests__/Password.test.ts
+@@ -0,0 +1,85 @@
++import { describe, it, expect } from "vitest";
++import { Password } from "../Password";
++import { AppError } from "@/lib/server/error";
++
++describe("Password", () => {
++  describe("create", () => {
++    it("有効なパスワードでPasswordを作成できること", () => {
++      const password = Password.create("password123");
++      expect(password.value).toBe("password123");
++    });
++
++    it("1文字のパスワードでも作成できること", () => {
++      const password = Password.create("a");
++      expect(password.value).toBe("a");
++    });
++
++    it("日本語を含むパスワードでも作成できること", () => {
++      const password = Password.create("パスワード123");
++      expect(password.value).toBe("パスワード123");
++    });
++
++    it("特殊文字を含むパスワードでも作成できること", () => {
++      const password = Password.create("p@ssw0rd!#$%");
++      expect(password.value).toBe("p@ssw0rd!#$%");
++    });
++
++    it("空文字の場合はエラーになること", () => {
++      expect(() => Password.create("")).toThrow(AppError);
++      try {
++        Password.create("");
++      } catch (error) {
++        expect(error).toBeInstanceOf(AppError);
++        expect((error as AppError).messageCode).toBe("PASSWORD_EMPTY");
++      }
++    });
++
++    it("空白のみの場合はエラーになること", () => {
++      expect(() => Password.create("   ")).toThrow(AppError);
++      try {
++        Password.create("   ");
++      } catch (error) {
++        expect(error).toBeInstanceOf(AppError);
++        expect((error as AppError).messageCode).toBe("PASSWORD_EMPTY");
++      }
++    });
++
++    it("nullの場合はエラーになること", () => {
++      expect(() => Password.create(null as unknown as string)).toThrow(
++        AppError,
++      );
++      try {
++        Password.create(null as unknown as string);
++      } catch (error) {
++        expect(error).toBeInstanceOf(AppError);
++        expect((error as AppError).messageCode).toBe("PASSWORD_EMPTY");
++      }
++    });
++
++    it("undefinedの場合はエラーになること", () => {
++      expect(() => Password.create(undefined as unknown as string)).toThrow(
++        AppError,
++      );
++      try {
++        Password.create(undefined as unknown as string);
++      } catch (error) {
++        expect(error).toBeInstanceOf(AppError);
++        expect((error as AppError).messageCode).toBe("PASSWORD_EMPTY");
++      }
++    });
++  });
++
++  describe("equals", () => {
++    it("同じ値のPasswordは等しいこと", () => {
++      const password1 = Password.create("password123");
++      const password2 = Password.create("password123");
++      expect(password1.equals(password2)).toBe(true);
++    });
++
++    it("異なる値のPasswordは等しくないこと", () => {
++      const password1 = Password.create("password123");
++      const password2 = Password.create("password456");
++      expect(password1.equals(password2)).toBe(false);
++    });
++  });
++});
+diff --git a/next-server/domain/user/__tests__/User.test.ts b/next-server/domain/user/__tests__/User.test.ts
+index 46a9ed9..1013276 100644
+--- a/next-server/domain/user/__tests__/User.test.ts
++++ b/next-server/domain/user/__tests__/User.test.ts
+@@ -303,4 +303,130 @@ describe("User", () => {
+       });
+     });
+   });
++
++  describe("createLocalUser", () => {
++    it("ローカル認証ユーザを作成できる", () => {
++      const user = User.createLocalUser({
++        employeeId: "EMP001",
++        displayName: "山田太郎",
++        passwordHash: "encryptedPassword123",
++      });
++
++      expect(user.id).toBeDefined();
++      expect(user.employeeId.value).toBe("EMP001");
++      expect(user.displayName).toBe("山田太郎");
++      expect(user.isAdmin).toBe(false);
++      expect(user.passwordHash).toBe("encryptedPassword123");
++      expect(user.hasPasswordHash()).toBe(true);
++      expect(user.createdAt).toEqual(fixedDate);
++      expect(user.updatedAt).toEqual(fixedDate);
++    });
++
++    it("isAdminをtrueで作成できる", () => {
++      const user = User.createLocalUser({
++        employeeId: "EMP001",
++        displayName: "管理者",
++        passwordHash: "encryptedPassword123",
++        isAdmin: true,
++      });
++
++      expect(user.isAdmin).toBe(true);
++      expect(user.hasPasswordHash()).toBe(true);
++    });
++
++    it("空の表示名ではエラーになる", () => {
++      expect(() =>
++        User.createLocalUser({
++          employeeId: "EMP001",
++          displayName: "",
++          passwordHash: "encryptedPassword123",
++        }),
++      ).toThrow();
++    });
++  });
++
++  describe("hasPasswordHash", () => {
++    it("SSOユーザはパスワードハッシュを持たない", () => {
++      const user = User.create({
++        employeeId: "EMP001",
++        displayName: "山田太郎",
++      });
++
++      expect(user.hasPasswordHash()).toBe(false);
++      expect(user.passwordHash).toBeUndefined();
++    });
++
++    it("ローカル認証ユーザはパスワードハッシュを持つ", () => {
++      const user = User.createLocalUser({
++        employeeId: "EMP001",
++        displayName: "山田太郎",
++        passwordHash: "encryptedPassword123",
++      });
++
++      expect(user.hasPasswordHash()).toBe(true);
++      expect(user.passwordHash).toBe("encryptedPassword123");
++    });
++
++    it("reconstructでpasswordHashを復元できる", () => {
++      const user = User.reconstruct({
++        id: "550e8400-e29b-41d4-a716-446655440000",
++        employeeId: "EMP001",
++        displayName: "山田太郎",
++        isAdmin: false,
++        passwordHash: "encryptedPassword123",
++        createdAt: new Date(),
++        updatedAt: new Date(),
++      });
++
++      expect(user.hasPasswordHash()).toBe(true);
++      expect(user.passwordHash).toBe("encryptedPassword123");
++    });
++
++    it("reconstructでpasswordHashがundefinedの場合", () => {
++      const user = User.reconstruct({
++        id: "550e8400-e29b-41d4-a716-446655440000",
++        employeeId: "EMP001",
++        displayName: "山田太郎",
++        isAdmin: false,
++        createdAt: new Date(),
++        updatedAt: new Date(),
++      });
++
++      expect(user.hasPasswordHash()).toBe(false);
++      expect(user.passwordHash).toBeUndefined();
++    });
++  });
++
++  describe("updateDisplayName with passwordHash", () => {
++    it("表示名更新後もパスワードハッシュが維持される", () => {
++      const user = User.createLocalUser({
++        employeeId: "EMP001",
++        displayName: "山田太郎",
++        passwordHash: "encryptedPassword123",
++      });
++
++      const updatedUser = user.updateDisplayName("山田次郎");
++
++      expect(updatedUser.displayName).toBe("山田次郎");
++      expect(updatedUser.passwordHash).toBe("encryptedPassword123");
++      expect(updatedUser.hasPasswordHash()).toBe(true);
++    });
++  });
++
++  describe("updateAdminStatus with passwordHash", () => {
++    it("管理者ステータス更新後もパスワードハッシュが維持される", () => {
++      const user = User.createLocalUser({
++        employeeId: "EMP001",
++        displayName: "山田太郎",
++        passwordHash: "encryptedPassword123",
++        isAdmin: false,
++      });
++
++      const updatedUser = user.updateAdminStatus(true);
++
++      expect(updatedUser.isAdmin).toBe(true);
++      expect(updatedUser.passwordHash).toBe("encryptedPassword123");
++      expect(updatedUser.hasPasswordHash()).toBe(true);
++    });
++  });
+ });
+diff --git a/next-server/domain/user/index.ts b/next-server/domain/user/index.ts
+index 5a5d909..2b44d1e 100644
+--- a/next-server/domain/user/index.ts
++++ b/next-server/domain/user/index.ts
+@@ -4,7 +4,9 @@ export {
+   User,
+   type UserDto,
+   type CreateUserParams,
++  type CreateLocalUserParams,
+   type ReconstructUserParams,
+ } from "./User";
+ export { UserId } from "./UserId";
+ export { EmployeeId } from "./EmployeeId";
++export { Password } from "./Password";
+diff --git a/next-server/drizzle/migrations/0001_stormy_mulholland_black.sql b/next-server/drizzle/migrations/0001_stormy_mulholland_black.sql
+new file mode 100644
+index 0000000..05fa387
+--- /dev/null
++++ b/next-server/drizzle/migrations/0001_stormy_mulholland_black.sql
+@@ -0,0 +1 @@
++ALTER TABLE "users" ADD COLUMN "password_hash" text;
+\ No newline at end of file
+diff --git a/next-server/drizzle/migrations/meta/0001_snapshot.json b/next-server/drizzle/migrations/meta/0001_snapshot.json
+new file mode 100644
+index 0000000..b6be0ff
+--- /dev/null
++++ b/next-server/drizzle/migrations/meta/0001_snapshot.json
+@@ -0,0 +1,1318 @@
++{
++  "id": "09c5f666-3863-47c4-84f5-b02958890127",
++  "prevId": "3191263d-7acb-4118-9585-31d3c1014cd0",
++  "version": "7",
++  "dialect": "postgresql",
++  "tables": {
++    "public.ai_task_file_metadata": {
++      "name": "ai_task_file_metadata",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "task_id": {
++          "name": "task_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "file_name": {
++          "name": "file_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "file_path": {
++          "name": "file_path",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "file_size": {
++          "name": "file_size",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "mime_type": {
++          "name": "mime_type",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "process_mode": {
++          "name": "process_mode",
++          "type": "varchar(10)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'text'"
++        },
++        "converted_image_count": {
++          "name": "converted_image_count",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 0
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_ai_task_file_metadata_task_id": {
++          "name": "idx_ai_task_file_metadata_task_id",
++          "columns": [
++            {
++              "expression": "task_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "ai_task_file_metadata_task_id_ai_tasks_id_fk": {
++          "name": "ai_task_file_metadata_task_id_ai_tasks_id_fk",
++          "tableFrom": "ai_task_file_metadata",
++          "tableTo": "ai_tasks",
++          "columnsFrom": [
++            "task_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.ai_tasks": {
++      "name": "ai_tasks",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "task_type": {
++          "name": "task_type",
++          "type": "varchar(50)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "api_key_hash": {
++          "name": "api_key_hash",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "priority": {
++          "name": "priority",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 5
++        },
++        "payload": {
++          "name": "payload",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "error_message": {
++          "name": "error_message",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "started_at": {
++          "name": "started_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "completed_at": {
++          "name": "completed_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": false
++        }
++      },
++      "indexes": {
++        "idx_ai_tasks_queue": {
++          "name": "idx_ai_tasks_queue",
++          "columns": [
++            {
++              "expression": "status",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            },
++            {
++              "expression": "api_key_hash",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            },
++            {
++              "expression": "priority",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        },
++        "idx_ai_tasks_status": {
++          "name": "idx_ai_tasks_status",
++          "columns": [
++            {
++              "expression": "status",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.check_list_items": {
++      "name": "check_list_items",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "review_space_id": {
++          "name": "review_space_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "content": {
++          "name": "content",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_check_list_items_review_space_id": {
++          "name": "idx_check_list_items_review_space_id",
++          "columns": [
++            {
++              "expression": "review_space_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "check_list_items_review_space_id_review_spaces_id_fk": {
++          "name": "check_list_items_review_space_id_review_spaces_id_fk",
++          "tableFrom": "check_list_items",
++          "tableTo": "review_spaces",
++          "columnsFrom": [
++            "review_space_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.large_document_result_caches": {
++      "name": "large_document_result_caches",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "review_document_cache_id": {
++          "name": "review_document_cache_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "review_result_id": {
++          "name": "review_result_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "comment": {
++          "name": "comment",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "total_chunks": {
++          "name": "total_chunks",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 1
++        },
++        "chunk_index": {
++          "name": "chunk_index",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 0
++        },
++        "individual_file_name": {
++          "name": "individual_file_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_large_doc_result_cache_doc": {
++          "name": "idx_large_doc_result_cache_doc",
++          "columns": [
++            {
++              "expression": "review_document_cache_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        },
++        "idx_large_doc_result_cache_result": {
++          "name": "idx_large_doc_result_cache_result",
++          "columns": [
++            {
++              "expression": "review_result_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "large_document_result_caches_review_document_cache_id_review_document_caches_id_fk": {
++          "name": "large_document_result_caches_review_document_cache_id_review_document_caches_id_fk",
++          "tableFrom": "large_document_result_caches",
++          "tableTo": "review_document_caches",
++          "columnsFrom": [
++            "review_document_cache_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        },
++        "large_document_result_caches_review_result_id_review_results_id_fk": {
++          "name": "large_document_result_caches_review_result_id_review_results_id_fk",
++          "tableFrom": "large_document_result_caches",
++          "tableTo": "review_results",
++          "columnsFrom": [
++            "review_result_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.project_members": {
++      "name": "project_members",
++      "schema": "",
++      "columns": {
++        "project_id": {
++          "name": "project_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_project_members_user_id": {
++          "name": "idx_project_members_user_id",
++          "columns": [
++            {
++              "expression": "user_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "project_members_project_id_projects_id_fk": {
++          "name": "project_members_project_id_projects_id_fk",
++          "tableFrom": "project_members",
++          "tableTo": "projects",
++          "columnsFrom": [
++            "project_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        },
++        "project_members_user_id_users_id_fk": {
++          "name": "project_members_user_id_users_id_fk",
++          "tableFrom": "project_members",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {
++        "project_members_project_id_user_id_pk": {
++          "name": "project_members_project_id_user_id_pk",
++          "columns": [
++            "project_id",
++            "user_id"
++          ]
++        }
++      },
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.projects": {
++      "name": "projects",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "name": {
++          "name": "name",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "description": {
++          "name": "description",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "encrypted_api_key": {
++          "name": "encrypted_api_key",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.qa_histories": {
++      "name": "qa_histories",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "review_target_id": {
++          "name": "review_target_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "user_id": {
++          "name": "user_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "question": {
++          "name": "question",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "check_list_item_content": {
++          "name": "check_list_item_content",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "answer": {
++          "name": "answer",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "research_summary": {
++          "name": "research_summary",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'processing'"
++        },
++        "error_message": {
++          "name": "error_message",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_qa_histories_review_target_id": {
++          "name": "idx_qa_histories_review_target_id",
++          "columns": [
++            {
++              "expression": "review_target_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        },
++        "idx_qa_histories_user_id": {
++          "name": "idx_qa_histories_user_id",
++          "columns": [
++            {
++              "expression": "user_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        },
++        "idx_qa_histories_created_at": {
++          "name": "idx_qa_histories_created_at",
++          "columns": [
++            {
++              "expression": "created_at",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "qa_histories_review_target_id_review_targets_id_fk": {
++          "name": "qa_histories_review_target_id_review_targets_id_fk",
++          "tableFrom": "qa_histories",
++          "tableTo": "review_targets",
++          "columnsFrom": [
++            "review_target_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        },
++        "qa_histories_user_id_users_id_fk": {
++          "name": "qa_histories_user_id_users_id_fk",
++          "tableFrom": "qa_histories",
++          "tableTo": "users",
++          "columnsFrom": [
++            "user_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.review_document_caches": {
++      "name": "review_document_caches",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "review_target_id": {
++          "name": "review_target_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "file_name": {
++          "name": "file_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "process_mode": {
++          "name": "process_mode",
++          "type": "varchar(10)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "cache_path": {
++          "name": "cache_path",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_review_document_caches_review_target_id": {
++          "name": "idx_review_document_caches_review_target_id",
++          "columns": [
++            {
++              "expression": "review_target_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "review_document_caches_review_target_id_review_targets_id_fk": {
++          "name": "review_document_caches_review_target_id_review_targets_id_fk",
++          "tableFrom": "review_document_caches",
++          "tableTo": "review_targets",
++          "columnsFrom": [
++            "review_target_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.review_results": {
++      "name": "review_results",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "review_target_id": {
++          "name": "review_target_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "check_list_item_content": {
++          "name": "check_list_item_content",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "evaluation": {
++          "name": "evaluation",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "comment": {
++          "name": "comment",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "error_message": {
++          "name": "error_message",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_review_results_review_target_id": {
++          "name": "idx_review_results_review_target_id",
++          "columns": [
++            {
++              "expression": "review_target_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        },
++        "idx_review_results_target_content": {
++          "name": "idx_review_results_target_content",
++          "columns": [
++            {
++              "expression": "review_target_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            },
++            {
++              "expression": "check_list_item_content",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": true,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "review_results_review_target_id_review_targets_id_fk": {
++          "name": "review_results_review_target_id_review_targets_id_fk",
++          "tableFrom": "review_results",
++          "tableTo": "review_targets",
++          "columnsFrom": [
++            "review_target_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.review_spaces": {
++      "name": "review_spaces",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "project_id": {
++          "name": "project_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "name": {
++          "name": "name",
++          "type": "varchar(100)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "description": {
++          "name": "description",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "default_review_settings": {
++          "name": "default_review_settings",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "checklist_generation_error": {
++          "name": "checklist_generation_error",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        }
++      },
++      "indexes": {
++        "idx_review_spaces_project_id": {
++          "name": "idx_review_spaces_project_id",
++          "columns": [
++            {
++              "expression": "project_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "review_spaces_project_id_projects_id_fk": {
++          "name": "review_spaces_project_id_projects_id_fk",
++          "tableFrom": "review_spaces",
++          "tableTo": "projects",
++          "columnsFrom": [
++            "project_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.review_targets": {
++      "name": "review_targets",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "review_space_id": {
++          "name": "review_space_id",
++          "type": "uuid",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "name": {
++          "name": "name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "status": {
++          "name": "status",
++          "type": "varchar(20)",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "'pending'"
++        },
++        "review_settings": {
++          "name": "review_settings",
++          "type": "jsonb",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "review_type": {
++          "name": "review_type",
++          "type": "varchar(10)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_review_targets_review_space_id": {
++          "name": "idx_review_targets_review_space_id",
++          "columns": [
++            {
++              "expression": "review_space_id",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        },
++        "idx_review_targets_status": {
++          "name": "idx_review_targets_status",
++          "columns": [
++            {
++              "expression": "status",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {
++        "review_targets_review_space_id_review_spaces_id_fk": {
++          "name": "review_targets_review_space_id_review_spaces_id_fk",
++          "tableFrom": "review_targets",
++          "tableTo": "review_spaces",
++          "columnsFrom": [
++            "review_space_id"
++          ],
++          "columnsTo": [
++            "id"
++          ],
++          "onDelete": "cascade",
++          "onUpdate": "no action"
++        }
++      },
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.system_notifications": {
++      "name": "system_notifications",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "message": {
++          "name": "message",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "display_order": {
++          "name": "display_order",
++          "type": "integer",
++          "primaryKey": false,
++          "notNull": true,
++          "default": 0
++        },
++        "is_active": {
++          "name": "is_active",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": true
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {
++        "idx_system_notifications_display_order": {
++          "name": "idx_system_notifications_display_order",
++          "columns": [
++            {
++              "expression": "display_order",
++              "isExpression": false,
++              "asc": true,
++              "nulls": "last"
++            }
++          ],
++          "isUnique": false,
++          "concurrently": false,
++          "method": "btree",
++          "with": {}
++        }
++      },
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.system_settings": {
++      "name": "system_settings",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "integer",
++          "primaryKey": true,
++          "notNull": true,
++          "default": 1
++        },
++        "encrypted_api_key": {
++          "name": "encrypted_api_key",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "api_url": {
++          "name": "api_url",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "api_model": {
++          "name": "api_model",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {},
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    },
++    "public.users": {
++      "name": "users",
++      "schema": "",
++      "columns": {
++        "id": {
++          "name": "id",
++          "type": "uuid",
++          "primaryKey": true,
++          "notNull": true,
++          "default": "gen_random_uuid()"
++        },
++        "employee_id": {
++          "name": "employee_id",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "display_name": {
++          "name": "display_name",
++          "type": "varchar(255)",
++          "primaryKey": false,
++          "notNull": true
++        },
++        "is_admin": {
++          "name": "is_admin",
++          "type": "boolean",
++          "primaryKey": false,
++          "notNull": true,
++          "default": false
++        },
++        "password_hash": {
++          "name": "password_hash",
++          "type": "text",
++          "primaryKey": false,
++          "notNull": false
++        },
++        "created_at": {
++          "name": "created_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        },
++        "updated_at": {
++          "name": "updated_at",
++          "type": "timestamp with time zone",
++          "primaryKey": false,
++          "notNull": true,
++          "default": "now()"
++        }
++      },
++      "indexes": {},
++      "foreignKeys": {},
++      "compositePrimaryKeys": {},
++      "uniqueConstraints": {
++        "users_employee_id_unique": {
++          "name": "users_employee_id_unique",
++          "nullsNotDistinct": false,
++          "columns": [
++            "employee_id"
++          ]
++        }
++      },
++      "policies": {},
++      "checkConstraints": {},
++      "isRLSEnabled": false
++    }
++  },
++  "enums": {},
++  "schemas": {},
++  "sequences": {},
++  "roles": {},
++  "policies": {},
++  "views": {},
++  "_meta": {
++    "columns": {},
++    "schemas": {},
++    "tables": {}
++  }
++}
+\ No newline at end of file
+diff --git a/next-server/drizzle/migrations/meta/_journal.json b/next-server/drizzle/migrations/meta/_journal.json
+index 5e7501c..95d1a6d 100644
+--- a/next-server/drizzle/migrations/meta/_journal.json
++++ b/next-server/drizzle/migrations/meta/_journal.json
+@@ -8,6 +8,13 @@
+       "when": 1766118213787,
+       "tag": "0000_clear_slyde",
+       "breakpoints": true
++    },
++    {
++      "idx": 1,
++      "version": "7",
++      "when": 1766414271531,
++      "tag": "0001_stormy_mulholland_black",
++      "breakpoints": true
+     }
+   ]
+ }
+\ No newline at end of file
+diff --git a/next-server/drizzle/schema.ts b/next-server/drizzle/schema.ts
+index 7a85d19..365134f 100644
+--- a/next-server/drizzle/schema.ts
++++ b/next-server/drizzle/schema.ts
+@@ -14,17 +14,23 @@ import {
+ 
+ /**
+  * usersテーブル
+- * Keycloakで認証されたユーザ情報を管理
++ * SSO認証またはローカル認証されたユーザ情報を管理
+  */
+ export const users = pgTable("users", {
+   /** システム内部ID（PK） */
+   id: uuid("id").primaryKey().defaultRandom(),
+-  /** Keycloakのpreferred_username（社員ID） */
++  /** 社員ID（SSO: Keycloakのpreferred_username / GitLabのusername） */
+   employeeId: varchar("employee_id", { length: 255 }).notNull().unique(),
+-  /** Keycloakのdisplay_name（表示名） */
++  /** 表示名（SSO: Keycloakのdisplay_name / GitLabのname） */
+   displayName: varchar("display_name", { length: 255 }).notNull(),
+   /** 管理者フラグ（デフォルトfalse） */
+   isAdmin: boolean("is_admin").notNull().default(false),
++  /**
++   * AES-256-GCMで暗号化されたパスワード
++   * NULLの場合はSSOのみで認証可能
++   * 値がある場合はローカル認証（社員ID+パスワード）が可能
++   */
++  passwordHash: text("password_hash"),
+   /** レコード作成日時 */
+   createdAt: timestamp("created_at", { withTimezone: true })
+     .notNull()
+diff --git a/next-server/infrastructure/adapter/db/drizzle/repository/UserRepository.ts b/next-server/infrastructure/adapter/db/drizzle/repository/UserRepository.ts
+index a0b456e..60b92f5 100644
+--- a/next-server/infrastructure/adapter/db/drizzle/repository/UserRepository.ts
++++ b/next-server/infrastructure/adapter/db/drizzle/repository/UserRepository.ts
+@@ -33,6 +33,7 @@ export class UserRepository implements IUserRepository {
+       employeeId: row.employeeId,
+       displayName: row.displayName,
+       isAdmin: row.isAdmin,
++      passwordHash: row.passwordHash ?? undefined,
+       createdAt: row.createdAt,
+       updatedAt: row.updatedAt,
+     });
+@@ -58,6 +59,7 @@ export class UserRepository implements IUserRepository {
+       employeeId: row.employeeId,
+       displayName: row.displayName,
+       isAdmin: row.isAdmin,
++      passwordHash: row.passwordHash ?? undefined,
+       createdAt: row.createdAt,
+       updatedAt: row.updatedAt,
+     });
+@@ -87,6 +89,7 @@ export class UserRepository implements IUserRepository {
+         employeeId: row.employeeId,
+         displayName: row.displayName,
+         isAdmin: row.isAdmin,
++        passwordHash: row.passwordHash ?? undefined,
+         createdAt: row.createdAt,
+         updatedAt: row.updatedAt,
+       }),
+@@ -121,6 +124,7 @@ export class UserRepository implements IUserRepository {
+         employeeId: row.employeeId,
+         displayName: row.displayName,
+         isAdmin: row.isAdmin,
++        passwordHash: row.passwordHash ?? undefined,
+         createdAt: row.createdAt,
+         updatedAt: row.updatedAt,
+       }),
+@@ -156,6 +160,7 @@ export class UserRepository implements IUserRepository {
+         employeeId: user.employeeId.value,
+         displayName: user.displayName,
+         isAdmin: user.isAdmin,
++        passwordHash: user.passwordHash,
+         createdAt: user.createdAt,
+         updatedAt: user.updatedAt,
+       })
+@@ -164,6 +169,7 @@ export class UserRepository implements IUserRepository {
+         set: {
+           displayName: user.displayName,
+           isAdmin: user.isAdmin,
++          // passwordHashは新規作成時のみ設定し、更新時は維持（SSOログイン時にパスワードを消さない）
+           updatedAt: user.updatedAt,
+         },
+       });
+@@ -185,6 +191,7 @@ export class UserRepository implements IUserRepository {
+         employeeId: row.employeeId,
+         displayName: row.displayName,
+         isAdmin: row.isAdmin,
++        passwordHash: row.passwordHash ?? undefined,
+         createdAt: row.createdAt,
+         updatedAt: row.updatedAt,
+       }),
+@@ -232,6 +239,7 @@ export class UserRepository implements IUserRepository {
+         employeeId: row.employeeId,
+         displayName: row.displayName,
+         isAdmin: row.isAdmin,
++        passwordHash: row.passwordHash ?? undefined,
+         createdAt: row.createdAt,
+         updatedAt: row.updatedAt,
+       }),
+diff --git a/next-server/infrastructure/adapter/service/PasswordService.ts b/next-server/infrastructure/adapter/service/PasswordService.ts
+new file mode 100644
+index 0000000..bb53764
+--- /dev/null
++++ b/next-server/infrastructure/adapter/service/PasswordService.ts
+@@ -0,0 +1,43 @@
++import { timingSafeEqual } from "crypto";
++import { encrypt, decrypt } from "@/lib/server/encryption";
++import { IPasswordService } from "@/application/shared/port/service";
++
++/**
++ * パスワードサービス実装
++ * AES-256-GCM暗号化を使用してパスワードを暗号化・検証する
++ */
++export class PasswordService implements IPasswordService {
++  /**
++   * 平文パスワードを暗号化する
++   * @param plainPassword - 暗号化する平文パスワード
++   * @returns AES-256-GCMで暗号化されたパスワード（Base64エンコード）
++   */
++  encrypt(plainPassword: string): string {
++    return encrypt(plainPassword);
++  }
++
++  /**
++   * パスワードを検証する
++   * タイミング攻撃対策のためtimingSafeEqualを使用
++   * @param plainPassword - 検証する平文パスワード
++   * @param encryptedPassword - 暗号化されたパスワード
++   * @returns パスワードが一致する場合はtrue
++   */
++  verify(plainPassword: string, encryptedPassword: string): boolean {
++    try {
++      const decrypted = decrypt(encryptedPassword);
++      const decryptedBuffer = Buffer.from(decrypted, "utf8");
++      const plainBuffer = Buffer.from(plainPassword, "utf8");
++
++      // 長さが異なる場合は一致しない
++      if (decryptedBuffer.length !== plainBuffer.length) {
++        return false;
++      }
++
++      return timingSafeEqual(decryptedBuffer, plainBuffer);
++    } catch {
++      // 復号に失敗した場合はfalseを返す
++      return false;
++    }
++  }
++}
+diff --git a/next-server/infrastructure/adapter/service/index.ts b/next-server/infrastructure/adapter/service/index.ts
+new file mode 100644
+index 0000000..c15339e
+--- /dev/null
++++ b/next-server/infrastructure/adapter/service/index.ts
+@@ -0,0 +1,3 @@
++// サービスアダプターのエントリーポイント
++
++export { PasswordService } from "./PasswordService";
+diff --git a/next-server/messages/ja/template.ts b/next-server/messages/ja/template.ts
+index 25014fa..8015da1 100644
+--- a/next-server/messages/ja/template.ts
++++ b/next-server/messages/ja/template.ts
+@@ -11,6 +11,10 @@ export const template = {
+   EMPLOYEE_ID_EMPTY: `社員IDは必須です。`,
+   EMPLOYEE_ID_TOO_LONG: `社員IDは255文字以内で入力してください。`,
+   DISPLAY_NAME_EMPTY: `表示名は必須です。`,
++  PASSWORD_EMPTY: `パスワードは必須です。`,
++  USER_ALREADY_EXISTS: `この社員IDは既に登録されています。`,
++  INVALID_CREDENTIALS: `社員IDまたはパスワードが正しくありません。`,
++  SIGNUP_SUCCESS: `アカウントを作成しました。サインインしてください。`,
+   // 認証エラー
+   USER_SYNC_FAILED: `システムに問題が発生しており、ログイン処理を完了できません`,
+   // プロジェクト管理ドメインバリデーションエラー
+diff --git a/next-server/middleware.ts b/next-server/middleware.ts
+index c14870f..30681a3 100644
+--- a/next-server/middleware.ts
++++ b/next-server/middleware.ts
+@@ -37,10 +37,11 @@ export const config = {
+      * Match all request paths except for the ones starting with:
+      * - api/auth (authentication API routes)
+      * - auth/signin (sign in page)
++     * - auth/signup (sign up page)
+      * - _next/static (static files)
+      * - _next/image (image optimization files)
+      * - favicon.ico (favicon file)
+      */
+-    "/((?!api/auth|auth/signin|_next/static|_next/image|favicon.ico).*)",
++    "/((?!api/auth|auth/signin|auth/signup|_next/static|_next/image|favicon.ico).*)",
+   ],
+ };
+diff --git a/next-server/types/message.ts b/next-server/types/message.ts
+index 30b30ae..0750374 100644
+--- a/next-server/types/message.ts
++++ b/next-server/types/message.ts
+@@ -11,6 +11,10 @@ export type MessageCode =
+   | "EMPLOYEE_ID_EMPTY"
+   | "EMPLOYEE_ID_TOO_LONG"
+   | "DISPLAY_NAME_EMPTY"
++  | "PASSWORD_EMPTY"
++  | "USER_ALREADY_EXISTS"
++  | "INVALID_CREDENTIALS"
++  | "SIGNUP_SUCCESS"
+   // 認証エラー
+   | "USER_SYNC_FAILED"
+   // プロジェクト管理ドメインバリデーションエラー
