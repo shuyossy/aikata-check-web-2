@@ -1,8 +1,10 @@
 import { NextAuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 import GitLabProvider from "next-auth/providers/gitlab";
-import { SyncUserService } from "@/application/user";
+import CredentialsProvider from "next-auth/providers/credentials";
+import { SyncUserService, AuthenticateUserService } from "@/application/user";
 import { UserRepository } from "@/infrastructure/adapter/db";
+import { PasswordService } from "@/infrastructure/adapter/service";
 
 /**
  * GitLabのプロファイル型定義
@@ -75,6 +77,52 @@ export const authOptions: NextAuthOptions = {
           }),
         ]
       : []),
+    // 独自認証プロバイダー（社員ID + パスワード）
+    CredentialsProvider({
+      id: "credentials",
+      name: "社員ID・パスワード",
+      credentials: {
+        employeeId: {
+          label: "社員ID",
+          type: "text",
+          placeholder: "PIT*/A*",
+        },
+        password: {
+          label: "パスワード",
+          type: "password",
+        },
+      },
+      async authorize(credentials) {
+        if (!credentials?.employeeId || !credentials?.password) {
+          return null;
+        }
+
+        try {
+          const authenticateUserService = new AuthenticateUserService(
+            new UserRepository(),
+            new PasswordService(),
+          );
+          const userDto = await authenticateUserService.execute({
+            employeeId: credentials.employeeId,
+            password: credentials.password,
+          });
+
+          // next-authが期待するユーザー形式で返却
+          return {
+            id: userDto.id,
+            employeeId: userDto.employeeId,
+            displayName: userDto.displayName,
+            isAdmin: userDto.isAdmin,
+            name: userDto.displayName,
+            email: null,
+            image: null,
+          };
+        } catch {
+          // 認証失敗時はnullを返す
+          return null;
+        }
+      },
+    }),
   ],
   session: {
     strategy: "jwt",
@@ -109,7 +157,14 @@ export const authOptions: NextAuthOptions = {
     /**
      * サインイン時にDBにユーザを同期
      */
-    async signIn({ user }) {
+    async signIn({ user, account }) {
+      // 独自認証の場合は、authorize関数で既に認証済みなのでそのまま許可
+      if (account?.provider === "credentials") {
+        // userオブジェクトには既にDBのユーザー情報が設定されている
+        return true;
+      }
+
+      // SSO認証の場合はDBにユーザを同期
       try {
         const syncUserService = new SyncUserService(new UserRepository());
         const syncedUser = await syncUserService.execute({

@@ -303,4 +303,130 @@ describe("User", () => {
       });
     });
   });
+
+  describe("createLocalUser", () => {
+    it("ローカル認証ユーザを作成できる", () => {
+      const user = User.createLocalUser({
+        employeeId: "EMP001",
+        displayName: "山田太郎",
+        passwordHash: "encryptedPassword123",
+      });
+
+      expect(user.id).toBeDefined();
+      expect(user.employeeId.value).toBe("EMP001");
+      expect(user.displayName).toBe("山田太郎");
+      expect(user.isAdmin).toBe(false);
+      expect(user.passwordHash).toBe("encryptedPassword123");
+      expect(user.hasPasswordHash()).toBe(true);
+      expect(user.createdAt).toEqual(fixedDate);
+      expect(user.updatedAt).toEqual(fixedDate);
+    });
+
+    it("isAdminをtrueで作成できる", () => {
+      const user = User.createLocalUser({
+        employeeId: "EMP001",
+        displayName: "管理者",
+        passwordHash: "encryptedPassword123",
+        isAdmin: true,
+      });
+
+      expect(user.isAdmin).toBe(true);
+      expect(user.hasPasswordHash()).toBe(true);
+    });
+
+    it("空の表示名ではエラーになる", () => {
+      expect(() =>
+        User.createLocalUser({
+          employeeId: "EMP001",
+          displayName: "",
+          passwordHash: "encryptedPassword123",
+        }),
+      ).toThrow();
+    });
+  });
+
+  describe("hasPasswordHash", () => {
+    it("SSOユーザはパスワードハッシュを持たない", () => {
+      const user = User.create({
+        employeeId: "EMP001",
+        displayName: "山田太郎",
+      });
+
+      expect(user.hasPasswordHash()).toBe(false);
+      expect(user.passwordHash).toBeUndefined();
+    });
+
+    it("ローカル認証ユーザはパスワードハッシュを持つ", () => {
+      const user = User.createLocalUser({
+        employeeId: "EMP001",
+        displayName: "山田太郎",
+        passwordHash: "encryptedPassword123",
+      });
+
+      expect(user.hasPasswordHash()).toBe(true);
+      expect(user.passwordHash).toBe("encryptedPassword123");
+    });
+
+    it("reconstructでpasswordHashを復元できる", () => {
+      const user = User.reconstruct({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        employeeId: "EMP001",
+        displayName: "山田太郎",
+        isAdmin: false,
+        passwordHash: "encryptedPassword123",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(user.hasPasswordHash()).toBe(true);
+      expect(user.passwordHash).toBe("encryptedPassword123");
+    });
+
+    it("reconstructでpasswordHashがundefinedの場合", () => {
+      const user = User.reconstruct({
+        id: "550e8400-e29b-41d4-a716-446655440000",
+        employeeId: "EMP001",
+        displayName: "山田太郎",
+        isAdmin: false,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      expect(user.hasPasswordHash()).toBe(false);
+      expect(user.passwordHash).toBeUndefined();
+    });
+  });
+
+  describe("updateDisplayName with passwordHash", () => {
+    it("表示名更新後もパスワードハッシュが維持される", () => {
+      const user = User.createLocalUser({
+        employeeId: "EMP001",
+        displayName: "山田太郎",
+        passwordHash: "encryptedPassword123",
+      });
+
+      const updatedUser = user.updateDisplayName("山田次郎");
+
+      expect(updatedUser.displayName).toBe("山田次郎");
+      expect(updatedUser.passwordHash).toBe("encryptedPassword123");
+      expect(updatedUser.hasPasswordHash()).toBe(true);
+    });
+  });
+
+  describe("updateAdminStatus with passwordHash", () => {
+    it("管理者ステータス更新後もパスワードハッシュが維持される", () => {
+      const user = User.createLocalUser({
+        employeeId: "EMP001",
+        displayName: "山田太郎",
+        passwordHash: "encryptedPassword123",
+        isAdmin: false,
+      });
+
+      const updatedUser = user.updateAdminStatus(true);
+
+      expect(updatedUser.isAdmin).toBe(true);
+      expect(updatedUser.passwordHash).toBe("encryptedPassword123");
+      expect(updatedUser.hasPasswordHash()).toBe(true);
+    });
+  });
 });

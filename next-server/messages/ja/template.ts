@@ -11,6 +11,10 @@ export const template = {
   EMPLOYEE_ID_EMPTY: `社員IDは必須です。`,
   EMPLOYEE_ID_TOO_LONG: `社員IDは255文字以内で入力してください。`,
   DISPLAY_NAME_EMPTY: `表示名は必須です。`,
+  PASSWORD_EMPTY: `パスワードは必須です。`,
+  USER_ALREADY_EXISTS: `この社員IDは既に登録されています。`,
+  INVALID_CREDENTIALS: `社員IDまたはパスワードが正しくありません。`,
+  SIGNUP_SUCCESS: `アカウントを作成しました。サインインしてください。`,
   // 認証エラー
   USER_SYNC_FAILED: `システムに問題が発生しており、ログイン処理を完了できません`,
   // プロジェクト管理ドメインバリデーションエラー

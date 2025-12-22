@@ -1,8 +1,13 @@
 "use client";
 
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
-import { Suspense } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
 
 /**
  * サインインページコンテンツ
@@ -10,8 +15,41 @@ import { Suspense } from "react";
  */
 function SignInContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const error = searchParams.get("error");
+
+  const [employeeId, setEmployeeId] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [credentialsError, setCredentialsError] = useState<string | null>(null);
+
+  /**
+   * 独自認証でのサインイン処理
+   */
+  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setCredentialsError(null);
+
+    try {
+      const result = await signIn("credentials", {
+        employeeId,
+        password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setCredentialsError("社員IDまたはパスワードが正しくありません");
+      } else if (result?.ok) {
+        router.push(callbackUrl);
+      }
+    } catch {
+      setCredentialsError("ログイン処理中にエラーが発生しました");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="h-full flex items-center justify-center bg-gradient-to-br from-primary-50 to-blue-100 px-4">
@@ -35,9 +73,73 @@ function SignInContent() {
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
               {error === "UserSyncFailed"
                 ? "システムに問題が発生しており、ログイン処理を完了できません"
-                : "ログインに失敗しました"}
+                : error === "CredentialsSignin"
+                  ? "社員IDまたはパスワードが正しくありません"
+                  : "ログインに失敗しました"}
             </div>
           )}
+
+          {credentialsError && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6">
+              {credentialsError}
+            </div>
+          )}
+
+          {/* Credentials Login Form */}
+          <form onSubmit={handleCredentialsSignIn} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="employeeId">社員ID</Label>
+              <Input
+                id="employeeId"
+                type="text"
+                placeholder="PIT*/A*"
+                value={employeeId}
+                onChange={(e) => setEmployeeId(e.target.value)}
+                disabled={isLoading}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">パスワード</Label>
+              <Input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={isLoading}
+                required
+              />
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={isLoading || !employeeId || !password}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ログイン中...
+                </>
+              ) : (
+                "ログイン"
+              )}
+            </Button>
+          </form>
+
+          {/* Sign Up Link */}
+          <div className="mt-4 text-center">
+            <span className="text-sm text-gray-600">
+              アカウントをお持ちでない方は{" "}
+              <Link
+                href="/auth/signup"
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                新規登録
+              </Link>
+            </span>
+          </div>
 
           {/* Divider */}
           <div className="relative my-6">
@@ -91,7 +193,7 @@ function SignInContent() {
 
 /**
  * サインインページ
- * Keycloak OIDC / GitLab OAuth2 へのリダイレクト用ログインページ
+ * 独自認証（社員ID・パスワード）およびKeycloak OIDC / GitLab OAuth2へのリダイレクト
  */
 export default function SignInPage() {
   return (

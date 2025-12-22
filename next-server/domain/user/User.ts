@@ -14,11 +14,21 @@ export interface UserDto {
 }
 
 /**
- * ユーザ作成用パラメータ
+ * SSOユーザ作成用パラメータ
  */
 export interface CreateUserParams {
   employeeId: string;
   displayName: string;
+  isAdmin?: boolean;
+}
+
+/**
+ * ローカル認証ユーザ作成用パラメータ
+ */
+export interface CreateLocalUserParams {
+  employeeId: string;
+  displayName: string;
+  passwordHash: string;
   isAdmin?: boolean;
 }
 
@@ -30,19 +40,21 @@ export interface ReconstructUserParams {
   employeeId: string;
   displayName: string;
   isAdmin: boolean;
+  passwordHash?: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 /**
  * ユーザエンティティ（集約ルート）
- * Keycloakで認証されたユーザを表現
+ * SSO認証またはローカル認証されたユーザを表現
  */
 export class User {
   private readonly _id: UserId;
   private readonly _employeeId: EmployeeId;
   private readonly _displayName: string;
   private readonly _isAdmin: boolean;
+  private readonly _passwordHash?: string;
   private readonly _createdAt: Date;
   private readonly _updatedAt: Date;
 
@@ -53,6 +65,7 @@ export class User {
     isAdmin: boolean,
     createdAt: Date,
     updatedAt: Date,
+    passwordHash?: string,
   ) {
     this._id = id;
     this._employeeId = employeeId;
@@ -60,10 +73,11 @@ export class User {
     this._isAdmin = isAdmin;
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
+    this._passwordHash = passwordHash;
   }
 
   /**
-   * 新規ユーザを作成する
+   * 新規SSOユーザを作成する
    * @throws ドメインバリデーションエラー - バリデーション失敗時
    */
   static create(params: CreateUserParams): User {
@@ -80,6 +94,29 @@ export class User {
       isAdmin,
       now,
       now,
+      undefined,
+    );
+  }
+
+  /**
+   * 新規ローカル認証ユーザを作成する
+   * @throws ドメインバリデーションエラー - バリデーション失敗時
+   */
+  static createLocalUser(params: CreateLocalUserParams): User {
+    const { employeeId, displayName, passwordHash, isAdmin = false } = params;
+
+    // 表示名のバリデーション
+    User.validateDisplayName(displayName);
+
+    const now = new Date();
+    return new User(
+      UserId.create(),
+      EmployeeId.create(employeeId),
+      displayName,
+      isAdmin,
+      now,
+      now,
+      passwordHash,
     );
   }
 
@@ -88,8 +125,15 @@ export class User {
    * @throws ドメインバリデーションエラー - バリデーション失敗時
    */
   static reconstruct(params: ReconstructUserParams): User {
-    const { id, employeeId, displayName, isAdmin, createdAt, updatedAt } =
-      params;
+    const {
+      id,
+      employeeId,
+      displayName,
+      isAdmin,
+      passwordHash,
+      createdAt,
+      updatedAt,
+    } = params;
 
     // 表示名のバリデーション
     User.validateDisplayName(displayName);
@@ -101,6 +145,7 @@ export class User {
       isAdmin,
       createdAt,
       updatedAt,
+      passwordHash,
     );
   }
 
@@ -127,6 +172,7 @@ export class User {
       this._isAdmin,
       this._createdAt,
       new Date(),
+      this._passwordHash,
     );
   }
 
@@ -142,6 +188,7 @@ export class User {
       isAdmin,
       this._createdAt,
       new Date(),
+      this._passwordHash,
     );
   }
 
@@ -187,5 +234,17 @@ export class User {
 
   get updatedAt(): Date {
     return this._updatedAt;
+  }
+
+  get passwordHash(): string | undefined {
+    return this._passwordHash;
+  }
+
+  /**
+   * パスワードハッシュが設定されているかを判定
+   * trueの場合、ローカル認証が可能
+   */
+  hasPasswordHash(): boolean {
+    return this._passwordHash !== undefined && this._passwordHash !== null;
   }
 }

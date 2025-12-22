@@ -33,6 +33,7 @@ export class UserRepository implements IUserRepository {
       employeeId: row.employeeId,
       displayName: row.displayName,
       isAdmin: row.isAdmin,
+      passwordHash: row.passwordHash ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -58,6 +59,7 @@ export class UserRepository implements IUserRepository {
       employeeId: row.employeeId,
       displayName: row.displayName,
       isAdmin: row.isAdmin,
+      passwordHash: row.passwordHash ?? undefined,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     });
@@ -87,6 +89,7 @@ export class UserRepository implements IUserRepository {
         employeeId: row.employeeId,
         displayName: row.displayName,
         isAdmin: row.isAdmin,
+        passwordHash: row.passwordHash ?? undefined,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }),
@@ -121,6 +124,7 @@ export class UserRepository implements IUserRepository {
         employeeId: row.employeeId,
         displayName: row.displayName,
         isAdmin: row.isAdmin,
+        passwordHash: row.passwordHash ?? undefined,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }),
@@ -156,6 +160,7 @@ export class UserRepository implements IUserRepository {
         employeeId: user.employeeId.value,
         displayName: user.displayName,
         isAdmin: user.isAdmin,
+        passwordHash: user.passwordHash,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
       })
@@ -164,6 +169,7 @@ export class UserRepository implements IUserRepository {
         set: {
           displayName: user.displayName,
           isAdmin: user.isAdmin,
+          // passwordHashは新規作成時のみ設定し、更新時は維持（SSOログイン時にパスワードを消さない）
           updatedAt: user.updatedAt,
         },
       });
@@ -185,6 +191,7 @@ export class UserRepository implements IUserRepository {
         employeeId: row.employeeId,
         displayName: row.displayName,
         isAdmin: row.isAdmin,
+        passwordHash: row.passwordHash ?? undefined,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }),
@@ -232,6 +239,7 @@ export class UserRepository implements IUserRepository {
         employeeId: row.employeeId,
         displayName: row.displayName,
         isAdmin: row.isAdmin,
+        passwordHash: row.passwordHash ?? undefined,
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
       }),

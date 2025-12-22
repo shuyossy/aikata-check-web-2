@@ -7,14 +7,15 @@
 
 ## users テーブル
 
-ユーザ情報を管理するテーブル。KeycloakまたはGitLabで認証されたユーザの初回ログイン時に自動作成される。
+ユーザ情報を管理するテーブル。SSO（KeycloakまたはGitLab）で認証されたユーザの初回ログイン時、または独自認証でのサインアップ時に自動作成される。
 
 | カラム名 | 型 | NULL | デフォルト | 説明 |
 |---------|------|------|-----------|------|
 | id | UUID | NOT NULL | gen_random_uuid() | システム内部ID（PK） |
 | employee_id | VARCHAR(255) | NOT NULL | - | Keycloakのpreferred_usernameまたはGitLabのusername（社員ID）。UNIQUE制約 |
-| display_name | VARCHAR(255) | NOT NULL | - | KeycloakまたはGitLabから取得する表示名 |
+| display_name | VARCHAR(255) | NOT NULL | - | KeycloakまたはGitLabから取得する表示名、または独自認証でのサインアップ時に指定した名前 |
 | is_admin | BOOLEAN | NOT NULL | false | 管理者フラグ |
+| password_hash | TEXT | NULL | - | AES-256-GCMで暗号化されたパスワード。独自認証ユーザのみ設定される |
 | created_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード作成日時 |
 | updated_at | TIMESTAMP WITH TIME ZONE | NOT NULL | NOW() | レコード更新日時 |
 
@@ -24,13 +25,15 @@
 
 ### 設計思想
 - **id**: UUIDを採用し、外部キーとして他テーブルから参照される想定。UUIDを使用することで分散環境でもIDの衝突を回避できる。
-- **employee_id**: KeycloakまたはGitLabから取得する社員ID（Keycloakのpreferred_usernameまたはGitLabのusername）。外部認証システムへの依存を明確化。UNIQUE制約により社員IDの一意性を保証し、重複登録を防止する。
-- **display_name**: KeycloakまたはGitLabから取得する表示名。UIでユーザを識別する目的に使用（認証プロバイダー側で変更された場合はログイン時に同期される）。
+- **employee_id**: KeycloakまたはGitLabから取得する社員ID（Keycloakのpreferred_usernameまたはGitLabのusername）、または独自認証でのサインアップ時に指定した社員ID。UNIQUE制約により社員IDの一意性を保証し、重複登録を防止する。
+- **display_name**: KeycloakまたはGitLabから取得する表示名、または独自認証でのサインアップ時に指定した名前。UIでユーザを識別する目的に使用（SSOログイン時は認証プロバイダー側で変更された場合に同期される）。
 - **is_admin**: システム管理者フラグ。trueの場合、管理者画面へのアクセス、全プロジェクトへのアクセス、システム設定の編集が可能になる。初期状態ではfalse。管理者権限の付与はDB直接操作または既存の管理者による操作で行う。
+- **password_hash**: 独自認証用のパスワード。AES-256-GCM暗号化されて保存される。SSOユーザはNULL（独自認証が利用不可）、独自認証ユーザは値が設定されている（独自認証が可能）。独自認証ユーザが後からSSOでログインした場合でも、パスワードは維持される（両方の認証方式が利用可能）。
 - **created_at/updated_at**: 監査目的で作成日時と更新日時を記録。タイムゾーン付きで国際化に対応する。
 
 ### 備考
 - NextAuthのAccountやSessionテーブルは作成しない（JWTセッション戦略を採用するため）。
+- 認証方式の判断：password_hashがNULLの場合はSSOのみ、値がある場合は独自認証（およびSSO）が可能。
 
 ---
 

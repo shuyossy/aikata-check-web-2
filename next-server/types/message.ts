@@ -11,6 +11,10 @@ export type MessageCode =
   | "EMPLOYEE_ID_EMPTY"
   | "EMPLOYEE_ID_TOO_LONG"
   | "DISPLAY_NAME_EMPTY"
+  | "PASSWORD_EMPTY"
+  | "USER_ALREADY_EXISTS"
+  | "INVALID_CREDENTIALS"
+  | "SIGNUP_SUCCESS"
   // 認証エラー
   | "USER_SYNC_FAILED"
   // プロジェクト管理ドメインバリデーションエラー

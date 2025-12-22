@@ -14,17 +14,23 @@ import {
 
 /**
  * usersテーブル
- * Keycloakで認証されたユーザ情報を管理
+ * SSO認証またはローカル認証されたユーザ情報を管理
  */
 export const users = pgTable("users", {
   /** システム内部ID（PK） */
   id: uuid("id").primaryKey().defaultRandom(),
-  /** Keycloakのpreferred_username（社員ID） */
+  /** 社員ID（SSO: Keycloakのpreferred_username / GitLabのusername） */
   employeeId: varchar("employee_id", { length: 255 }).notNull().unique(),
-  /** Keycloakのdisplay_name（表示名） */
+  /** 表示名（SSO: Keycloakのdisplay_name / GitLabのname） */
   displayName: varchar("display_name", { length: 255 }).notNull(),
   /** 管理者フラグ（デフォルトfalse） */
   isAdmin: boolean("is_admin").notNull().default(false),
+  /**
+   * AES-256-GCMで暗号化されたパスワード
+   * NULLの場合はSSOのみで認証可能
+   * 値がある場合はローカル認証（社員ID+パスワード）が可能
+   */
+  passwordHash: text("password_hash"),
   /** レコード作成日時 */
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
