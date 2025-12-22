@@ -795,7 +795,13 @@ describe("AIチェックリスト生成 結合テスト", () => {
 
         // Assert: RuntimeContextが正しく含まれていることを確認
         assertRuntimeContext(capturedRuntimeContext, {
-          shouldExist: ["employeeId", "aiApiKey", "aiApiUrl", "aiApiModel", "checklistRequirements"],
+          shouldExist: [
+            "employeeId",
+            "aiApiKey",
+            "aiApiUrl",
+            "aiApiModel",
+            "checklistRequirements",
+          ],
           exactValues: {
             employeeId: testUserId,
             aiApiKey: "test-api-key",

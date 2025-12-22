@@ -43,7 +43,11 @@ describe("Sidebar", () => {
         id: "space-1",
         name: "レビュースペース1",
         reviewTargets: [
-          { id: "target-1", name: "レビュー対象1", status: "completed" as const },
+          {
+            id: "target-1",
+            name: "レビュー対象1",
+            status: "completed" as const,
+          },
         ],
         hasMore: false,
       },
@@ -145,12 +149,7 @@ describe("Sidebar", () => {
       });
 
       it("レビュースペースがない場合はレビュースペースがありませんと表示されること", () => {
-        render(
-          <Sidebar
-            {...defaultProps}
-            reviewSpaces={[]}
-          />,
-        );
+        render(<Sidebar {...defaultProps} reviewSpaces={[]} />);
 
         expect(
           screen.getByText("レビュースペースがありません"),

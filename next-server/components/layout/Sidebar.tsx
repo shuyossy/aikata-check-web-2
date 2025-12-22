@@ -228,7 +228,9 @@ export function Sidebar({
                             href={`/projects/${currentProject.id}/spaces/${space.id}/review/new`}
                             className={cn(
                               "flex items-center gap-2 px-3 py-1.5 text-sm rounded transition duration-150",
-                              pathname.includes(`/spaces/${space.id}/review/new`)
+                              pathname.includes(
+                                `/spaces/${space.id}/review/new`,
+                              )
                                 ? "text-blue-600 bg-blue-50"
                                 : "text-blue-600 hover:bg-blue-50 font-medium",
                             )}
