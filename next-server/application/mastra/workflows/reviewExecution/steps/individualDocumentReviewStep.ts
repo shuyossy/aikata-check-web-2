@@ -120,9 +120,9 @@ export const individualDocumentReviewStep = createStep({
         z.object({
           // CoTのようにAIにどのファイルのどのセクションをレビューするべきかを考えさせるための隠しフィールド
           reviewSections: z
-            .array(z.string().describe('section name within the file'))
+            .array(z.string().describe("section name within the file"))
             .describe(
-              'sections that should be reviewed for evaluation and commenting',
+              "sections that should be reviewed for evaluation and commenting",
             ),
           checklistId: z.number().describe("checklist item ID"),
           comment: z.string().describe("review comment"),
