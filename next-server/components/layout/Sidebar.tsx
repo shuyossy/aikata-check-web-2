@@ -14,6 +14,7 @@ import {
   AlertCircle,
   Loader2,
   Clock,
+  PlayCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -220,6 +221,20 @@ export function Sidebar({
                           >
                             <ClipboardList className="size-3" />
                             <span className="truncate">チェックリスト</span>
+                          </Link>
+
+                          {/* 新規レビューリンク */}
+                          <Link
+                            href={`/projects/${currentProject.id}/spaces/${space.id}/review/new`}
+                            className={cn(
+                              "flex items-center gap-2 px-3 py-1.5 text-sm rounded transition duration-150",
+                              pathname.includes(`/spaces/${space.id}/review/new`)
+                                ? "text-blue-600 bg-blue-50"
+                                : "text-blue-600 hover:bg-blue-50 font-medium",
+                            )}
+                          >
+                            <PlayCircle className="size-3" />
+                            <span className="truncate">新規レビュー</span>
                           </Link>
 
                           {/* レビュー対象リスト */}
