@@ -1,6 +1,10 @@
 import { AiTaskQueueService } from "./AiTaskQueueService";
 import { AiTaskWorkerPool } from "./AiTaskWorkerPool";
-import { AiTaskExecutor } from "./AiTaskExecutor";
+import {
+  AiTaskExecutor,
+  type ReviewTaskPayload,
+  type ChecklistGenerationTaskPayload,
+} from "./AiTaskExecutor";
 import {
   AiTaskRepository,
   AiTaskFileMetadataRepository,
@@ -13,7 +17,9 @@ import {
   ReviewSpaceRepository,
   LargeDocumentResultCacheRepository,
 } from "@/infrastructure/adapter/db/drizzle/repository";
-import { AI_TASK_STATUS } from "@/domain/aiTask";
+import { AI_TASK_STATUS, AI_TASK_TYPE } from "@/domain/aiTask";
+import { ReviewTargetId } from "@/domain/reviewTarget";
+import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { TaskFileHelper } from "@/lib/server/taskFileHelper";
 import { getLogger } from "@/lib/server/logger";
 
@@ -87,7 +93,11 @@ export class AiTaskBootstrap {
       this.workerPool = new AiTaskWorkerPool(this.queueService, executor);
 
       // 処理中のタスクを復元（失敗としてマーク）
-      await this.recoverStuckTasks(aiTaskRepository);
+      await this.recoverStuckTasks(
+        aiTaskRepository,
+        reviewTargetRepository,
+        reviewSpaceRepository,
+      );
 
       // キューにあるタスクのAPIキーハッシュを取得してワーカーを開始
       const apiKeyHashes =
@@ -116,9 +126,12 @@ export class AiTaskBootstrap {
   /**
    * 処理中で止まっていたタスクを復元
    * システム再起動時に処理中だったタスクは失敗として扱う
+   * 関連するエンティティ（review_targets, review_spaces）のステータスも更新する
    */
   private async recoverStuckTasks(
     aiTaskRepository: AiTaskRepository,
+    reviewTargetRepository: ReviewTargetRepository,
+    reviewSpaceRepository: ReviewSpaceRepository,
   ): Promise<void> {
     const processingTasks = await aiTaskRepository.findByStatus(
       AI_TASK_STATUS.PROCESSING,
@@ -134,15 +147,24 @@ export class AiTaskBootstrap {
       "処理中のタスクを失敗としてマークします",
     );
 
+    const errorMessage = "システム再起動により処理が中断されました";
+
     for (const task of processingTasks) {
       try {
         // タスクを失敗としてマーク
-        const failedTask = task.failWithError(
-          "システム再起動により処理が中断されました",
-        );
+        const failedTask = task.failWithError(errorMessage);
 
         // DBを更新（その後すぐ削除されるが、ログ目的で一旦保存）
         await aiTaskRepository.save(failedTask);
+
+        // タスク種別に応じて関連エンティティのステータスを更新
+        await this.updateRelatedEntityStatus(
+          task.taskType.value,
+          task.payload,
+          reviewTargetRepository,
+          reviewSpaceRepository,
+          errorMessage,
+        );
 
         // ファイルを削除
         await TaskFileHelper.deleteTaskFiles(task.id.value);
@@ -158,6 +180,68 @@ export class AiTaskBootstrap {
         logger.error(
           { err: error, taskId: task.id.value },
           "タスク復元処理中にエラーが発生しました",
+        );
+      }
+    }
+  }
+
+  /**
+   * タスク種別に応じて関連エンティティのステータスを更新
+   */
+  private async updateRelatedEntityStatus(
+    taskType: string,
+    payload: unknown,
+    reviewTargetRepository: ReviewTargetRepository,
+    reviewSpaceRepository: ReviewSpaceRepository,
+    errorMessage: string,
+  ): Promise<void> {
+    if (
+      taskType === AI_TASK_TYPE.SMALL_REVIEW ||
+      taskType === AI_TASK_TYPE.LARGE_REVIEW
+    ) {
+      // レビュータスクの場合: review_targetsをerrorに更新
+      const reviewPayload = payload as ReviewTaskPayload;
+      const reviewTargetId = reviewPayload.reviewTargetId;
+
+      try {
+        const reviewTarget = await reviewTargetRepository.findById(
+          ReviewTargetId.reconstruct(reviewTargetId),
+        );
+
+        if (reviewTarget) {
+          const errorTarget = reviewTarget.markAsError();
+          await reviewTargetRepository.save(errorTarget);
+          logger.info(
+            { reviewTargetId },
+            "レビュー対象のステータスをerrorに更新しました",
+          );
+        } else {
+          logger.warn({ reviewTargetId }, "レビュー対象が見つかりませんでした");
+        }
+      } catch (error) {
+        logger.error(
+          { err: error, reviewTargetId },
+          "レビュー対象のステータス更新に失敗しました",
+        );
+      }
+    } else if (taskType === AI_TASK_TYPE.CHECKLIST_GENERATION) {
+      // チェックリスト生成タスクの場合: checklistGenerationErrorを保存
+      const checklistPayload = payload as ChecklistGenerationTaskPayload;
+      const reviewSpaceId = checklistPayload.reviewSpaceId;
+
+      try {
+        await reviewSpaceRepository.updateChecklistGenerationError(
+          ReviewSpaceId.reconstruct(reviewSpaceId),
+          errorMessage,
+        );
+        logger.info(
+          { reviewSpaceId },
+          "チェックリスト生成エラーを保存しました",
+        );
+      } catch (error) {
+        logger.error(
+          { err: error, reviewSpaceId },
+          "チェックリスト生成エラーの保存に失敗しました",
         );
       }
     }

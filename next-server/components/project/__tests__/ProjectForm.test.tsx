@@ -212,7 +212,9 @@ describe("ProjectForm", () => {
       it("プレースホルダーが「sk-xxxx...」形式で表示される", () => {
         render(<ProjectForm {...defaultProps} />);
 
-        const apiKeyInput = screen.getByPlaceholderText("sk-xxxxxxxxxxxxxxxxxxxx");
+        const apiKeyInput = screen.getByPlaceholderText(
+          "sk-xxxxxxxxxxxxxxxxxxxx",
+        );
         expect(apiKeyInput).toBeInTheDocument();
       });
 
@@ -222,13 +224,14 @@ describe("ProjectForm", () => {
         render(<ProjectForm {...defaultProps} onSubmit={onSubmit} />);
 
         // プロジェクト名を入力（必須フィールド）
-        const nameInput = screen.getByPlaceholderText(
-          "例: ○○システム開発プロジェクト",
-        );
+        const nameInput =
+          screen.getByPlaceholderText("例: ○○システム開発プロジェクト");
         await user.type(nameInput, "テストプロジェクト");
 
         // APIキーを入力
-        const apiKeyInput = screen.getByPlaceholderText("sk-xxxxxxxxxxxxxxxxxxxx");
+        const apiKeyInput = screen.getByPlaceholderText(
+          "sk-xxxxxxxxxxxxxxxxxxxx",
+        );
         await user.type(apiKeyInput, "sk-test-key");
 
         // 送信
@@ -393,7 +396,9 @@ describe("ProjectForm", () => {
           />,
         );
 
-        const apiKeyInput = screen.getByPlaceholderText("sk-xxxxxxxxxxxxxxxxxxxx");
+        const apiKeyInput = screen.getByPlaceholderText(
+          "sk-xxxxxxxxxxxxxxxxxxxx",
+        );
         expect(apiKeyInput).toBeInTheDocument();
       });
     });

@@ -241,7 +241,8 @@ export function ProjectForm({
                   id="apiKey"
                   type={showApiKey ? "text" : "password"}
                   {...register("apiKey", {
-                    onChange: (e) => setIsApiKeyChanged(e.target.value.length > 0),
+                    onChange: (e) =>
+                      setIsApiKeyChanged(e.target.value.length > 0),
                   })}
                   className="h-11 pr-10 font-mono text-sm"
                   placeholder={
