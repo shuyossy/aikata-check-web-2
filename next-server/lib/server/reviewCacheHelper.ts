@@ -49,7 +49,10 @@ export class ReviewCacheHelper {
     const filePath = path.join(cacheDir, `${cacheId}.txt`);
     await fs.writeFile(filePath, content, "utf-8");
 
-    logger.debug({ reviewTargetId, cacheId, filePath }, "テキストキャッシュを保存しました");
+    logger.debug(
+      { reviewTargetId, cacheId, filePath },
+      "テキストキャッシュを保存しました",
+    );
     return filePath;
   }
 
@@ -137,7 +140,10 @@ export class ReviewCacheHelper {
     const cacheDir = ReviewCacheHelper.getCacheDir(reviewTargetId);
     try {
       await fs.rm(cacheDir, { recursive: true, force: true });
-      logger.debug({ reviewTargetId, cacheDir }, "キャッシュディレクトリを削除しました");
+      logger.debug(
+        { reviewTargetId, cacheDir },
+        "キャッシュディレクトリを削除しました",
+      );
     } catch (error) {
       // ディレクトリが存在しない場合は無視
       logger.debug(

@@ -43,10 +43,14 @@ const reviewSettingsSchema = z.object({
   additionalInstructions: z.string().nullable().optional(),
   concurrentReviewItems: z.number().optional(),
   commentFormat: z.string().nullable().optional(),
-  evaluationCriteria: z.array(z.object({
-    label: z.string(),
-    description: z.string(),
-  })).optional(),
+  evaluationCriteria: z
+    .array(
+      z.object({
+        label: z.string(),
+        description: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 /**
@@ -126,12 +130,14 @@ async function parseFormData(formData: FormData): Promise<{
   }
 
   // レビュー設定をパース
-  let reviewSettings: {
-    additionalInstructions?: string | null;
-    concurrentReviewItems?: number;
-    commentFormat?: string | null;
-    evaluationCriteria?: EvaluationCriterion[];
-  } | undefined;
+  let reviewSettings:
+    | {
+        additionalInstructions?: string | null;
+        concurrentReviewItems?: number;
+        commentFormat?: string | null;
+        evaluationCriteria?: EvaluationCriterion[];
+      }
+    | undefined;
 
   if (typeof reviewSettingsJson === "string" && reviewSettingsJson) {
     try {
@@ -151,7 +157,10 @@ async function parseFormData(formData: FormData): Promise<{
     const metadata = formDataMetadataItemSchema.parse(metadataArray[i]);
 
     // 画像モードかテキストモードかで処理を分岐
-    const isImageMode = metadata.processMode === "image" && metadata.convertedImageCount && metadata.convertedImageCount > 0;
+    const isImageMode =
+      metadata.processMode === "image" &&
+      metadata.convertedImageCount &&
+      metadata.convertedImageCount > 0;
 
     let buffer: Buffer;
     const convertedImageBuffers: Buffer[] = [];
@@ -224,8 +233,14 @@ export const executeReviewAction = authenticatedAction
   .schema(z.instanceof(FormData))
   .action(async ({ parsedInput, ctx }) => {
     // FormDataからパラメータを抽出
-    const { reviewSpaceId, name, files, fileBuffers, reviewSettings, reviewType } =
-      await parseFormData(parsedInput);
+    const {
+      reviewSpaceId,
+      name,
+      files,
+      fileBuffers,
+      reviewSettings,
+      reviewType,
+    } = await parseFormData(parsedInput);
 
     // リポジトリの初期化
     const projectRepository = new ProjectRepository();

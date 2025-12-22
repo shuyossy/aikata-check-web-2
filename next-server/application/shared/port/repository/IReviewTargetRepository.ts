@@ -1,8 +1,5 @@
 import { ReviewSpaceId } from "@/domain/reviewSpace";
-import {
-  ReviewTarget,
-  ReviewTargetId,
-} from "@/domain/reviewTarget";
+import { ReviewTarget, ReviewTargetId } from "@/domain/reviewTarget";
 
 /**
  * レビュー対象検索オプション

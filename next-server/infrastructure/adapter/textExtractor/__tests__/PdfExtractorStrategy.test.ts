@@ -8,7 +8,8 @@ const mockExtractText = vi.fn();
 // unpdfのモック
 vi.mock("unpdf", () => ({
   getDocumentProxy: (data: Uint8Array) => mockGetDocumentProxy(data),
-  extractText: (pdf: unknown, options: unknown) => mockExtractText(pdf, options),
+  extractText: (pdf: unknown, options: unknown) =>
+    mockExtractText(pdf, options),
 }));
 
 describe("PdfExtractorStrategy", () => {
@@ -35,7 +36,10 @@ describe("PdfExtractorStrategy", () => {
       const mockPdf = { numPages: 1 };
       const mockContent = ["ドキュメントの内容\n段落1\n段落2"];
       mockGetDocumentProxy.mockResolvedValueOnce(mockPdf);
-      mockExtractText.mockResolvedValueOnce({ text: mockContent, totalPages: 1 });
+      mockExtractText.mockResolvedValueOnce({
+        text: mockContent,
+        totalPages: 1,
+      });
 
       const buffer = Buffer.from("dummy pdf content");
       const result = await strategy.extract(buffer);
@@ -45,14 +49,21 @@ describe("PdfExtractorStrategy", () => {
       expect(result.metadata.strategyUsed).toBe("unpdf");
       expect(result.metadata.originalSize).toBe(buffer.length);
       expect(mockGetDocumentProxy).toHaveBeenCalledWith(expect.any(Uint8Array));
-      expect(mockExtractText).toHaveBeenCalledWith(mockPdf, { mergePages: false });
+      expect(mockExtractText).toHaveBeenCalledWith(mockPdf, {
+        mergePages: false,
+      });
     });
 
     it("日本語を含むPDFを正しく処理する", async () => {
       const mockPdf = { numPages: 1 };
-      const mockContent = ["チェックリスト\n項目1：確認事項\n項目2：レビュー観点"];
+      const mockContent = [
+        "チェックリスト\n項目1：確認事項\n項目2：レビュー観点",
+      ];
       mockGetDocumentProxy.mockResolvedValueOnce(mockPdf);
-      mockExtractText.mockResolvedValueOnce({ text: mockContent, totalPages: 1 });
+      mockExtractText.mockResolvedValueOnce({
+        text: mockContent,
+        totalPages: 1,
+      });
 
       const buffer = Buffer.from("dummy pdf content");
       const result = await strategy.extract(buffer);
@@ -81,7 +92,10 @@ describe("PdfExtractorStrategy", () => {
         "第2章 詳細\nこれは詳細です。",
       ];
       mockGetDocumentProxy.mockResolvedValueOnce(mockPdf);
-      mockExtractText.mockResolvedValueOnce({ text: mockContent, totalPages: 2 });
+      mockExtractText.mockResolvedValueOnce({
+        text: mockContent,
+        totalPages: 2,
+      });
 
       const buffer = Buffer.from("dummy pdf content");
       const result = await strategy.extract(buffer);
@@ -98,7 +112,10 @@ describe("PdfExtractorStrategy", () => {
       const mockPdf = { numPages: 1 };
       const mockContent = ["チェックリスト:\n・項目1\n・項目2\n・項目3"];
       mockGetDocumentProxy.mockResolvedValueOnce(mockPdf);
-      mockExtractText.mockResolvedValueOnce({ text: mockContent, totalPages: 1 });
+      mockExtractText.mockResolvedValueOnce({
+        text: mockContent,
+        totalPages: 1,
+      });
 
       const buffer = Buffer.from("dummy pdf content");
       const result = await strategy.extract(buffer);
@@ -112,7 +129,10 @@ describe("PdfExtractorStrategy", () => {
       const mockPdf = { numPages: 1 };
       const mockContent = "単一の文字列コンテンツ";
       mockGetDocumentProxy.mockResolvedValueOnce(mockPdf);
-      mockExtractText.mockResolvedValueOnce({ text: mockContent, totalPages: 1 });
+      mockExtractText.mockResolvedValueOnce({
+        text: mockContent,
+        totalPages: 1,
+      });
 
       const buffer = Buffer.from("dummy pdf content");
       const result = await strategy.extract(buffer);
@@ -127,7 +147,9 @@ describe("PdfExtractorStrategy", () => {
 
       const buffer = Buffer.from("invalid content");
 
-      await expect(strategy.extract(buffer)).rejects.toThrow("Invalid PDF file");
+      await expect(strategy.extract(buffer)).rejects.toThrow(
+        "Invalid PDF file",
+      );
     });
 
     it("extractTextがエラーを投げた場合エラーを伝搬する", async () => {

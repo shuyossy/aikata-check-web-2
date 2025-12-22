@@ -28,13 +28,13 @@ export function SystemNotificationBanner({
 
   const goToPrevious = () => {
     setCurrentIndex((prev) =>
-      prev === 0 ? notifications.length - 1 : prev - 1
+      prev === 0 ? notifications.length - 1 : prev - 1,
     );
   };
 
   const goToNext = () => {
     setCurrentIndex((prev) =>
-      prev === notifications.length - 1 ? 0 : prev + 1
+      prev === notifications.length - 1 ? 0 : prev + 1,
     );
   };
 

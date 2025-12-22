@@ -31,7 +31,12 @@ import {
 import { CheckListItemListItemDto } from "@/domain/checkListItem";
 import type { ChecklistGenerationTaskStatusDto } from "@/application/checkListItem";
 import { extractServerErrorMessage } from "@/hooks";
-import { showError, showSuccess, getMessage, formatClientMessage } from "@/lib/client";
+import {
+  showError,
+  showSuccess,
+  getMessage,
+  formatClientMessage,
+} from "@/lib/client";
 import { CheckListImportModal } from "./CheckListImportModal";
 import { useChecklistTaskPolling } from "../hooks/useChecklistTaskPolling";
 
@@ -79,8 +84,7 @@ function getTaskStatusBannerConfig(status: string | null) {
         textColor: "text-blue-800",
         iconColor: "text-blue-500",
         title: "生成中",
-        message:
-          "AIがチェックリストを生成しています。しばらくお待ちください。",
+        message: "AIがチェックリストを生成しています。しばらくお待ちください。",
         showCancelButton: false,
         animate: true,
       };
@@ -154,7 +158,9 @@ export function CheckListEditClient({
         // 削除予定と空アイテムを除外し、新規フラグをクリア
         setItems((prev) =>
           prev
-            .filter((item) => !item.isPendingDelete && item.content.trim().length > 0)
+            .filter(
+              (item) => !item.isPendingDelete && item.content.trim().length > 0,
+            )
             .map((item) => ({ ...item, isNew: false })),
         );
       },
@@ -191,7 +197,9 @@ export function CheckListEditClient({
           URL.revokeObjectURL(url);
 
           showSuccess(
-            formatClientMessage("SUCCESS_CHECKLIST_EXPORTED", { count: result.data.exportedCount }),
+            formatClientMessage("SUCCESS_CHECKLIST_EXPORTED", {
+              count: result.data.exportedCount,
+            }),
           );
         }
       },
@@ -251,8 +259,8 @@ export function CheckListEditClient({
       // 既存アイテムは削除予定としてマーク
       setItems((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, isPendingDelete: true } : item
-        )
+          item.id === id ? { ...item, isPendingDelete: true } : item,
+        ),
       );
     }
     setSelectedIds((prev) => {
@@ -267,8 +275,8 @@ export function CheckListEditClient({
   const handleRestoreItem = useCallback((id: string) => {
     setItems((prev) =>
       prev.map((item) =>
-        item.id === id ? { ...item, isPendingDelete: false } : item
-      )
+        item.id === id ? { ...item, isPendingDelete: false } : item,
+      ),
     );
     setHasChanges(true);
   }, []);
@@ -306,12 +314,15 @@ export function CheckListEditClient({
   // 選択可能なアイテム（削除予定でないアイテム）
   const selectableItems = useMemo(
     () => items.filter((item) => !item.isPendingDelete),
-    [items]
+    [items],
   );
 
   // 全選択/解除
   const handleSelectAll = useCallback(() => {
-    if (selectedIds.size === selectableItems.length && selectableItems.length > 0) {
+    if (
+      selectedIds.size === selectableItems.length &&
+      selectableItems.length > 0
+    ) {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(selectableItems.map((item) => item.id)));
@@ -332,8 +343,8 @@ export function CheckListEditClient({
         .map((item) =>
           existingItemIds.includes(item.id)
             ? { ...item, isPendingDelete: true }
-            : item
-        )
+            : item,
+        ),
     );
 
     setSelectedIds(new Set());
@@ -354,7 +365,8 @@ export function CheckListEditClient({
     });
   }, [items, spaceId, executeBulkSave]);
 
-  const isAllSelected = selectableItems.length > 0 && selectedIds.size === selectableItems.length;
+  const isAllSelected =
+    selectableItems.length > 0 && selectedIds.size === selectableItems.length;
   const hasSelected = selectedIds.size > 0;
 
   // 空のアイテムが存在するか確認（削除予定アイテムは除外）
@@ -390,7 +402,10 @@ export function CheckListEditClient({
         <Breadcrumb
           items={[
             { label: projectName, href: `/projects/${projectId}/spaces` },
-            { label: spaceName, href: `/projects/${projectId}/spaces/${spaceId}` },
+            {
+              label: spaceName,
+              href: `/projects/${projectId}/spaces/${spaceId}`,
+            },
             { label: "チェックリスト" },
           ]}
         />
@@ -398,7 +413,9 @@ export function CheckListEditClient({
         {/* Page Header with Actions */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-gray-900">チェックリスト編集</h1>
+            <h1 className="text-xl font-bold text-gray-900">
+              チェックリスト編集
+            </h1>
             {isPolling && (
               <span className="text-sm text-gray-500">(自動更新中)</span>
             )}
@@ -434,7 +451,9 @@ export function CheckListEditClient({
                   AI生成
                 </>
               ) : (
-                <Link href={`/projects/${projectId}/spaces/${spaceId}/checklist/ai-generate`}>
+                <Link
+                  href={`/projects/${projectId}/spaces/${spaceId}/checklist/ai-generate`}
+                >
                   <Sparkles className="w-4 h-4" />
                   AI生成
                 </Link>
@@ -612,11 +631,13 @@ export function CheckListEditClient({
                           }}
                         />
                       </td>
-                      <td className={`px-6 py-4 text-sm ${
-                        item.isPendingDelete
-                          ? "text-gray-400"
-                          : "text-gray-900"
-                      }`}>
+                      <td
+                        className={`px-6 py-4 text-sm ${
+                          item.isPendingDelete
+                            ? "text-gray-400"
+                            : "text-gray-900"
+                        }`}
+                      >
                         {item.isPendingDelete ? (
                           <span className="line-through">{item.content}</span>
                         ) : (
@@ -702,10 +723,10 @@ export function CheckListEditClient({
               <ul className="mt-2 text-sm text-gray-600 space-y-1 list-disc list-inside">
                 <li>項目をクリックして直接編集できます</li>
                 <li>編集後は「変更を保存」ボタンをクリックしてください</li>
+                <li>Shiftキーを押しながらクリックすると、範囲選択ができます</li>
                 <li>
-                  Shiftキーを押しながらクリックすると、範囲選択ができます
+                  AI生成機能でドキュメントからチェック項目を自動生成できます
                 </li>
-                <li>AI生成機能でドキュメントからチェック項目を自動生成できます</li>
               </ul>
             </div>
           </div>

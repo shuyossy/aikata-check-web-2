@@ -1,4 +1,7 @@
-import { ISystemNotificationRepository, FindSystemNotificationsOptions } from "@/application/shared/port/repository";
+import {
+  ISystemNotificationRepository,
+  FindSystemNotificationsOptions,
+} from "@/application/shared/port/repository";
 import { SystemNotificationDto } from "@/domain/system-notification";
 
 /**

@@ -6,9 +6,8 @@
 export async function register() {
   // サーバサイドでのみ実行
   if (process.env.NEXT_RUNTIME === "nodejs") {
-    const { initializeServer, shutdownServer } = await import(
-      "@/lib/server/bootstrap"
-    );
+    const { initializeServer, shutdownServer } =
+      await import("@/lib/server/bootstrap");
 
     // サーバ初期化
     await initializeServer();

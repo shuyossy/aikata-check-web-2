@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { planQaResearchStep } from "../planQaResearchStep";
-import type { AvailableDocument, ChecklistResultWithIndividual } from "../../types";
+import type {
+  AvailableDocument,
+  ChecklistResultWithIndividual,
+} from "../../types";
 
 // エージェントをモック
 const mockGenerateLegacy = vi.fn();
@@ -25,7 +28,8 @@ vi.mock("@/lib/server/logger", () => ({
 
 describe("planQaResearchStep", () => {
   // テストデータ
-  const testQuestion = "このドキュメントの安全性についてどのように評価されましたか？";
+  const testQuestion =
+    "このドキュメントの安全性についてどのように評価されましたか？";
 
   const testAvailableDocuments: AvailableDocument[] = [
     { id: "doc-1", fileName: "セキュリティガイドライン.docx" },
@@ -121,8 +125,12 @@ describe("planQaResearchStep", () => {
       expect(result.status).toBe("success");
       expect(result.researchTasks).toHaveLength(1);
       expect(result.researchTasks![0].documentCacheId).toBe("doc-1");
-      expect(result.researchTasks![0].researchContent).toBe("セキュリティに関する記述を調査");
-      expect(result.researchTasks![0].reasoning).toBe("セキュリティ評価に関する質問のため");
+      expect(result.researchTasks![0].researchContent).toBe(
+        "セキュリティに関する記述を調査",
+      );
+      expect(result.researchTasks![0].reasoning).toBe(
+        "セキュリティ評価に関する質問のため",
+      );
     });
 
     it("調査計画を正常に作成する（大量レビューモード）", async () => {
@@ -234,7 +242,10 @@ describe("planQaResearchStep", () => {
 
       // Assert
       expect(mockGetAgent).toHaveBeenCalledWith("qaPlanningAgent");
-      expect(mockGenerateLegacy).toHaveBeenCalledWith(testQuestion, expect.any(Object));
+      expect(mockGenerateLegacy).toHaveBeenCalledWith(
+        testQuestion,
+        expect.any(Object),
+      );
     });
   });
 
@@ -331,7 +342,7 @@ describe("planQaResearchStep", () => {
       expect(bailMock).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-        })
+        }),
       );
     });
 
@@ -361,7 +372,7 @@ describe("planQaResearchStep", () => {
       expect(bailMock).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-        })
+        }),
       );
     });
   });

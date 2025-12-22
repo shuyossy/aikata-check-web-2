@@ -18,7 +18,7 @@ interface SettingsClientProps {
  */
 export function SettingsClient({ initialSettings }: SettingsClientProps) {
   const [settings, setSettings] = useState<GetSystemSettingResultDto | null>(
-    initialSettings
+    initialSettings,
   );
   const { error, handleError, clearError } = useServerActionError();
 
@@ -36,7 +36,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
       onError: ({ error: actionError }) => {
         handleError(actionError, "設定の保存に失敗しました");
       },
-    }
+    },
   );
 
   const handleSubmit = (data: {
@@ -67,9 +67,7 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
       {/* 設定フォームカード */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">
-            AI API設定
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">AI API設定</h2>
           <p className="text-sm text-gray-500 mt-1">
             ここで設定されたAPIキー・URL・モデルがシステム全体で優先的に使用されます
           </p>
@@ -86,15 +84,11 @@ export function SettingsClient({ initialSettings }: SettingsClientProps) {
 
       {/* 注意事項 */}
       <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-        <h3 className="text-sm font-medium text-yellow-800 mb-2">
-          注意事項
-        </h3>
+        <h3 className="text-sm font-medium text-yellow-800 mb-2">注意事項</h3>
         <ul className="text-sm text-yellow-700 list-disc list-inside space-y-1">
           <li>APIキーは暗号化して保存されます</li>
           <li>設定を変更すると、すべてのユーザーに即座に反映されます</li>
-          <li>
-            システム設定が空の場合は、環境変数の設定が使用されます
-          </li>
+          <li>システム設定が空の場合は、環境変数の設定が使用されます</li>
         </ul>
       </div>
     </div>

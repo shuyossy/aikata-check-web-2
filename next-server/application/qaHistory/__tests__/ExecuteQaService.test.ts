@@ -83,9 +83,15 @@ describe("ExecuteQaService", () => {
   describe("正常系", () => {
     it("Q&A履歴を作成してIDを返す", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
 
       // Act
       const result = await service.execute({
@@ -99,16 +105,22 @@ describe("ExecuteQaService", () => {
       expect(result.qaHistoryId).toBeDefined();
       // UUIDフォーマットの検証
       expect(result.qaHistoryId).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
       );
       expect(mockQaHistoryRepository.save).toHaveBeenCalledTimes(1);
     });
 
     it("Q&A履歴がpending状態で保存される（ワークフローはSSE接続後に開始される）", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
 
       // Act
       await service.execute({
@@ -119,7 +131,8 @@ describe("ExecuteQaService", () => {
       });
 
       // Assert
-      const savedQaHistory = vi.mocked(mockQaHistoryRepository.save).mock.calls[0][0];
+      const savedQaHistory = vi.mocked(mockQaHistoryRepository.save).mock
+        .calls[0][0];
       expect(savedQaHistory.isPending()).toBe(true);
       expect(savedQaHistory.question.value).toBe("テスト質問");
       // レビュー対象ID、ユーザーIDが正しく設定されていることを確認
@@ -132,11 +145,21 @@ describe("ExecuteQaService", () => {
 
     it("複数のチェック項目をJSON配列として保存する", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
 
-      const checklistItemContents = ["チェック項目1", "チェック項目2", "チェック項目3"];
+      const checklistItemContents = [
+        "チェック項目1",
+        "チェック項目2",
+        "チェック項目3",
+      ];
 
       // Act
       await service.execute({
@@ -147,17 +170,26 @@ describe("ExecuteQaService", () => {
       });
 
       // Assert
-      const savedQaHistory = vi.mocked(mockQaHistoryRepository.save).mock.calls[0][0];
-      const savedChecklistItems = JSON.parse(savedQaHistory.checkListItemContent.value);
+      const savedQaHistory = vi.mocked(mockQaHistoryRepository.save).mock
+        .calls[0][0];
+      const savedChecklistItems = JSON.parse(
+        savedQaHistory.checkListItemContent.value,
+      );
       expect(savedChecklistItems).toEqual(checklistItemContents);
       expect(savedChecklistItems).toHaveLength(3);
     });
 
     it("単一のチェック項目も配列として保存する", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
 
       const checklistItemContents = ["単一チェック項目"];
 
@@ -170,8 +202,11 @@ describe("ExecuteQaService", () => {
       });
 
       // Assert
-      const savedQaHistory = vi.mocked(mockQaHistoryRepository.save).mock.calls[0][0];
-      const savedChecklistItems = JSON.parse(savedQaHistory.checkListItemContent.value);
+      const savedQaHistory = vi.mocked(mockQaHistoryRepository.save).mock
+        .calls[0][0];
+      const savedChecklistItems = JSON.parse(
+        savedQaHistory.checkListItemContent.value,
+      );
       expect(savedChecklistItems).toEqual(["単一チェック項目"]);
       expect(Array.isArray(savedChecklistItems)).toBe(true);
     });
@@ -188,7 +223,9 @@ describe("ExecuteQaService", () => {
           checklistItemContents: [],
           userId: testUserId,
         }),
-      ).rejects.toMatchObject({ messageCode: "QA_HISTORY_CHECKLIST_ITEM_CONTENT_EMPTY" });
+      ).rejects.toMatchObject({
+        messageCode: "QA_HISTORY_CHECKLIST_ITEM_CONTENT_EMPTY",
+      });
 
       // リポジトリは呼ばれないことを確認（早期リターン）
       expect(mockReviewTargetRepository.findById).not.toHaveBeenCalled();
@@ -211,7 +248,9 @@ describe("ExecuteQaService", () => {
 
     it("レビュースペースが見つからない場合はエラーを投げる", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(null);
 
       // Act & Assert
@@ -227,8 +266,12 @@ describe("ExecuteQaService", () => {
 
     it("プロジェクトが見つからない場合はエラーを投げる", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(null);
 
       // Act & Assert
@@ -244,9 +287,15 @@ describe("ExecuteQaService", () => {
 
     it("プロジェクトメンバーでない場合はエラーを投げる", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([]) as any); // メンバーなし
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([]) as any,
+      ); // メンバーなし
 
       // Act & Assert
       await expect(
@@ -261,9 +310,15 @@ describe("ExecuteQaService", () => {
 
     it("質問が空の場合はエラーを投げる（Questionドメインバリデーション）", async () => {
       // Arrange - 権限チェックは通過する設定
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
 
       // Act & Assert
       await expect(
@@ -281,9 +336,15 @@ describe("ExecuteQaService", () => {
 
     it("質問が空白のみの場合はエラーを投げる", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
 
       // Act & Assert
       await expect(

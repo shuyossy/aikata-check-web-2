@@ -1,4 +1,8 @@
-import { AiTaskFileMetadata, AiTaskFileMetadataId, AiTaskId } from "@/domain/aiTask";
+import {
+  AiTaskFileMetadata,
+  AiTaskFileMetadataId,
+  AiTaskId,
+} from "@/domain/aiTask";
 
 /**
  * AIタスクファイルメタデータリポジトリインターフェース

@@ -127,24 +127,26 @@ export function ReviewTargetListClient({
       onError: ({ error: actionError }) => {
         const message = extractServerErrorMessage(
           actionError,
-          "レビュー対象の削除に失敗しました"
+          "レビュー対象の削除に失敗しました",
         );
         showError(message);
         setDeletingId(null);
       },
-    }
+    },
   );
 
   // 削除ハンドラー
   const handleDelete = useCallback(
     (targetId: string, targetName: string) => {
-      if (!confirm(`「${targetName}」を削除しますか？この操作は取り消せません。`)) {
+      if (
+        !confirm(`「${targetName}」を削除しますか？この操作は取り消せません。`)
+      ) {
         return;
       }
       setDeletingId(targetId);
       executeDelete({ reviewTargetId: targetId, projectId, spaceId });
     },
-    [executeDelete, projectId, spaceId]
+    [executeDelete, projectId, spaceId],
   );
 
   // 日付フォーマット
@@ -245,9 +247,7 @@ export function ReviewTargetListClient({
                     <ChevronRight className="h-4 w-4 text-gray-500" />
                   )}
                   {!hasReviewSettings && (
-                    <span className="text-xs text-gray-400 ml-2">
-                      未設定
-                    </span>
+                    <span className="text-xs text-gray-400 ml-2">未設定</span>
                   )}
                 </CollapsibleTrigger>
                 <CollapsibleContent className="mt-4">
@@ -357,7 +357,9 @@ export function ReviewTargetListClient({
               </Link>
             </Button>
             <Button asChild className="flex items-center gap-2">
-              <Link href={`/projects/${projectId}/spaces/${spaceId}/review/new`}>
+              <Link
+                href={`/projects/${projectId}/spaces/${spaceId}/review/new`}
+              >
                 <PlayCircle className="w-5 h-5" />
                 新規レビューを実行
               </Link>
@@ -489,10 +491,16 @@ export function ReviewTargetListClient({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(target.id, target.name)}
+                              onClick={() =>
+                                handleDelete(target.id, target.name)
+                              }
                               disabled={!canDelete || isDeleting}
                               className="text-gray-600 hover:text-red-600"
-                              title={canDelete ? "削除" : "レビュー中は削除できません"}
+                              title={
+                                canDelete
+                                  ? "削除"
+                                  : "レビュー中は削除できません"
+                              }
                             >
                               {isThisDeleting ? (
                                 <Loader2 className="w-4 h-4 animate-spin" />

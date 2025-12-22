@@ -1,7 +1,6 @@
 import { Agent } from "@mastra/core/agent";
 import { getModel } from "./model";
 import { getQaAnswerPrompt } from "./prompts";
-import type { QaAnswerAgentRuntimeContext } from "./types";
 
 /**
  * Q&A回答生成エージェント
@@ -9,13 +8,6 @@ import type { QaAnswerAgentRuntimeContext } from "./types";
  */
 export const qaAnswerAgent = new Agent({
   name: "qaAnswerAgent",
-  instructions: ({
-    runtimeContext,
-  }: {
-    runtimeContext?: { get: (key: string) => unknown };
-  }) =>
-    getQaAnswerPrompt({
-      runtimeContext: runtimeContext as import("@mastra/core/di").RuntimeContext<QaAnswerAgentRuntimeContext>,
-    }),
-  model: ({ runtimeContext }) => getModel(runtimeContext),
+  instructions: getQaAnswerPrompt,
+  model: getModel,
 });

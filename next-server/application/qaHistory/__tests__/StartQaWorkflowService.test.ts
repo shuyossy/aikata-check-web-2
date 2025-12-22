@@ -25,18 +25,30 @@ import { ProjectId } from "@/domain/project";
 import { QaStatus } from "@/domain/qaHistory";
 
 // ワークフローのモック（vi.hoistedでモック変数をhoistする）
-const { mockWorkflowStart, mockCreateRunAsync, mockCheckWorkflowResult, mockResolveAiApiConfig } = vi.hoisted(() => {
+const {
+  mockWorkflowStart,
+  mockCreateRunAsync,
+  mockCheckWorkflowResult,
+  mockResolveAiApiConfig,
+} = vi.hoisted(() => {
   const mockWorkflowStart = vi.fn();
   const mockCreateRunAsync = vi.fn().mockResolvedValue({
     start: mockWorkflowStart,
   });
-  const mockCheckWorkflowResult = vi.fn().mockReturnValue({ status: "success" });
+  const mockCheckWorkflowResult = vi
+    .fn()
+    .mockReturnValue({ status: "success" });
   const mockResolveAiApiConfig = vi.fn().mockReturnValue({
     apiKey: "test-api-key",
     apiUrl: "https://api.example.com",
     apiModel: "test-model",
   });
-  return { mockWorkflowStart, mockCreateRunAsync, mockCheckWorkflowResult, mockResolveAiApiConfig };
+  return {
+    mockWorkflowStart,
+    mockCreateRunAsync,
+    mockCheckWorkflowResult,
+    mockResolveAiApiConfig,
+  };
 });
 
 vi.mock("@/application/mastra/workflows/qaExecution", () => ({
@@ -93,7 +105,9 @@ describe("StartQaWorkflowService", () => {
   const testDocumentCacheId1 = "550e8400-e29b-41d4-a716-446655440020";
 
   // モックエンティティ作成ヘルパー
-  const createMockQaHistory = (status: "pending" | "processing" | "completed" | "error") => ({
+  const createMockQaHistory = (
+    status: "pending" | "processing" | "completed" | "error",
+  ) => ({
     id: { value: testQaHistoryId },
     reviewTargetId: ReviewTargetId.reconstruct(testReviewTargetId),
     question: { value: "テスト質問" },
@@ -245,14 +259,26 @@ describe("StartQaWorkflowService", () => {
       // Arrange
       // findByIdは2回呼ばれる（startWorkflow内と executeQaWorkflow内）
       vi.mocked(mockQaHistoryRepository.findById)
-        .mockResolvedValueOnce(createMockQaHistory("pending") as any)  // startWorkflow内
-        .mockResolvedValueOnce(createMockQaHistory("processing") as any);  // executeQaWorkflow内
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(createMockReviewResults() as any);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(createMockDocumentCaches() as any);
-      vi.mocked(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults).mockResolvedValue([]);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject() as any);
+        .mockResolvedValueOnce(createMockQaHistory("pending") as any) // startWorkflow内
+        .mockResolvedValueOnce(createMockQaHistory("processing") as any); // executeQaWorkflow内
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createMockReviewResults() as any);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createMockDocumentCaches() as any);
+      vi.mocked(
+        mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults,
+      ).mockResolvedValue([]);
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject() as any,
+      );
 
       mockWorkflowStart.mockResolvedValue({
         status: "success",
@@ -273,7 +299,7 @@ describe("StartQaWorkflowService", () => {
       // ステータスがprocessingに更新されたことを確認
       expect(mockQaHistoryRepository.updateStatus).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ value: "processing" })
+        expect.objectContaining({ value: "processing" }),
       );
 
       // ワークフローが開始されたことを確認
@@ -298,7 +324,7 @@ describe("StartQaWorkflowService", () => {
               }),
             ]),
           }),
-        })
+        }),
       );
     });
 
@@ -307,7 +333,9 @@ describe("StartQaWorkflowService", () => {
 
     it("processing状態のQ&A履歴では何もしない（二重起動防止）", async () => {
       // Arrange
-      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(createMockQaHistory("processing") as any);
+      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+        createMockQaHistory("processing") as any,
+      );
 
       // Act
       await service.startWorkflow(testQaHistoryId, testUserId);
@@ -322,7 +350,9 @@ describe("StartQaWorkflowService", () => {
 
     it("completed状態のQ&A履歴では何もしない", async () => {
       // Arrange
-      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(createMockQaHistory("completed") as any);
+      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+        createMockQaHistory("completed") as any,
+      );
 
       // Act
       await service.startWorkflow(testQaHistoryId, testUserId);
@@ -334,7 +364,9 @@ describe("StartQaWorkflowService", () => {
 
     it("error状態のQ&A履歴では何もしない", async () => {
       // Arrange
-      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(createMockQaHistory("error") as any);
+      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+        createMockQaHistory("error") as any,
+      );
 
       // Act
       await service.startWorkflow(testQaHistoryId, testUserId);
@@ -349,37 +381,53 @@ describe("StartQaWorkflowService", () => {
       vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.startWorkflow(testQaHistoryId, testUserId)).rejects.toThrow(
-        "Q&A履歴が見つかりません"
-      );
+      await expect(
+        service.startWorkflow(testQaHistoryId, testUserId),
+      ).rejects.toThrow("Q&A履歴が見つかりません");
     });
 
     it("レビュー対象が見つからない場合はエラーを投げる", async () => {
       // Arrange
-      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(createMockQaHistory("pending") as any);
+      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+        createMockQaHistory("pending") as any,
+      );
       vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(null);
 
       // Act & Assert
-      await expect(service.startWorkflow(testQaHistoryId, testUserId)).rejects.toThrow(
-        "レビュー対象が見つかりません"
-      );
+      await expect(
+        service.startWorkflow(testQaHistoryId, testUserId),
+      ).rejects.toThrow("レビュー対象が見つかりません");
 
       // ステータス更新前にエラーが発生するため、更新されない
       expect(mockQaHistoryRepository.updateStatus).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ value: "processing" })
+        expect.objectContaining({ value: "processing" }),
       );
     });
 
     it("ワークフロー失敗時にエラーがDB記録され、エラーイベントが発行される", async () => {
       // Arrange
-      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(createMockQaHistory("pending") as any);
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(createMockReviewResults() as any);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(createMockDocumentCaches() as any);
-      vi.mocked(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults).mockResolvedValue([]);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject() as any);
+      vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+        createMockQaHistory("pending") as any,
+      );
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createMockReviewResults() as any);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createMockDocumentCaches() as any);
+      vi.mocked(
+        mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults,
+      ).mockResolvedValue([]);
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject() as any,
+      );
 
       // checkWorkflowResultがエラーを返すようモック
       mockCheckWorkflowResult.mockReturnValue({
@@ -403,7 +451,7 @@ describe("StartQaWorkflowService", () => {
       expect(mockQaHistoryRepository.updateError).toHaveBeenCalledTimes(1);
       expect(mockQaHistoryRepository.updateError).toHaveBeenCalledWith(
         expect.anything(),
-        expect.any(String)
+        expect.any(String),
       );
 
       // Assert - エラーイベントがブロードキャストされたことを確認
@@ -414,7 +462,7 @@ describe("StartQaWorkflowService", () => {
           data: expect.objectContaining({
             message: expect.any(String),
           }),
-        })
+        }),
       );
     });
 
@@ -422,22 +470,38 @@ describe("StartQaWorkflowService", () => {
       // Arrange
       // findByIdは2回呼ばれる（startWorkflow内と executeQaWorkflow内）
       vi.mocked(mockQaHistoryRepository.findById)
-        .mockResolvedValueOnce(createMockQaHistory("pending") as any)  // startWorkflow内
-        .mockResolvedValueOnce(createMockQaHistory("processing") as any);  // executeQaWorkflow内
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(createMockReviewResults() as any);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(createMockDocumentCaches() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject() as any);
+        .mockResolvedValueOnce(createMockQaHistory("pending") as any) // startWorkflow内
+        .mockResolvedValueOnce(createMockQaHistory("processing") as any); // executeQaWorkflow内
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createMockReviewResults() as any);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createMockDocumentCaches() as any);
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject() as any,
+      );
 
       // 大量レビュー結果をモック
-      vi.mocked(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults).mockResolvedValue([
+      vi.mocked(
+        mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults,
+      ).mockResolvedValue([
         {
           checklistItemContent: "チェック項目内容",
           evaluation: "B",
           comment: "総合コメント",
           individualResults: [
-            { documentId: "doc-1", comment: "個別コメント", individualFileName: "part1.docx" },
+            {
+              documentId: "doc-1",
+              comment: "個別コメント",
+              individualFileName: "part1.docx",
+            },
           ],
         },
       ]);
@@ -473,7 +537,7 @@ describe("StartQaWorkflowService", () => {
               }),
             ]),
           }),
-        })
+        }),
       );
     });
   });

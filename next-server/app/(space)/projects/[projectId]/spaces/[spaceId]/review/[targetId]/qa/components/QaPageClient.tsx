@@ -53,28 +53,37 @@ export function QaPageClient({
   initialHistories,
 }: QaPageClientProps) {
   // 現在処理中のQ&A履歴ID
-  const [activeQaHistoryId, setActiveQaHistoryId] = useState<string | null>(null);
+  const [activeQaHistoryId, setActiveQaHistoryId] = useState<string | null>(
+    null,
+  );
   // 履歴リスト（初期値はサーバーから取得、古い順にソート）
   const [histories, setHistories] = useState<QaHistoryData[]>(() => {
     // 初期履歴を古い順（createdAt昇順）にソート
     return [...initialHistories].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
   });
   // ストリーミング中の状態
   const [currentQuestion, setCurrentQuestion] = useState<string | null>(null);
-  const [currentChecklistItemContents, setCurrentChecklistItemContents] = useState<string[]>([]);
+  const [currentChecklistItemContents, setCurrentChecklistItemContents] =
+    useState<string[]>([]);
 
   // 履歴リストの表示用（古い順 = 最新が下）
   const sortedHistories = useMemo(() => {
     return [...histories].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      (a, b) =>
+        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
     );
   }, [histories]);
 
   // Q&A実行開始時のハンドラー
   const handleQaStart = useCallback(
-    (qaHistoryId: string, question: string, checklistItemContents: string[]) => {
+    (
+      qaHistoryId: string,
+      question: string,
+      checklistItemContents: string[],
+    ) => {
       setActiveQaHistoryId(qaHistoryId);
       setCurrentQuestion(question);
       setCurrentChecklistItemContents(checklistItemContents);
@@ -95,7 +104,7 @@ export function QaPageClient({
         },
       ]);
     },
-    []
+    [],
   );
 
   // Q&A完了時のハンドラー
@@ -115,32 +124,35 @@ export function QaPageClient({
                 status: "completed" as const,
                 updatedAt: new Date(),
               }
-            : history
-        )
+            : history,
+        ),
       );
     },
-    []
+    [],
   );
 
   // Q&Aエラー時のハンドラー
-  const handleQaError = useCallback((qaHistoryId: string, errorMessage: string) => {
-    setActiveQaHistoryId(null);
-    setCurrentQuestion(null);
-    setCurrentChecklistItemContents([]);
-    // 履歴リストを更新
-    setHistories((prev) =>
-      prev.map((history) =>
-        history.id === qaHistoryId
-          ? {
-              ...history,
-              status: "error" as const,
-              errorMessage,
-              updatedAt: new Date(),
-            }
-          : history
-      )
-    );
-  }, []);
+  const handleQaError = useCallback(
+    (qaHistoryId: string, errorMessage: string) => {
+      setActiveQaHistoryId(null);
+      setCurrentQuestion(null);
+      setCurrentChecklistItemContents([]);
+      // 履歴リストを更新
+      setHistories((prev) =>
+        prev.map((history) =>
+          history.id === qaHistoryId
+            ? {
+                ...history,
+                status: "error" as const,
+                errorMessage,
+                updatedAt: new Date(),
+              }
+            : history,
+        ),
+      );
+    },
+    [],
+  );
 
   // 入力可能かどうか
   const isInputEnabled = activeQaHistoryId === null;
@@ -151,7 +163,8 @@ export function QaPageClient({
   // 末尾にスクロール
   const scrollToBottom = useCallback(() => {
     if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+      scrollContainerRef.current.scrollTop =
+        scrollContainerRef.current.scrollHeight;
     }
   }, []);
 

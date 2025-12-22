@@ -15,7 +15,9 @@ function createTestExcelBuffer(
     XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name);
   }
 
-  return Buffer.from(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }));
+  return Buffer.from(
+    XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }),
+  );
 }
 
 describe("FileTextExtractor", () => {
@@ -180,9 +182,9 @@ describe("FileTextExtractor", () => {
       it("サポートされていない拡張子でエラーを投げる", async () => {
         const buffer = Buffer.from("content", "utf-8");
 
-        await expect(
-          extractor.extract(buffer, "test.unknown"),
-        ).rejects.toThrow("サポートされていないファイル形式です: .unknown");
+        await expect(extractor.extract(buffer, "test.unknown")).rejects.toThrow(
+          "サポートされていないファイル形式です: .unknown",
+        );
       });
 
       it("拡張子のないファイルでエラーを投げる", async () => {

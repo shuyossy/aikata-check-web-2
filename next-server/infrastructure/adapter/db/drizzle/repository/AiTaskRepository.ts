@@ -3,7 +3,13 @@ import {
   IAiTaskRepository,
   FindAiTasksOptions,
 } from "@/application/shared/port/repository/IAiTaskRepository";
-import { AiTask, AiTaskId, AI_TASK_STATUS, AI_TASK_TYPE, type ReconstructAiTaskFileMetadataParams } from "@/domain/aiTask";
+import {
+  AiTask,
+  AiTaskId,
+  AI_TASK_STATUS,
+  AI_TASK_TYPE,
+  type ReconstructAiTaskFileMetadataParams,
+} from "@/domain/aiTask";
 import { db } from "../index";
 import { aiTasks, aiTaskFileMetadata } from "@/drizzle/schema";
 
@@ -133,7 +139,9 @@ export class AiTaskRepository implements IAiTaskRepository {
     const result = await db
       .select()
       .from(aiTasks)
-      .where(and(eq(aiTasks.apiKeyHash, apiKeyHash), eq(aiTasks.status, status)))
+      .where(
+        and(eq(aiTasks.apiKeyHash, apiKeyHash), eq(aiTasks.status, status)),
+      )
       .orderBy(desc(aiTasks.priority), aiTasks.createdAt)
       .limit(limit)
       .offset(offset);

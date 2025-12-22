@@ -1,10 +1,7 @@
 export { ReviewSpaceId } from "./ReviewSpaceId";
 export { ReviewSpaceName } from "./ReviewSpaceName";
 export { ReviewSpaceDescription } from "./ReviewSpaceDescription";
-export {
-  EvaluationItem,
-  type EvaluationItemProps,
-} from "./EvaluationItem";
+export { EvaluationItem, type EvaluationItemProps } from "./EvaluationItem";
 export {
   EvaluationCriteria,
   DEFAULT_EVALUATION_CRITERIA,

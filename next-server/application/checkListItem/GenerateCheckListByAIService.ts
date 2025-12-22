@@ -1,4 +1,7 @@
-import { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
+import {
+  IProjectRepository,
+  ISystemSettingRepository,
+} from "@/application/shared/port/repository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { getAiTaskBootstrap } from "@/application/aiTask";
@@ -98,7 +101,10 @@ export class GenerateCheckListByAIService {
 
     // API設定を取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const systemSetting = await this.systemSettingRepository.find();
-    const aiApiConfig = resolveAiApiConfig(project.encryptedApiKey, systemSetting);
+    const aiApiConfig = resolveAiApiConfig(
+      project.encryptedApiKey,
+      systemSetting,
+    );
 
     // ペイロードを作成
     const payload: ChecklistGenerationTaskPayload = {
@@ -131,7 +137,9 @@ export class GenerateCheckListByAIService {
         buffer: processMode === "text" ? bufferData.buffer : Buffer.alloc(0),
         // 画像モードの場合のみ変換済み画像を設定
         convertedImageBuffers:
-          processMode === "image" ? bufferData.convertedImageBuffers : undefined,
+          processMode === "image"
+            ? bufferData.convertedImageBuffers
+            : undefined,
       };
     });
 

@@ -91,8 +91,11 @@ export class SystemNotification {
    * DBから取得したデータからシステム通知を復元する
    * @throws ドメインバリデーションエラー - バリデーション失敗時
    */
-  static reconstruct(params: ReconstructSystemNotificationParams): SystemNotification {
-    const { id, message, displayOrder, isActive, createdAt, updatedAt } = params;
+  static reconstruct(
+    params: ReconstructSystemNotificationParams,
+  ): SystemNotification {
+    const { id, message, displayOrder, isActive, createdAt, updatedAt } =
+      params;
 
     // バリデーション
     SystemNotification.validateMessage(message);
@@ -170,11 +173,16 @@ export class SystemNotification {
    * 複数項目を一括で更新する
    * 新しいインスタンスを返す（不変性を保持）
    */
-  update(params: { message?: string; displayOrder?: number; isActive?: boolean }): SystemNotification {
+  update(params: {
+    message?: string;
+    displayOrder?: number;
+    isActive?: boolean;
+  }): SystemNotification {
     const { message, displayOrder, isActive } = params;
 
     const newMessage = message !== undefined ? message : this._message;
-    const newDisplayOrder = displayOrder !== undefined ? displayOrder : this._displayOrder;
+    const newDisplayOrder =
+      displayOrder !== undefined ? displayOrder : this._displayOrder;
     const newIsActive = isActive !== undefined ? isActive : this._isActive;
 
     // メッセージが変更された場合はバリデーション

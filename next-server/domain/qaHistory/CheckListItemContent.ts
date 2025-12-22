@@ -46,7 +46,9 @@ export class CheckListItemContent {
         parsed = JSON.parse(value);
       } catch {
         // JSONパースに失敗した場合は不正なJSON形式としてエラー
-        throw domainValidationError("QA_HISTORY_CHECKLIST_ITEM_CONTENT_INVALID_JSON");
+        throw domainValidationError(
+          "QA_HISTORY_CHECKLIST_ITEM_CONTENT_INVALID_JSON",
+        );
       }
       if (Array.isArray(parsed) && parsed.length === 0) {
         throw domainValidationError("QA_HISTORY_CHECKLIST_ITEM_CONTENT_EMPTY");

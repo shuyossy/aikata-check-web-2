@@ -276,7 +276,7 @@ describe("buildAnswerChecklistInfo", () => {
     const result = buildAnswerChecklistInfo(checklistResults);
     const lines = result.split("\n");
 
-    expect(lines.some(line => line.includes("項目1"))).toBe(true);
-    expect(lines.some(line => line.includes("項目2"))).toBe(true);
+    expect(lines.some((line) => line.includes("項目1"))).toBe(true);
+    expect(lines.some((line) => line.includes("項目2"))).toBe(true);
   });
 });

@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { GetProjectService } from "@/application/project";
 import { GetReviewSpaceService } from "@/application/reviewSpace";
-import { GetReviewTargetService, GetRetryInfoService } from "@/application/reviewTarget";
+import {
+  GetReviewTargetService,
+  GetRetryInfoService,
+} from "@/application/reviewTarget";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
@@ -23,7 +26,9 @@ interface RetryReviewPageProps {
 /**
  * リトライレビューページ（サーバコンポーネント）
  */
-export default async function RetryReviewPage({ params }: RetryReviewPageProps) {
+export default async function RetryReviewPage({
+  params,
+}: RetryReviewPageProps) {
   const { projectId, spaceId, targetId } = await params;
 
   // 認証チェック
@@ -41,7 +46,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   // プロジェクト情報を取得
   const getProjectService = new GetProjectService(
     projectRepository,
-    userRepository
+    userRepository,
   );
   const project = await getProjectService.execute({
     projectId,
@@ -55,7 +60,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   // レビュースペース情報を取得
   const getReviewSpaceService = new GetReviewSpaceService(
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
   const reviewSpace = await getReviewSpaceService.execute({
     reviewSpaceId: spaceId,
@@ -71,7 +76,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
     reviewTargetRepository,
     reviewResultRepository,
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
 
   let reviewTargetData;
@@ -91,7 +96,7 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
     checkListItemRepository,
     reviewDocumentCacheRepository,
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
 
   let retryInfo;
@@ -120,7 +125,10 @@ export default async function RetryReviewPage({ params }: RetryReviewPageProps) 
   const retryInfoForClient = {
     ...retryInfo,
     // apiタイプの場合はnullに変換（リトライ画面ではapiタイプは扱わない）
-    reviewType: (isApiReview ? null : retryInfo.reviewType) as Exclude<typeof retryInfo.reviewType, "api">,
+    reviewType: (isApiReview ? null : retryInfo.reviewType) as Exclude<
+      typeof retryInfo.reviewType,
+      "api"
+    >,
     // apiタイプの場合はcanRetryもfalseにする
     canRetry: isApiReview ? false : retryInfo.canRetry,
     // リトライ不可の理由（外部APIレビューの場合のみ設定）

@@ -55,7 +55,7 @@ export function NotificationsClient({
       onError: ({ error: actionError }) => {
         handleError(actionError, "通知一覧の取得に失敗しました");
       },
-    }
+    },
   );
 
   // 通知作成
@@ -73,7 +73,7 @@ export function NotificationsClient({
       onError: ({ error: actionError }) => {
         handleError(actionError, "通知の作成に失敗しました");
       },
-    }
+    },
   );
 
   // 通知更新
@@ -88,7 +88,7 @@ export function NotificationsClient({
       onError: ({ error: actionError }) => {
         handleError(actionError, "通知の更新に失敗しました");
       },
-    }
+    },
   );
 
   // 通知削除
@@ -105,7 +105,7 @@ export function NotificationsClient({
         setDeleteTargetId(null);
         handleError(actionError, "通知の削除に失敗しました");
       },
-    }
+    },
   );
 
   const handleCreateNotification = (data: {

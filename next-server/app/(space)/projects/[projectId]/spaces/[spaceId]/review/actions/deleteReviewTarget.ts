@@ -20,7 +20,7 @@ export const deleteReviewTargetAction = authenticatedAction
       reviewTargetId: z.string().uuid(),
       projectId: z.string().uuid(),
       spaceId: z.string().uuid(),
-    })
+    }),
   )
   .action(async ({ parsedInput, ctx }) => {
     const { reviewTargetId, projectId, spaceId } = parsedInput;
@@ -36,7 +36,7 @@ export const deleteReviewTargetAction = authenticatedAction
       reviewTargetRepository,
       reviewSpaceRepository,
       projectRepository,
-      aiTaskRepository
+      aiTaskRepository,
     );
 
     await service.execute({

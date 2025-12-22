@@ -33,7 +33,7 @@ export function getRequestContext(): RequestContext | undefined {
  */
 export function runWithRequestContext<T>(
   context: RequestContext,
-  callback: () => T
+  callback: () => T,
 ): T {
   return requestContextStorage.run(context, callback);
 }

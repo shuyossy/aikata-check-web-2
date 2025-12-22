@@ -113,9 +113,9 @@ describe("StartApiReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: StartApiReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -138,7 +138,8 @@ describe("StartApiReviewService", () => {
       expect(mockReviewTargetRepository.save).toHaveBeenCalledTimes(1);
 
       // 保存されたReviewTargetがreviewType=apiかつreviewingステータスであることを確認
-      const savedTarget = vi.mocked(mockReviewTargetRepository.save).mock.calls[0][0] as ReviewTarget;
+      const savedTarget = vi.mocked(mockReviewTargetRepository.save).mock
+        .calls[0][0] as ReviewTarget;
       expect(savedTarget.reviewType?.isApi()).toBe(true);
       expect(savedTarget.status.isReviewing()).toBe(true);
     });
@@ -148,9 +149,9 @@ describe("StartApiReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: StartApiReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -178,9 +179,9 @@ describe("StartApiReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: StartApiReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -195,7 +196,8 @@ describe("StartApiReviewService", () => {
       expect(result.concurrentReviewItems).toBe(10);
 
       // 保存されたReviewTargetのreviewSettingsがnullであることを確認
-      const savedTarget = vi.mocked(mockReviewTargetRepository.save).mock.calls[0][0] as ReviewTarget;
+      const savedTarget = vi.mocked(mockReviewTargetRepository.save).mock
+        .calls[0][0] as ReviewTarget;
       expect(savedTarget.reviewSettings).toBeNull();
     });
   });
@@ -258,9 +260,9 @@ describe("StartApiReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        [],
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue([]);
 
       const command: StartApiReviewCommand = {
         reviewSpaceId: testReviewSpaceId,

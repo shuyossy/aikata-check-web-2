@@ -55,7 +55,9 @@ export function EvaluationCriteriaEditor({
 
       {value.length === 0 ? (
         <div className="text-center py-6 border-2 border-dashed border-gray-200 rounded-lg">
-          <p className="text-sm text-gray-500 mb-3">評定基準が設定されていません</p>
+          <p className="text-sm text-gray-500 mb-3">
+            評定基準が設定されていません
+          </p>
           <div className="flex flex-col sm:flex-row gap-2 justify-center">
             <Button
               type="button"
@@ -65,7 +67,12 @@ export function EvaluationCriteriaEditor({
             >
               デフォルト設定を使用
             </Button>
-            <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={handleAddItem}
+            >
               <Plus className="h-4 w-4 mr-1" />
               カスタム項目を追加
             </Button>

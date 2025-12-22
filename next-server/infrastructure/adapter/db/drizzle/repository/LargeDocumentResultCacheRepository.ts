@@ -17,9 +17,7 @@ import {
  * 大量ドキュメント結果キャッシュリポジトリ実装
  * Drizzle ORMを使用してPostgreSQLと通信
  */
-export class LargeDocumentResultCacheRepository
-  implements ILargeDocumentResultCacheRepository
-{
+export class LargeDocumentResultCacheRepository implements ILargeDocumentResultCacheRepository {
   /**
    * 大量ドキュメント結果キャッシュを保存
    */
@@ -73,7 +71,10 @@ export class LargeDocumentResultCacheRepository
       .select()
       .from(largeDocumentResultCaches)
       .where(
-        inArray(largeDocumentResultCaches.reviewDocumentCacheId, documentCacheIds),
+        inArray(
+          largeDocumentResultCaches.reviewDocumentCacheId,
+          documentCacheIds,
+        ),
       );
 
     return results.map((row) => ({
@@ -106,7 +107,10 @@ export class LargeDocumentResultCacheRepository
     await db
       .delete(largeDocumentResultCaches)
       .where(
-        inArray(largeDocumentResultCaches.reviewDocumentCacheId, documentCacheIds),
+        inArray(
+          largeDocumentResultCaches.reviewDocumentCacheId,
+          documentCacheIds,
+        ),
       );
   }
 
@@ -139,7 +143,9 @@ export class LargeDocumentResultCacheRepository
     const individualCaches = await db
       .select()
       .from(largeDocumentResultCaches)
-      .where(inArray(largeDocumentResultCaches.reviewResultId, reviewResultIds));
+      .where(
+        inArray(largeDocumentResultCaches.reviewResultId, reviewResultIds),
+      );
 
     // 結果を組み立て
     return targetReviewResults.map((reviewResult) => {
@@ -169,7 +175,9 @@ export class LargeDocumentResultCacheRepository
     const results = await db
       .select({ totalChunks: largeDocumentResultCaches.totalChunks })
       .from(largeDocumentResultCaches)
-      .where(eq(largeDocumentResultCaches.reviewDocumentCacheId, documentCacheId));
+      .where(
+        eq(largeDocumentResultCaches.reviewDocumentCacheId, documentCacheId),
+      );
 
     if (results.length === 0) {
       return 1; // 履歴がない場合はデフォルトで1チャンク

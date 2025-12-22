@@ -110,8 +110,7 @@ export function Sidebar({
     (spaceId: string, e: React.MouseEvent) => {
       // Chevronアイコン以外がクリックされた場合は遷移
       const target = e.target as HTMLElement;
-      const isChevronClick =
-        target.closest('[data-chevron="true"]') !== null;
+      const isChevronClick = target.closest('[data-chevron="true"]') !== null;
 
       if (!isChevronClick) {
         // 展開状態にして遷移
@@ -214,9 +213,7 @@ export function Sidebar({
                             href={`/projects/${currentProject.id}/spaces/${space.id}/checklist`}
                             className={cn(
                               "flex items-center gap-2 px-3 py-1.5 text-sm rounded transition duration-150",
-                              pathname.includes(
-                                `/spaces/${space.id}/checklist`,
-                              )
+                              pathname.includes(`/spaces/${space.id}/checklist`)
                                 ? "text-blue-600 bg-blue-50"
                                 : "text-gray-700 hover:bg-gray-100",
                             )}

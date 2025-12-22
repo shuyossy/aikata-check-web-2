@@ -71,14 +71,14 @@ export const judgeErrorIsContentLengthError = (error: unknown) => {
   const apiError = extractAIAPISafeError(error);
   if (!apiError) return false;
   if (apiError instanceof AppError) {
-    return apiError.messageCode === 'AI_MESSAGE_TOO_LARGE';
+    return apiError.messageCode === "AI_MESSAGE_TOO_LARGE";
   }
   if (APICallError.isInstance(apiError)) {
     return (
-      apiError.responseBody?.includes('maximum context length') ||
-      apiError.responseBody?.includes('tokens_limit_reached') ||
-      apiError.responseBody?.includes('context_length_exceeded') ||
-      apiError.responseBody?.includes('many images')
+      apiError.responseBody?.includes("maximum context length") ||
+      apiError.responseBody?.includes("tokens_limit_reached") ||
+      apiError.responseBody?.includes("context_length_exceeded") ||
+      apiError.responseBody?.includes("many images")
     );
   }
   return false;

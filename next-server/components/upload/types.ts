@@ -1,11 +1,7 @@
 /**
  * アップロードファイルの処理状態
  */
-export type UploadFileStatus =
-  | "pending"
-  | "processing"
-  | "complete"
-  | "error";
+export type UploadFileStatus = "pending" | "processing" | "complete" | "error";
 
 /**
  * ファイルの処理モード
@@ -96,8 +92,7 @@ export const getFileExtension = (filename: string): string => {
  */
 export const isPdfFile = (file: File): boolean => {
   return (
-    file.type === "application/pdf" ||
-    getFileExtension(file.name) === ".pdf"
+    file.type === "application/pdf" || getFileExtension(file.name) === ".pdf"
   );
 };
 

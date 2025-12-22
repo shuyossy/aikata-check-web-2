@@ -44,7 +44,7 @@ export function ReviewSettingsEditor({
   // フィールド更新のヘルパー関数
   const updateField = <K extends keyof ReviewSettingsValue>(
     field: K,
-    fieldValue: ReviewSettingsValue[K]
+    fieldValue: ReviewSettingsValue[K],
   ) => {
     onChange({
       ...value,
@@ -60,7 +60,9 @@ export function ReviewSettingsEditor({
         <Textarea
           id="additionalInstructions"
           value={value.additionalInstructions}
-          onChange={(e) => updateField("additionalInstructions", e.target.value)}
+          onChange={(e) =>
+            updateField("additionalInstructions", e.target.value)
+          }
           placeholder="AIレビュー実行時に追加する指示を入力"
           rows={4}
           maxLength={2000}
@@ -85,7 +87,7 @@ export function ReviewSettingsEditor({
           onChange={(e) =>
             updateField(
               "concurrentReviewItems",
-              e.target.value ? Number(e.target.value) : 1
+              e.target.value ? Number(e.target.value) : 1,
             )
           }
           placeholder="例: 5"

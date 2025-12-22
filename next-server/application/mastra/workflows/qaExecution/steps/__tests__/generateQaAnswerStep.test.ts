@@ -1,7 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RuntimeContext } from "@mastra/core/di";
 import { generateQaAnswerStep } from "../generateQaAnswerStep";
-import type { ChecklistResultWithIndividual, ResearchResult, QaExecutionWorkflowRuntimeContext } from "../../types";
+import type {
+  ChecklistResultWithIndividual,
+  ResearchResult,
+  QaExecutionWorkflowRuntimeContext,
+} from "../../types";
 import type { IEventBroker } from "@/application/shared/port/push/IEventBroker";
 
 // エージェントをモック
@@ -20,7 +24,8 @@ vi.mock("@/lib/server/logger", () => ({
 
 describe("generateQaAnswerStep", () => {
   // テストデータ
-  const testQuestion = "このドキュメントの安全性についてどのように評価されましたか？";
+  const testQuestion =
+    "このドキュメントの安全性についてどのように評価されましたか？";
 
   const testChecklistResults: ChecklistResultWithIndividual[] = [
     {
@@ -39,7 +44,8 @@ describe("generateQaAnswerStep", () => {
       documentCacheId: "cache-doc-1",
       documentName: "セキュリティガイドライン.docx",
       researchContent: "セキュリティに関する記述を調査",
-      researchResult: "第3章にセキュリティに関する記述があり、AES-256暗号化を推奨しています。",
+      researchResult:
+        "第3章にセキュリティに関する記述があり、AES-256暗号化を推奨しています。",
     },
     {
       documentCacheId: "cache-doc-2",
@@ -80,9 +86,10 @@ describe("generateQaAnswerStep", () => {
       eventBroker?: IEventBroker;
       userId?: string;
       qaHistoryId?: string;
-    } = {}
+    } = {},
   ) => {
-    const runtimeContext = new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
+    const runtimeContext =
+      new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
     if (options.eventBroker) {
       runtimeContext.set("eventBroker", options.eventBroker);
     }
@@ -102,7 +109,8 @@ describe("generateQaAnswerStep", () => {
   describe("正常系", () => {
     it("調査結果を統合して回答を生成する", async () => {
       // Arrange
-      const expectedAnswer = "セキュリティガイドラインの第3章によると、AES-256暗号化が推奨されています。また、テスト計画書では侵入テストが計画されており、セキュリティ対策は概ね適切に行われています。";
+      const expectedAnswer =
+        "セキュリティガイドラインの第3章によると、AES-256暗号化が推奨されています。また、テスト計画書では侵入テストが計画されており、セキュリティ対策は概ね適切に行われています。";
       mockGenerateLegacy.mockResolvedValue({
         text: expectedAnswer,
       });
@@ -264,7 +272,7 @@ describe("generateQaAnswerStep", () => {
         expect.objectContaining({
           type: "answer_chunk",
           data: expect.objectContaining({ text: "チャンク1" }),
-        })
+        }),
       );
       expect(eventBroker.publish).toHaveBeenCalledWith(
         testUserId,
@@ -272,7 +280,7 @@ describe("generateQaAnswerStep", () => {
         expect.objectContaining({
           type: "answer_chunk",
           data: expect.objectContaining({ text: "チャンク2" }),
-        })
+        }),
       );
     });
 
@@ -334,7 +342,7 @@ describe("generateQaAnswerStep", () => {
       expect(bailMock).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-        })
+        }),
       );
     });
 
@@ -364,7 +372,7 @@ describe("generateQaAnswerStep", () => {
       expect(bailMock).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-        })
+        }),
       );
     });
   });

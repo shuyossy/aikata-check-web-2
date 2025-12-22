@@ -1,7 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowLeft, Copy, Check, ExternalLink, Code, FileJson } from "lucide-react";
+import {
+  ArrowLeft,
+  Copy,
+  Check,
+  ExternalLink,
+  Code,
+  FileJson,
+} from "lucide-react";
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -93,13 +100,7 @@ const RESPONSE_SCHEMA_SAMPLE = `{
 /**
  * コードブロックコンポーネント
  */
-function CodeBlock({
-  code,
-  language,
-}: {
-  code: string;
-  language: string;
-}) {
+function CodeBlock({ code, language }: { code: string; language: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
@@ -411,7 +412,9 @@ export function ApiSpecClient({
 
                 {/* 注意事項 */}
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <h4 className="font-medium text-blue-800 mb-2">重要な注意点</h4>
+                  <h4 className="font-medium text-blue-800 mb-2">
+                    重要な注意点
+                  </h4>
                   <ul className="text-sm text-blue-700 space-y-1 list-disc list-inside">
                     <li>
                       resultsの各要素のcheckListItemIdは、リクエストで送信したcheckListItemsのidと一致させてください

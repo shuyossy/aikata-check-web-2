@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeleteProjectService } from "../DeleteProjectService";
-import { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
+import {
+  IProjectRepository,
+  IAiTaskRepository,
+} from "@/application/shared/port/repository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
@@ -200,7 +203,9 @@ describe("DeleteProjectService", () => {
         deleteByStatus: vi.fn(),
         findByReviewTargetId: vi.fn().mockResolvedValue(null),
         deleteByReviewTargetId: vi.fn(),
-        findChecklistGenerationTaskByReviewSpaceId: vi.fn().mockResolvedValue(null),
+        findChecklistGenerationTaskByReviewSpaceId: vi
+          .fn()
+          .mockResolvedValue(null),
         deleteChecklistGenerationTaskByReviewSpaceId: vi.fn(),
       };
 
@@ -258,10 +263,14 @@ describe("DeleteProjectService", () => {
 
       // ワークフローキャンセルが呼ばれたことを確認
       expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenCalledWith(true);
-      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(validAiTaskId);
+      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(
+        validAiTaskId,
+      );
       expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenCalledWith(false);
       // タスクファイルとAIタスクが削除されたことを確認
-      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(validAiTaskId);
+      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(
+        validAiTaskId,
+      );
       expect(mockAiTaskRepository.deleteByReviewTargetId).toHaveBeenCalledWith(
         validReviewTargetId,
       );
@@ -394,7 +403,9 @@ describe("DeleteProjectService", () => {
       });
 
       // 両方のワークフローがキャンセルされたことを確認
-      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(validAiTaskId);
+      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(
+        validAiTaskId,
+      );
       expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(aiTask2Id);
       expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledTimes(2);
 
@@ -404,7 +415,9 @@ describe("DeleteProjectService", () => {
       expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenCalledTimes(4);
 
       // 両方のタスクファイルが削除されたことを確認
-      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(validAiTaskId);
+      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(
+        validAiTaskId,
+      );
       expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(aiTask2Id);
 
       // プロジェクト削除が実行されたことを確認

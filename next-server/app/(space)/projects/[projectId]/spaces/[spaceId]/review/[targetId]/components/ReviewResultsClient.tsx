@@ -95,7 +95,8 @@ function getStatusBannerConfig(status: string) {
         textColor: "text-yellow-800",
         iconColor: "text-yellow-500",
         title: "待機中",
-        message: "AIレビュータスクが実行待ちリストに登録されました。順番が来るまでお待ちください。",
+        message:
+          "AIレビュータスクが実行待ちリストに登録されました。順番が来るまでお待ちください。",
       };
     case "reviewing":
       return {
@@ -105,7 +106,8 @@ function getStatusBannerConfig(status: string) {
         textColor: "text-blue-800",
         iconColor: "text-blue-500",
         title: "レビュー実行中",
-        message: "AIがドキュメントをレビューしています。しばらくお待ちください。",
+        message:
+          "AIがドキュメントをレビューしています。しばらくお待ちください。",
         animate: true,
       };
     case "completed":
@@ -225,7 +227,9 @@ export function ReviewResultsClient({
           URL.revokeObjectURL(url);
 
           showSuccess(
-            formatClientMessage("SUCCESS_REVIEW_RESULT_EXPORTED", { count: result.data.exportedCount }),
+            formatClientMessage("SUCCESS_REVIEW_RESULT_EXPORTED", {
+              count: result.data.exportedCount,
+            }),
           );
         }
       },
@@ -247,13 +251,17 @@ export function ReviewResultsClient({
   // リトライハンドラー（今後実装）
   const handleRetry = useCallback(() => {
     // TODO: リトライ機能を実装
-    router.push(`/projects/${projectId}/spaces/${spaceId}/review/${targetId}/retry`);
+    router.push(
+      `/projects/${projectId}/spaces/${spaceId}/review/${targetId}/retry`,
+    );
   }, [router, projectId, spaceId, targetId]);
 
   // Q&Aハンドラー（今後実装）
   const handleQA = useCallback(() => {
     // TODO: Q&A機能を実装
-    router.push(`/projects/${projectId}/spaces/${spaceId}/review/${targetId}/qa`);
+    router.push(
+      `/projects/${projectId}/spaces/${spaceId}/review/${targetId}/qa`,
+    );
   }, [router, projectId, spaceId, targetId]);
 
   return (
@@ -273,7 +281,9 @@ export function ReviewResultsClient({
 
         {/* Action Buttons */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-          <h2 className="text-xl font-bold text-gray-900">{reviewTarget.name}</h2>
+          <h2 className="text-xl font-bold text-gray-900">
+            {reviewTarget.name}
+          </h2>
           <div className="flex flex-col sm:flex-row gap-3">
             <Button
               variant="outline"
@@ -319,7 +329,9 @@ export function ReviewResultsClient({
             <div className="ml-3 flex-1">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
-                  <p className={`text-sm ${bannerConfig.textColor} font-medium`}>
+                  <p
+                    className={`text-sm ${bannerConfig.textColor} font-medium`}
+                  >
                     {bannerConfig.title}
                     {isPolling && (
                       <span className="ml-2 text-xs text-gray-500">
@@ -328,12 +340,16 @@ export function ReviewResultsClient({
                     )}
                   </p>
                   {bannerConfig.message && (
-                    <p className={`mt-1 text-sm ${bannerConfig.textColor.replace("800", "700")}`}>
+                    <p
+                      className={`mt-1 text-sm ${bannerConfig.textColor.replace("800", "700")}`}
+                    >
                       {bannerConfig.message}
                     </p>
                   )}
                   {reviewTarget.status === "completed" && (
-                    <p className={`mt-1 text-sm ${bannerConfig.textColor.replace("800", "700")}`}>
+                    <p
+                      className={`mt-1 text-sm ${bannerConfig.textColor.replace("800", "700")}`}
+                    >
                       レビュー完了日時: {formatDate(reviewTarget.updatedAt)}
                     </p>
                   )}
@@ -378,7 +394,10 @@ export function ReviewResultsClient({
               <tbody className="bg-white divide-y divide-gray-200">
                 {sortedResults.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
+                    <td
+                      colSpan={4}
+                      className="px-6 py-8 text-center text-gray-500"
+                    >
                       {reviewTarget.status === "reviewing" ? (
                         <div className="flex items-center justify-center gap-2">
                           <Loader2 className="w-5 h-5 animate-spin" />
@@ -413,7 +432,7 @@ export function ReviewResultsClient({
                           ) : result.evaluation ? (
                             <span
                               className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-bold ${getEvaluationBadgeStyle(
-                                result.evaluation
+                                result.evaluation,
                               )}`}
                             >
                               {result.evaluation}
@@ -425,9 +444,13 @@ export function ReviewResultsClient({
                         <td className="px-6 py-4 text-sm text-gray-700">
                           <div className="max-h-24 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
                             {hasError ? (
-                              <span className="text-red-600">{result.errorMessage}</span>
+                              <span className="text-red-600">
+                                {result.errorMessage}
+                              </span>
                             ) : result.comment ? (
-                              <span className="whitespace-pre-wrap">{result.comment}</span>
+                              <span className="whitespace-pre-wrap">
+                                {result.comment}
+                              </span>
                             ) : (
                               <span className="text-gray-400">-</span>
                             )}

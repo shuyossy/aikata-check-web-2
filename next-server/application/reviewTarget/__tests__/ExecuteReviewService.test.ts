@@ -6,7 +6,10 @@ import {
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
+import type {
+  IProjectRepository,
+  ISystemSettingRepository,
+} from "@/application/shared/port/repository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
@@ -206,9 +209,9 @@ describe("ExecuteReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -242,9 +245,9 @@ describe("ExecuteReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -270,9 +273,9 @@ describe("ExecuteReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -329,9 +332,9 @@ describe("ExecuteReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        [],
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue([]);
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -411,9 +414,9 @@ describe("ExecuteReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -442,9 +445,9 @@ describe("ExecuteReviewService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: ExecuteReviewCommand = {
         reviewSpaceId: testReviewSpaceId,

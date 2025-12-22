@@ -53,7 +53,7 @@ export function AdminUserSearchDialog({
       onError: ({ error: actionError }) => {
         handleError(actionError, "ユーザー検索に失敗しました");
       },
-    }
+    },
   );
 
   // debounced search
@@ -83,7 +83,7 @@ export function AdminUserSearchDialog({
   }, [open]);
 
   const filteredUsers = users.filter(
-    (user) => !existingAdminIds.includes(user.id)
+    (user) => !existingAdminIds.includes(user.id),
   );
 
   return (

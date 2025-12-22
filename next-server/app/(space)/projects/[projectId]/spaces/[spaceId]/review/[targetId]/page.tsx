@@ -1,7 +1,10 @@
 import { notFound } from "next/navigation";
 import { GetProjectService } from "@/application/project";
 import { GetReviewSpaceService } from "@/application/reviewSpace";
-import { GetReviewTargetService, GetRetryInfoService } from "@/application/reviewTarget";
+import {
+  GetReviewTargetService,
+  GetRetryInfoService,
+} from "@/application/reviewTarget";
 import {
   ProjectRepository,
   ReviewSpaceRepository,
@@ -43,7 +46,7 @@ export default async function ReviewResultsPage({
   // プロジェクト情報を取得
   const getProjectService = new GetProjectService(
     projectRepository,
-    userRepository
+    userRepository,
   );
   const project = await getProjectService.execute({
     projectId,
@@ -57,7 +60,7 @@ export default async function ReviewResultsPage({
   // レビュースペース情報を取得
   const getReviewSpaceService = new GetReviewSpaceService(
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
   const reviewSpace = await getReviewSpaceService.execute({
     reviewSpaceId: spaceId,
@@ -73,7 +76,7 @@ export default async function ReviewResultsPage({
     reviewTargetRepository,
     reviewResultRepository,
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
 
   let reviewTargetData;
@@ -93,7 +96,7 @@ export default async function ReviewResultsPage({
     checkListItemRepository,
     reviewDocumentCacheRepository,
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
 
   let canRetry = false;

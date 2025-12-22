@@ -83,7 +83,10 @@ export class ReviewSpaceRepository implements IReviewSpaceRepository {
   /**
    * プロジェクトIDでレビュースペース数をカウント
    */
-  async countByProjectId(projectId: ProjectId, search?: string): Promise<number> {
+  async countByProjectId(
+    projectId: ProjectId,
+    search?: string,
+  ): Promise<number> {
     const whereCondition = search
       ? sql`${reviewSpaces.projectId} = ${projectId.value} AND ${reviewSpaces.name} ILIKE ${"%" + search + "%"}`
       : eq(reviewSpaces.projectId, projectId.value);

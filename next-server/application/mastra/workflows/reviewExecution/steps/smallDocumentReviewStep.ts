@@ -8,7 +8,10 @@ import {
 import { baseStepOutputSchema } from "../../schema";
 import { extractedFileSchema } from "../../shared";
 import { createCombinedMessage } from "../../lib";
-import { createRuntimeContext, judgeFinishReason } from "../../../lib/agentUtils";
+import {
+  createRuntimeContext,
+  judgeFinishReason,
+} from "../../../lib/agentUtils";
 import { normalizeUnknownError, workflowError } from "@/lib/server/error";
 import { formatMessage } from "@/lib/server/messages";
 import type { ReviewExecuteAgentRuntimeContext } from "../../../agents";
@@ -83,10 +86,11 @@ export const smallDocumentReviewStep = createStep({
     const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
     const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
     const reviewTargetId = typedWorkflowRuntimeContext?.get("reviewTargetId");
-    const onReviewResultSaved = typedWorkflowRuntimeContext?.get("onReviewResultSaved");
+    const onReviewResultSaved = typedWorkflowRuntimeContext?.get(
+      "onReviewResultSaved",
+    );
 
     try {
-
       // 評価基準のラベル一覧を取得
       const evaluationLabels =
         evaluationCriteria && evaluationCriteria.length > 0
@@ -194,7 +198,7 @@ Please review the document against the above checklist items.`;
         if (output && Array.isArray(output)) {
           // 既にレビュー済みのチェック項目内容を取得
           const existingContents = new Set(
-            reviewResults.map((r) => r.checkListItemContent)
+            reviewResults.map((r) => r.checkListItemContent),
           );
 
           // レビュー結果を格納（重複は追加しない）
@@ -266,7 +270,7 @@ Please review the document against the above checklist items.`;
       const normalizedError = normalizeUnknownError(error);
 
       // 入力チェック項目全てにエラー結果を作成
-      const errorResults: SingleReviewResult[] = checkListItems.map(item => ({
+      const errorResults: SingleReviewResult[] = checkListItems.map((item) => ({
         checkListItemContent: item.content,
         evaluation: null,
         comment: null,

@@ -1,7 +1,10 @@
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
+import {
+  IProjectRepository,
+  ISystemSettingRepository,
+} from "@/application/shared/port/repository";
 import { ReviewTarget } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
@@ -23,7 +26,6 @@ import type { ReviewTaskPayload } from "@/application/aiTask";
 import { resolveAiApiConfig } from "@/application/shared/lib/resolveAiApiConfig";
 
 const logger = getLogger();
-
 
 /**
  * レビュー設定の入力型
@@ -165,7 +167,10 @@ export class ExecuteReviewService {
 
     // API設定を取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const systemSetting = await this.systemSettingRepository.find();
-    const aiApiConfig = resolveAiApiConfig(project.encryptedApiKey, systemSetting);
+    const aiApiConfig = resolveAiApiConfig(
+      project.encryptedApiKey,
+      systemSetting,
+    );
 
     // ファイルバッファをFileInfoCommand配列に変換
     const fileCommands: FileInfoCommand[] = [];
@@ -191,7 +196,9 @@ export class ExecuteReviewService {
         buffer: processMode === "text" ? bufferData.buffer : Buffer.alloc(0),
         // 画像モードの場合のみ変換済み画像を設定
         convertedImageBuffers:
-          processMode === "image" ? bufferData.convertedImageBuffers : undefined,
+          processMode === "image"
+            ? bufferData.convertedImageBuffers
+            : undefined,
       });
     }
 

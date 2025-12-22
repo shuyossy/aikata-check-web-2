@@ -118,7 +118,7 @@ describe("topicChecklistCreationStep", () => {
       const options = callArgs[1];
       expect(options.runtimeContext.get("topic")).toEqual(testTopic);
       expect(options.runtimeContext.get("checklistRequirements")).toBe(
-        testChecklistRequirements
+        testChecklistRequirements,
       );
     });
 
@@ -180,7 +180,7 @@ describe("topicChecklistCreationStep", () => {
       const message = callArgs[0];
       // メッセージの最初のテキストにトピック情報が含まれる
       const textContent = message.content.find(
-        (c: { type: string }) => c.type === "text"
+        (c: { type: string }) => c.type === "text",
       );
       expect(textContent.text).toContain(testTopic.title);
     });
@@ -230,7 +230,7 @@ describe("topicChecklistCreationStep", () => {
           expect.objectContaining({
             type: "image",
           }),
-        ])
+        ]),
       );
     });
 

@@ -64,14 +64,18 @@ export class ExecuteQaService {
 
     // レビュー対象の存在確認と権限チェック
     const reviewTargetIdVo = ReviewTargetId.reconstruct(reviewTargetId);
-    const reviewTarget = await this.reviewTargetRepository.findById(reviewTargetIdVo);
+    const reviewTarget =
+      await this.reviewTargetRepository.findById(reviewTargetIdVo);
     if (!reviewTarget) {
       throw domainValidationError("REVIEW_TARGET_NOT_FOUND");
     }
 
     // レビュースペースの存在確認
-    const reviewSpaceIdVo = ReviewSpaceId.reconstruct(reviewTarget.reviewSpaceId.value);
-    const reviewSpace = await this.reviewSpaceRepository.findById(reviewSpaceIdVo);
+    const reviewSpaceIdVo = ReviewSpaceId.reconstruct(
+      reviewTarget.reviewSpaceId.value,
+    );
+    const reviewSpace =
+      await this.reviewSpaceRepository.findById(reviewSpaceIdVo);
     if (!reviewSpace) {
       throw domainValidationError("REVIEW_SPACE_NOT_FOUND");
     }
@@ -94,7 +98,9 @@ export class ExecuteQaService {
       reviewTargetId: reviewTargetIdVo,
       userId: UserId.reconstruct(userId),
       question: Question.create(question),
-      checkListItemContent: CheckListItemContent.create(JSON.stringify(checklistItemContents)),
+      checkListItemContent: CheckListItemContent.create(
+        JSON.stringify(checklistItemContents),
+      ),
     });
     await this.qaHistoryRepository.save(qaHistory);
 

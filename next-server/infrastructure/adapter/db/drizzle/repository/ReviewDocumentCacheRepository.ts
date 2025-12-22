@@ -8,9 +8,7 @@ import { reviewDocumentCaches } from "@/drizzle/schema";
  * レビュードキュメントキャッシュリポジトリ実装
  * Drizzle ORMを使用してPostgreSQLと通信
  */
-export class ReviewDocumentCacheRepository
-  implements IReviewDocumentCacheRepository
-{
+export class ReviewDocumentCacheRepository implements IReviewDocumentCacheRepository {
   /**
    * IDでドキュメントキャッシュを検索
    */

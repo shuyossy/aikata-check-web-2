@@ -165,7 +165,9 @@ describe("AiTask", () => {
       it("failWithError()でprocessing → failedに遷移する", () => {
         const task = AiTask.create(baseCreateParams);
         const processingTask = task.startProcessing();
-        const failedTask = processingTask.failWithError("API rate limit exceeded");
+        const failedTask = processingTask.failWithError(
+          "API rate limit exceeded",
+        );
 
         expect(failedTask.status.value).toBe(AI_TASK_STATUS.FAILED);
         expect(failedTask.completedAt).toEqual(mockDate);
@@ -291,7 +293,7 @@ describe("AiTask", () => {
           AiTask.create({
             ...baseCreateParams,
             taskType: "invalid_type",
-          })
+          }),
         ).toThrow();
       });
 
@@ -300,14 +302,14 @@ describe("AiTask", () => {
           AiTask.create({
             ...baseCreateParams,
             priority: 0,
-          })
+          }),
         ).toThrow();
 
         expect(() =>
           AiTask.create({
             ...baseCreateParams,
             priority: 11,
-          })
+          }),
         ).toThrow();
       });
     });

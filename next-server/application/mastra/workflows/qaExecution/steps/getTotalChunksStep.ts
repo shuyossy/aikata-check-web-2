@@ -1,9 +1,9 @@
-import { createStep } from '@mastra/core/workflows';
-import { z } from 'zod';
-import { baseStepOutputSchema } from '../../schema';
-import { normalizeUnknownError } from '@/lib/server/error';
-import { getLogger } from '@/lib/server/logger';
-import { LargeDocumentResultCacheRepository } from '@/infrastructure/adapter/db/drizzle/repository/LargeDocumentResultCacheRepository';
+import { createStep } from "@mastra/core/workflows";
+import { z } from "zod";
+import { baseStepOutputSchema } from "../../schema";
+import { normalizeUnknownError } from "@/lib/server/error";
+import { getLogger } from "@/lib/server/logger";
+import { LargeDocumentResultCacheRepository } from "@/infrastructure/adapter/db/drizzle/repository/LargeDocumentResultCacheRepository";
 
 const logger = getLogger();
 
@@ -19,7 +19,9 @@ export const getTotalChunksStepInputSchema = z.object({
   reasoning: z.string(),
 });
 
-export type GetTotalChunksStepInput = z.infer<typeof getTotalChunksStepInputSchema>;
+export type GetTotalChunksStepInput = z.infer<
+  typeof getTotalChunksStepInputSchema
+>;
 
 /**
  * 最大チャンク数取得ステップの出力スキーマ
@@ -35,15 +37,17 @@ export const getTotalChunksStepOutputSchema = baseStepOutputSchema.extend({
   totalChunks: z.number().optional(),
 });
 
-export type GetTotalChunksStepOutput = z.infer<typeof getTotalChunksStepOutputSchema>;
+export type GetTotalChunksStepOutput = z.infer<
+  typeof getTotalChunksStepOutputSchema
+>;
 
 /**
  * 最大チャンク数取得ステップ
  * 過去のレビュー履歴から、ドキュメントの最大チャンク数を取得する
  */
 export const getTotalChunksStep = createStep({
-  id: 'getTotalChunksStep',
-  description: '最大チャンク数を取得するステップ',
+  id: "getTotalChunksStep",
+  description: "最大チャンク数を取得するステップ",
   inputSchema: getTotalChunksStepInputSchema,
   outputSchema: getTotalChunksStepOutputSchema,
   execute: async ({ inputData, bail }) => {
@@ -52,20 +56,21 @@ export const getTotalChunksStep = createStep({
 
       // リポジトリから最大チャンク数を取得
       const repository = new LargeDocumentResultCacheRepository();
-      const totalChunks = await repository.getMaxTotalChunksForDocument(documentCacheId);
+      const totalChunks =
+        await repository.getMaxTotalChunksForDocument(documentCacheId);
 
       return {
-        status: 'success' as const,
+        status: "success" as const,
         documentCacheId,
         researchContent,
         reasoning,
         totalChunks,
       };
     } catch (error) {
-      logger.error({ err: error }, '最大チャンク数の取得に失敗しました');
+      logger.error({ err: error }, "最大チャンク数の取得に失敗しました");
       const normalizedError = normalizeUnknownError(error);
       return bail({
-        status: 'failed' as const,
+        status: "failed" as const,
         errorMessage: normalizedError.message,
       });
     }

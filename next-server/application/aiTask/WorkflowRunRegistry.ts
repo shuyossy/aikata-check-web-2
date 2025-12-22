@@ -114,7 +114,10 @@ export class WorkflowRunRegistry implements IWorkflowRunRegistry {
   async cancel(taskId: string): Promise<boolean> {
     const run = this.runs.get(taskId);
     if (!run) {
-      logger.debug({ taskId }, "キャンセル対象のワークフロー実行が見つかりません");
+      logger.debug(
+        { taskId },
+        "キャンセル対象のワークフロー実行が見つかりません",
+      );
       return false;
     }
 
@@ -127,7 +130,7 @@ export class WorkflowRunRegistry implements IWorkflowRunRegistry {
     } catch (error) {
       logger.warn(
         { err: error, taskId },
-        "ワークフローのキャンセルに失敗しました"
+        "ワークフローのキャンセルに失敗しました",
       );
       // キャンセル失敗でも登録は解除する
       this.runs.delete(taskId);

@@ -62,17 +62,15 @@ describe("BulkDeleteCheckListItemsService", () => {
 
   beforeEach(() => {
     mockCheckListItemRepository = {
-      findById: vi
-        .fn()
-        .mockImplementation((id) => {
-          if (id.value === validCheckListItemId1) {
-            return Promise.resolve(mockCheckListItem1);
-          }
-          if (id.value === validCheckListItemId2) {
-            return Promise.resolve(mockCheckListItem2);
-          }
-          return Promise.resolve(null);
-        }),
+      findById: vi.fn().mockImplementation((id) => {
+        if (id.value === validCheckListItemId1) {
+          return Promise.resolve(mockCheckListItem1);
+        }
+        if (id.value === validCheckListItemId2) {
+          return Promise.resolve(mockCheckListItem2);
+        }
+        return Promise.resolve(null);
+      }),
       findByIds: vi.fn().mockImplementation((ids) => {
         const items: CheckListItem[] = [];
         for (const id of ids) {

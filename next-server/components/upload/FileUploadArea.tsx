@@ -12,7 +12,16 @@ import {
   getFileExtension,
   isPdfFile,
 } from "./types";
-import { Upload, X, FileText, FileSpreadsheet, FileImage, File, Loader2, AlertCircle } from "lucide-react";
+import {
+  Upload,
+  X,
+  FileText,
+  FileSpreadsheet,
+  FileImage,
+  File,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 
 /**
  * FileUploadArea コンポーネントのプロパティ
@@ -86,7 +95,7 @@ const ProcessModeSelector: React.FC<ProcessModeSelectorProps> = ({
     <div
       className={cn(
         "inline-flex rounded-md border",
-        isDisabled ? "bg-gray-100 border-gray-200" : "bg-white border-gray-300"
+        isDisabled ? "bg-gray-100 border-gray-200" : "bg-white border-gray-300",
       )}
     >
       <button
@@ -97,7 +106,7 @@ const ProcessModeSelector: React.FC<ProcessModeSelectorProps> = ({
             ? "bg-primary text-primary-foreground"
             : isDisabled
               ? "text-gray-400"
-              : "text-gray-600 hover:bg-gray-50"
+              : "text-gray-600 hover:bg-gray-50",
         )}
         disabled={isDisabled}
         onClick={() => onModeChange(file.id, false)}
@@ -112,7 +121,7 @@ const ProcessModeSelector: React.FC<ProcessModeSelectorProps> = ({
             ? "bg-primary text-primary-foreground"
             : isDisabled
               ? "text-gray-400 border-gray-200"
-              : "text-gray-600 hover:bg-gray-50 border-gray-300"
+              : "text-gray-600 hover:bg-gray-50 border-gray-300",
         )}
         disabled={isDisabled}
         onClick={() => onModeChange(file.id, true)}
@@ -164,7 +173,9 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
   className,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(new Set());
+  const [selectedFileIds, setSelectedFileIds] = useState<Set<string>>(
+    new Set(),
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
   // 最後に選択したファイルのインデックス（Shift+クリック用）
   const lastSelectedIndex = useRef<number | null>(null);
@@ -178,7 +189,7 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
         setIsDragging(true);
       }
     },
-    [disabled]
+    [disabled],
   );
 
   // ドラッグ離脱時の処理
@@ -201,7 +212,7 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
       processFiles(droppedFiles);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [disabled, files, maxFiles, maxFileSize, acceptedFormats, onFilesChange]
+    [disabled, files, maxFiles, maxFileSize, acceptedFormats, onFilesChange],
   );
 
   // ファイル選択時の処理
@@ -214,7 +225,7 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
       e.target.value = "";
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [disabled, files, maxFiles, maxFileSize, acceptedFormats, onFilesChange]
+    [disabled, files, maxFiles, maxFileSize, acceptedFormats, onFilesChange],
   );
 
   // ファイルを処理してstateに追加
@@ -240,7 +251,7 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
         }
         // 重複チェック
         const isDuplicate = files.some(
-          (f) => f.name === file.name && f.size === file.size
+          (f) => f.name === file.name && f.size === file.size,
         );
         if (isDuplicate) {
           return false;
@@ -274,19 +285,17 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
         return newSet;
       });
     },
-    [files, onFilesChange]
+    [files, onFilesChange],
   );
 
   // 処理モード変更
   const handleModeChange = useCallback(
     (fileId: string, willConvertToImage: boolean) => {
       onFilesChange(
-        files.map((f) =>
-          f.id === fileId ? { ...f, willConvertToImage } : f
-        )
+        files.map((f) => (f.id === fileId ? { ...f, willConvertToImage } : f)),
       );
     },
-    [files, onFilesChange]
+    [files, onFilesChange],
   );
 
   // 複数選択のトグル（Shift+クリック対応）
@@ -325,7 +334,7 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
 
       lastSelectedIndex.current = index;
     },
-    [files]
+    [files],
   );
 
   // 一括処理モード変更（選択されたPDFのみ）
@@ -335,12 +344,12 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
         files.map((f) =>
           selectedFileIds.has(f.id) && isPdfFile(f.file)
             ? { ...f, willConvertToImage }
-            : f
-        )
+            : f,
+        ),
       );
       setSelectedFileIds(new Set());
     },
-    [files, selectedFileIds, onFilesChange]
+    [files, selectedFileIds, onFilesChange],
   );
 
   // 選択解除
@@ -373,7 +382,7 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
           isDragging
             ? "border-primary bg-primary/5"
             : "border-gray-300 hover:border-primary/50 bg-gray-50 hover:bg-gray-100",
-          disabled && "opacity-50 cursor-not-allowed"
+          disabled && "opacity-50 cursor-not-allowed",
         )}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
@@ -463,24 +472,26 @@ export const FileUploadArea: React.FC<FileUploadAreaProps> = ({
                   ? "border-red-200"
                   : selectedFileIds.has(file.id)
                     ? "border-purple-300 bg-purple-50/50"
-                    : "border-gray-200"
+                    : "border-gray-200",
               )}
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1 min-w-0">
                   {/* 複数選択チェックボックス（Shift+クリック範囲選択対応） */}
-                  {enableMultiSelect && showImageConversion && isPdfFile(file.file) && (
-                    <Checkbox
-                      checked={selectedFileIds.has(file.id)}
-                      onCheckedChange={() => {}}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        handleSelectToggle(file.id, index, e.shiftKey);
-                      }}
-                      disabled={disabled || file.status === "processing"}
-                      className="flex-shrink-0"
-                    />
-                  )}
+                  {enableMultiSelect &&
+                    showImageConversion &&
+                    isPdfFile(file.file) && (
+                      <Checkbox
+                        checked={selectedFileIds.has(file.id)}
+                        onCheckedChange={() => {}}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleSelectToggle(file.id, index, e.shiftKey);
+                        }}
+                        disabled={disabled || file.status === "processing"}
+                        className="flex-shrink-0"
+                      />
+                    )}
 
                   <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center flex-shrink-0">
                     {getFileIcon(file)}

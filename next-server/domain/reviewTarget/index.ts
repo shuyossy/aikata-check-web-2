@@ -12,11 +12,7 @@ export {
   type ReviewTargetDto,
   type ReviewTargetListItemDto,
 } from "./ReviewTarget";
-export {
-  ReviewType,
-  REVIEW_TYPE,
-  type ReviewTypeValue,
-} from "./ReviewType";
+export { ReviewType, REVIEW_TYPE, type ReviewTypeValue } from "./ReviewType";
 export { ReviewDocumentCacheId } from "./ReviewDocumentCacheId";
 export {
   ReviewDocumentCache,

@@ -18,7 +18,11 @@ import { UserPlus, Loader2 } from "lucide-react";
 import { UserDto } from "@/domain/user";
 import { AdminUserList } from "./AdminUserList";
 import { AdminUserSearchDialog } from "./AdminUserSearchDialog";
-import { listAdminsAction, grantAdminAction, revokeAdminAction } from "../actions";
+import {
+  listAdminsAction,
+  grantAdminAction,
+  revokeAdminAction,
+} from "../actions";
 import { useServerActionError } from "@/hooks";
 import { showSuccess, getMessage } from "@/lib/client";
 
@@ -52,7 +56,7 @@ export function UsersClient({ initialAdmins }: UsersClientProps) {
       onError: ({ error: actionError }) => {
         handleError(actionError, "管理者一覧の取得に失敗しました");
       },
-    }
+    },
   );
 
   // 管理者権限付与
@@ -70,7 +74,7 @@ export function UsersClient({ initialAdmins }: UsersClientProps) {
       onError: ({ error: actionError }) => {
         handleError(actionError, "管理者権限の付与に失敗しました");
       },
-    }
+    },
   );
 
   // 管理者権限削除
@@ -87,7 +91,7 @@ export function UsersClient({ initialAdmins }: UsersClientProps) {
         setRevokeTargetId(null);
         handleError(actionError, "管理者権限の削除に失敗しました");
       },
-    }
+    },
   );
 
   const handleGrantAdmin = (userId: string) => {
@@ -110,10 +114,10 @@ export function UsersClient({ initialAdmins }: UsersClientProps) {
     <div className="p-6 max-w-4xl mx-auto">
       {/* ページヘッダー */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">管理者権限管理</h1>
-        <p className="text-gray-600">
-          システム管理者の追加と削除を行います
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+          管理者権限管理
+        </h1>
+        <p className="text-gray-600">システム管理者の追加と削除を行います</p>
       </div>
 
       {/* エラー表示 */}
@@ -170,7 +174,8 @@ export function UsersClient({ initialAdmins }: UsersClientProps) {
             <AlertDialogDescription>
               {revokeTarget && (
                 <>
-                  <strong>{revokeTarget.displayName}</strong> さんの管理者権限を削除します。
+                  <strong>{revokeTarget.displayName}</strong>{" "}
+                  さんの管理者権限を削除します。
                   この操作は取り消せます（再度権限を付与できます）。
                 </>
               )}

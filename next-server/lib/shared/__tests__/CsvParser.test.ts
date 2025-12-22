@@ -39,7 +39,7 @@ describe("CsvParser", () => {
       ]);
     });
 
-    it("エスケープされたクォート(\"\")を処理する", () => {
+    it('エスケープされたクォート("")を処理する', () => {
       const csvText = '"項目""1""",値1\n項目2,値2';
       const result = CsvParser.parse(csvText);
       expect(result).toEqual([

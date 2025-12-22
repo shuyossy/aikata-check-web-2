@@ -7,7 +7,11 @@ import type { IReviewTargetRepository } from "@/application/shared/port/reposito
 import type { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository, IReviewDocumentCacheRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
+import type {
+  IProjectRepository,
+  IReviewDocumentCacheRepository,
+  ISystemSettingRepository,
+} from "@/application/shared/port/repository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
@@ -262,15 +266,19 @@ describe("RetryReviewService", () => {
   describe("正常系", () => {
     it("失敗項目のみリトライでキューに登録される", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
-      );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        createTestReviewResults(),
-      );
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestReviewResults());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -307,15 +315,19 @@ describe("RetryReviewService", () => {
 
     it("全項目リトライ（前回チェックリスト使用）でキューに登録される", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
-      );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        createTestReviewResults(),
-      );
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestReviewResults());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -330,7 +342,9 @@ describe("RetryReviewService", () => {
       expect(result.retryItems).toBe(2); // 全項目
 
       // 最新チェックリストは取得されないことを確認
-      expect(mockCheckListItemRepository.findByReviewSpaceId).not.toHaveBeenCalled();
+      expect(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).not.toHaveBeenCalled();
 
       // ペイロードに全削除対象が含まれる
       const enqueueCall = mockEnqueueTask.mock.calls[0][0];
@@ -339,18 +353,22 @@ describe("RetryReviewService", () => {
 
     it("全項目リトライ（最新チェックリスト使用）でキューに登録される", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
-      );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        createTestReviewResults(),
-      );
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-        testCheckListItems,
-      );
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestReviewResults());
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testCheckListItems);
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -365,24 +383,32 @@ describe("RetryReviewService", () => {
       expect(result.retryItems).toBe(2);
 
       // 最新のチェックリストが取得されることを確認
-      expect(mockCheckListItemRepository.findByReviewSpaceId).toHaveBeenCalled();
+      expect(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).toHaveBeenCalled();
 
       // ペイロードのチェックリストが最新のものであることを確認
       const enqueueCall = mockEnqueueTask.mock.calls[0][0];
-      expect(enqueueCall.payload.checkListItems[0].id).toBe(testCheckListItemId1);
+      expect(enqueueCall.payload.checkListItems[0].id).toBe(
+        testCheckListItemId1,
+      );
     });
 
     it("レビュー種別を変更してリトライできる", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
-      );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        createTestReviewResults(),
-      );
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestReviewResults());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -409,15 +435,19 @@ describe("RetryReviewService", () => {
 
     it("レビュー設定を変更してリトライできる", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
-      );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        createTestReviewResults(),
-      );
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestReviewResults());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -435,7 +465,9 @@ describe("RetryReviewService", () => {
 
       // ペイロードにレビュー設定が反映されることを確認
       const enqueueCall = mockEnqueueTask.mock.calls[0][0];
-      expect(enqueueCall.payload.reviewSettings?.additionalInstructions).toBe("セキュリティに注意");
+      expect(enqueueCall.payload.reviewSettings?.additionalInstructions).toBe(
+        "セキュリティに注意",
+      );
       expect(enqueueCall.payload.reviewSettings?.concurrentReviewItems).toBe(3);
     });
   });
@@ -467,7 +499,9 @@ describe("RetryReviewService", () => {
         createdAt: new Date(),
         updatedAt: new Date(),
       });
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewingTarget);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewingTarget,
+      );
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -482,7 +516,9 @@ describe("RetryReviewService", () => {
 
     it("レビュースペースが存在しない場合エラーになる", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(null);
 
       const command: RetryReviewCommand = {
@@ -498,8 +534,12 @@ describe("RetryReviewService", () => {
 
     it("プロジェクトが存在しない場合エラーになる", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(null);
 
       const command: RetryReviewCommand = {
@@ -515,8 +555,12 @@ describe("RetryReviewService", () => {
 
     it("プロジェクトメンバーでない場合エラーになる", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
 
       const nonMemberUserId = "550e8400-e29b-41d4-a716-446655440099";
@@ -533,10 +577,16 @@ describe("RetryReviewService", () => {
 
     it("ドキュメントキャッシュが存在しない場合エラーになる", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([]);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue([]);
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -559,12 +609,16 @@ describe("RetryReviewService", () => {
         cachePath: null, // キャッシュパスなし
         createdAt: new Date(),
       });
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([
-        invalidCache,
-      ]);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue([invalidCache]);
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -603,13 +657,19 @@ describe("RetryReviewService", () => {
         }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
       );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(successResults);
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(successResults);
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -629,15 +689,19 @@ describe("RetryReviewService", () => {
       });
 
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
-      );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        createTestReviewResults(),
-      );
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestReviewResults());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -654,15 +718,19 @@ describe("RetryReviewService", () => {
   describe("キュー登録", () => {
     it("ペイロードにリトライ情報が含まれる", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
-      );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        createTestReviewResults(),
-      );
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestReviewResults());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
@@ -683,21 +751,27 @@ describe("RetryReviewService", () => {
         retryScope: "failed",
       });
       expect(enqueueCall.payload.checkListItems).toHaveLength(1);
-      expect(enqueueCall.payload.checkListItems[0].content).toBe("チェック項目2"); // 失敗項目のみ
+      expect(enqueueCall.payload.checkListItems[0].content).toBe(
+        "チェック項目2",
+      ); // 失敗項目のみ
       expect(enqueueCall.payload.resultsToDeleteIds).toHaveLength(1);
     });
 
     it("ファイルは登録されない（リトライ時はキャッシュを使用）", async () => {
       const testTarget = createTestReviewTarget();
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testTarget);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        testTarget,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        testReviewSpace,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(
-        createTestDocumentCaches(),
-      );
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        createTestReviewResults(),
-      );
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestDocumentCaches());
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(createTestReviewResults());
 
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,

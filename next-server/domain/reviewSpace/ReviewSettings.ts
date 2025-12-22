@@ -1,5 +1,8 @@
 import { domainValidationError } from "@/lib/server/error";
-import { EvaluationCriteria, DEFAULT_EVALUATION_CRITERIA } from "./EvaluationCriteria";
+import {
+  EvaluationCriteria,
+  DEFAULT_EVALUATION_CRITERIA,
+} from "./EvaluationCriteria";
 import { EvaluationItemProps } from "./EvaluationItem";
 
 /**
@@ -70,9 +73,11 @@ export class ReviewSettings {
   static create(props: ReviewSettingsProps): ReviewSettings {
     const additionalInstructions = props.additionalInstructions ?? null;
     // 必須フィールドはデフォルト値を使用
-    const concurrentReviewItems = props.concurrentReviewItems ?? DEFAULT_CONCURRENT_REVIEW_ITEMS;
+    const concurrentReviewItems =
+      props.concurrentReviewItems ?? DEFAULT_CONCURRENT_REVIEW_ITEMS;
     const commentFormat = props.commentFormat ?? DEFAULT_COMMENT_FORMAT;
-    const evaluationCriteria = props.evaluationCriteria ?? DEFAULT_EVALUATION_CRITERIA;
+    const evaluationCriteria =
+      props.evaluationCriteria ?? DEFAULT_EVALUATION_CRITERIA;
 
     // バリデーション
     ReviewSettings.validateAdditionalInstructions(additionalInstructions);
@@ -110,9 +115,11 @@ export class ReviewSettings {
   static reconstruct(props: ReviewSettingsProps): ReviewSettings {
     const additionalInstructions = props.additionalInstructions ?? null;
     // 必須フィールドはデフォルト値を使用（既存データの互換性のため）
-    const concurrentReviewItems = props.concurrentReviewItems ?? DEFAULT_CONCURRENT_REVIEW_ITEMS;
+    const concurrentReviewItems =
+      props.concurrentReviewItems ?? DEFAULT_CONCURRENT_REVIEW_ITEMS;
     const commentFormat = props.commentFormat ?? DEFAULT_COMMENT_FORMAT;
-    const evaluationCriteria = props.evaluationCriteria ?? DEFAULT_EVALUATION_CRITERIA;
+    const evaluationCriteria =
+      props.evaluationCriteria ?? DEFAULT_EVALUATION_CRITERIA;
 
     const criteria = EvaluationCriteria.reconstruct(evaluationCriteria);
 
@@ -128,8 +135,13 @@ export class ReviewSettings {
    * 追加指示の検証
    */
   private static validateAdditionalInstructions(value: string | null): void {
-    if (value !== null && value.length > ReviewSettings.MAX_ADDITIONAL_INSTRUCTIONS_LENGTH) {
-      throw domainValidationError("REVIEW_SETTINGS_ADDITIONAL_INSTRUCTIONS_TOO_LONG");
+    if (
+      value !== null &&
+      value.length > ReviewSettings.MAX_ADDITIONAL_INSTRUCTIONS_LENGTH
+    ) {
+      throw domainValidationError(
+        "REVIEW_SETTINGS_ADDITIONAL_INSTRUCTIONS_TOO_LONG",
+      );
     }
   }
 
@@ -202,8 +214,10 @@ export class ReviewSettings {
    */
   equals(other: ReviewSettings): boolean {
     // 単純プロパティの比較
-    if (this._additionalInstructions !== other._additionalInstructions) return false;
-    if (this._concurrentReviewItems !== other._concurrentReviewItems) return false;
+    if (this._additionalInstructions !== other._additionalInstructions)
+      return false;
+    if (this._concurrentReviewItems !== other._concurrentReviewItems)
+      return false;
     if (this._commentFormat !== other._commentFormat) return false;
 
     // 評定基準の比較

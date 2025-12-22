@@ -40,7 +40,7 @@ export default async function QaPage({ params }: QaPageProps) {
   // プロジェクト情報を取得
   const getProjectService = new GetProjectService(
     projectRepository,
-    userRepository
+    userRepository,
   );
   const project = await getProjectService.execute({
     projectId,
@@ -54,7 +54,7 @@ export default async function QaPage({ params }: QaPageProps) {
   // レビュースペース情報を取得
   const getReviewSpaceService = new GetReviewSpaceService(
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
   const reviewSpace = await getReviewSpaceService.execute({
     reviewSpaceId: spaceId,
@@ -70,7 +70,7 @@ export default async function QaPage({ params }: QaPageProps) {
     reviewTargetRepository,
     reviewResultRepository,
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
 
   let reviewTargetData;
@@ -88,7 +88,7 @@ export default async function QaPage({ params }: QaPageProps) {
     qaHistoryRepository,
     reviewTargetRepository,
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
 
   let qaHistories;

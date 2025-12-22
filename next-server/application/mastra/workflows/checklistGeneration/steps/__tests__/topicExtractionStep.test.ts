@@ -111,7 +111,7 @@ describe("topicExtractionStep", () => {
       const callArgs = mockGenerateLegacy.mock.calls[0];
       const options = callArgs[1];
       expect(options.runtimeContext.get("checklistRequirements")).toBe(
-        testChecklistRequirements
+        testChecklistRequirements,
       );
     });
 
@@ -176,7 +176,7 @@ describe("topicExtractionStep", () => {
           expect.objectContaining({
             type: "text",
           }),
-        ])
+        ]),
       );
     });
 
@@ -224,7 +224,7 @@ describe("topicExtractionStep", () => {
           expect.objectContaining({
             type: "image",
           }),
-        ])
+        ]),
       );
     });
   });

@@ -49,7 +49,10 @@ export async function shutdownServer(): Promise<void> {
     isInitialized = false;
     logger.info("サーバのシャットダウンが完了しました");
   } catch (error) {
-    logger.error({ err: error }, "サーバのシャットダウン中にエラーが発生しました");
+    logger.error(
+      { err: error },
+      "サーバのシャットダウン中にエラーが発生しました",
+    );
     throw error;
   }
 }

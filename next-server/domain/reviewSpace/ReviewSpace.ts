@@ -2,7 +2,11 @@ import { ProjectId } from "@/domain/project";
 import { ReviewSpaceId } from "./ReviewSpaceId";
 import { ReviewSpaceName } from "./ReviewSpaceName";
 import { ReviewSpaceDescription } from "./ReviewSpaceDescription";
-import { ReviewSettings, ReviewSettingsProps, ReviewSettingsDto } from "./ReviewSettings";
+import {
+  ReviewSettings,
+  ReviewSettingsProps,
+  ReviewSettingsDto,
+} from "./ReviewSettings";
 
 /**
  * レビュースペースDTO

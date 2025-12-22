@@ -95,7 +95,7 @@ export const authenticatedAction = baseAction.use(async ({ next }) => {
         ctx: {
           auth: authContext,
         },
-      })
+      }),
   );
 });
 

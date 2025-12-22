@@ -67,8 +67,12 @@ describe("ReviewSpaceId", () => {
       });
 
       it("nullish値の場合はエラーをスローする", () => {
-        expect(() => ReviewSpaceId.reconstruct(null as unknown as string)).toThrow();
-        expect(() => ReviewSpaceId.reconstruct(undefined as unknown as string)).toThrow();
+        expect(() =>
+          ReviewSpaceId.reconstruct(null as unknown as string),
+        ).toThrow();
+        expect(() =>
+          ReviewSpaceId.reconstruct(undefined as unknown as string),
+        ).toThrow();
       });
     });
   });

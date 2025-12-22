@@ -35,5 +35,7 @@ export default async function NewSpacePage({ params }: NewSpacePageProps) {
     notFound();
   }
 
-  return <NewReviewSpaceClient projectId={projectId} projectName={project.name} />;
+  return (
+    <NewReviewSpaceClient projectId={projectId} projectName={project.name} />
+  );
 }

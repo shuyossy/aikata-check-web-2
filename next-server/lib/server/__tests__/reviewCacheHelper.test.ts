@@ -96,8 +96,10 @@ describe("ReviewCacheHelper", () => {
   describe("saveImageCache", () => {
     it("Data URL形式の画像データからプレフィックスを削除してBase64デコードして保存する", async () => {
       // 実際のBase64エンコードされた画像データ（Data URL形式）
-      const imageData1 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-      const imageData2 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRof";
+      const imageData1 =
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+      const imageData2 =
+        "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRof";
       const imageDataArray = [imageData1, imageData2];
       vi.mocked(fs.mkdir).mockResolvedValue(undefined);
       vi.mocked(fs.writeFile).mockResolvedValue(undefined);
@@ -214,9 +216,15 @@ describe("ReviewCacheHelper", () => {
       expect(fs.readFile).toHaveBeenCalledTimes(3);
       expect(result).toHaveLength(3);
       // Data URLプレフィックスが付加されていることを確認
-      expect(result[0]).toBe(`data:image/png;base64,${buffer1.toString("base64")}`);
-      expect(result[1]).toBe(`data:image/png;base64,${buffer2.toString("base64")}`);
-      expect(result[2]).toBe(`data:image/png;base64,${buffer3.toString("base64")}`);
+      expect(result[0]).toBe(
+        `data:image/png;base64,${buffer1.toString("base64")}`,
+      );
+      expect(result[1]).toBe(
+        `data:image/png;base64,${buffer2.toString("base64")}`,
+      );
+      expect(result[2]).toBe(
+        `data:image/png;base64,${buffer3.toString("base64")}`,
+      );
     });
 
     it("ファイルが番号順にソートされる", async () => {

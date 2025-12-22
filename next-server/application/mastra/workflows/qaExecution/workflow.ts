@@ -1,18 +1,24 @@
-import { createWorkflow } from '@mastra/core/workflows';
-import type { RuntimeContext } from '@mastra/core/di';
-import { z } from 'zod';
+import { createWorkflow } from "@mastra/core/workflows";
+import type { RuntimeContext } from "@mastra/core/di";
+import { z } from "zod";
 import {
   QaExecutionWorkflowRuntimeContext,
   checklistResultWithIndividualSchema,
   availableDocumentSchema,
-} from './types';
-import { planQaResearchStep } from './steps/planQaResearchStep';
-import { generateQaAnswerStep, generateQaAnswerStepOutputSchema } from './steps/generateQaAnswerStep';
+} from "./types";
+import { planQaResearchStep } from "./steps/planQaResearchStep";
+import {
+  generateQaAnswerStep,
+  generateQaAnswerStepOutputSchema,
+} from "./steps/generateQaAnswerStep";
 import {
   researchDocumentWithRetryWorkflow,
   researchDocumentWithRetryInputSchema,
-} from './researchDocument';
-import type { QaResearchStartEvent, QaResearchProgressEvent } from '@/application/shared/port/push/QaSseEventTypes';
+} from "./researchDocument";
+import type {
+  QaResearchStartEvent,
+  QaResearchProgressEvent,
+} from "@/application/shared/port/push/QaSseEventTypes";
 
 /**
  * Q&A実行ワークフローの入力スキーマ
@@ -26,14 +32,18 @@ export const qaExecutionWorkflowInputSchema = z.object({
   checklistResults: z.array(checklistResultWithIndividualSchema),
 });
 
-export type QaExecutionWorkflowInput = z.infer<typeof qaExecutionWorkflowInputSchema>;
+export type QaExecutionWorkflowInput = z.infer<
+  typeof qaExecutionWorkflowInputSchema
+>;
 
 /**
  * Q&A実行ワークフローの出力スキーマ
  */
 export const qaExecutionWorkflowOutputSchema = generateQaAnswerStepOutputSchema;
 
-export type QaExecutionWorkflowOutput = z.infer<typeof qaExecutionWorkflowOutputSchema>;
+export type QaExecutionWorkflowOutput = z.infer<
+  typeof qaExecutionWorkflowOutputSchema
+>;
 
 /**
  * Q&A実行ワークフロー
@@ -45,33 +55,36 @@ export type QaExecutionWorkflowOutput = z.infer<typeof qaExecutionWorkflowOutput
  * 3. generateQaAnswerStep: 回答を生成
  */
 export const qaExecutionWorkflow = createWorkflow({
-  id: 'qaExecutionWorkflow',
+  id: "qaExecutionWorkflow",
   inputSchema: qaExecutionWorkflowInputSchema,
   outputSchema: qaExecutionWorkflowOutputSchema,
 })
   .then(planQaResearchStep)
   .map(async ({ inputData, bail, getInitData, runtimeContext }) => {
-    if (inputData.status === 'failed') {
+    if (inputData.status === "failed") {
       return bail(inputData);
     }
 
-    const initData = (await getInitData()) as z.infer<typeof qaExecutionWorkflowInputSchema>;
-    const ctx = runtimeContext as RuntimeContext<QaExecutionWorkflowRuntimeContext>;
-    const eventBroker = ctx.get('eventBroker');
-    const qaHistoryId = ctx.get('qaHistoryId');
+    const initData = (await getInitData()) as z.infer<
+      typeof qaExecutionWorkflowInputSchema
+    >;
+    const ctx =
+      runtimeContext as RuntimeContext<QaExecutionWorkflowRuntimeContext>;
+    const eventBroker = ctx.get("eventBroker");
+    const qaHistoryId = ctx.get("qaHistoryId");
 
     // ドキュメント名を取得するためのマップを作成
     const documentNameMap = new Map(
-      initData.availableDocuments.map((doc) => [doc.id, doc.fileName])
+      initData.availableDocuments.map((doc) => [doc.id, doc.fileName]),
     );
 
     // 調査開始イベントをブロードキャスト（全購読者に配信）
     if (eventBroker && qaHistoryId) {
       const researchStartEvent: QaResearchStartEvent = {
-        type: 'research_start',
+        type: "research_start",
         data: {
           tasks: (inputData.researchTasks || []).map((task) => ({
-            documentName: documentNameMap.get(task.documentCacheId) || '',
+            documentName: documentNameMap.get(task.documentCacheId) || "",
             researchContent: task.researchContent,
           })),
         },
@@ -81,10 +94,10 @@ export const qaExecutionWorkflow = createWorkflow({
       // 各ドキュメントの調査開始（in_progress）イベントをブロードキャスト
       for (const task of inputData.researchTasks || []) {
         const progressEvent: QaResearchProgressEvent = {
-          type: 'research_progress',
+          type: "research_progress",
           data: {
-            documentName: documentNameMap.get(task.documentCacheId) || '',
-            status: 'in_progress',
+            documentName: documentNameMap.get(task.documentCacheId) || "",
+            status: "in_progress",
           },
         };
         eventBroker.broadcast(`qa:${qaHistoryId}`, progressEvent);
@@ -105,19 +118,21 @@ export const qaExecutionWorkflow = createWorkflow({
     // 注：各ドキュメントの調査進捗イベントはresearchDocumentWithRetryWorkflow内で発行済み
 
     // 失敗があればエラー
-    if (inputData.some((item) => item.status === 'failed')) {
-      const failed = inputData.find((item) => item.status === 'failed');
+    if (inputData.some((item) => item.status === "failed")) {
+      const failed = inputData.find((item) => item.status === "failed");
       return bail({
-        status: 'failed' as const,
-        errorMessage: failed?.errorMessage || '調査に失敗しました',
+        status: "failed" as const,
+        errorMessage: failed?.errorMessage || "調査に失敗しました",
       });
     }
 
-    const initData = (await getInitData()) as z.infer<typeof qaExecutionWorkflowInputSchema>;
+    const initData = (await getInitData()) as z.infer<
+      typeof qaExecutionWorkflowInputSchema
+    >;
 
     // generateQaAnswerStepの入力形式に変換
     const researchResults = inputData
-      .filter((item) => item.status === 'success' && item.researchResult)
+      .filter((item) => item.status === "success" && item.researchResult)
       .map((item) => ({
         documentCacheId: item.documentCacheId!,
         documentName: item.documentName!,

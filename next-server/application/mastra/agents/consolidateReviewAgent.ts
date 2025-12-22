@@ -2,7 +2,6 @@ import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
 import { getConsolidateReviewPrompt } from "./prompts";
 import { getModel } from "./model";
-import type { ConsolidateReviewAgentRuntimeContext } from "./types";
 
 /**
  * レビュー結果統合の単一項目スキーマ
@@ -47,15 +46,6 @@ export type ConsolidateReviewOutput = z.infer<
  */
 export const consolidateReviewAgent = new Agent({
   name: "consolidate-review-agent",
-  instructions: ({
-    runtimeContext,
-  }: {
-    runtimeContext?: { get: (key: string) => unknown };
-  }) =>
-    getConsolidateReviewPrompt({
-      runtimeContext: runtimeContext as
-        | import("@mastra/core/di").RuntimeContext<ConsolidateReviewAgentRuntimeContext>
-        | undefined,
-    }),
-  model: ({ runtimeContext }) => getModel(runtimeContext),
+  instructions: getConsolidateReviewPrompt,
+  model: getModel,
 });

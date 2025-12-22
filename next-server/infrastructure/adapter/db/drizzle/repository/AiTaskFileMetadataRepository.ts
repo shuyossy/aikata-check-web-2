@@ -12,15 +12,11 @@ import { aiTaskFileMetadata } from "@/drizzle/schema";
  * AIタスクファイルメタデータリポジトリ実装
  * Drizzle ORMを使用してPostgreSQLと通信
  */
-export class AiTaskFileMetadataRepository
-  implements IAiTaskFileMetadataRepository
-{
+export class AiTaskFileMetadataRepository implements IAiTaskFileMetadataRepository {
   /**
    * IDでファイルメタデータを検索
    */
-  async findById(
-    id: AiTaskFileMetadataId,
-  ): Promise<AiTaskFileMetadata | null> {
+  async findById(id: AiTaskFileMetadataId): Promise<AiTaskFileMetadata | null> {
     const result = await db
       .select()
       .from(aiTaskFileMetadata)
@@ -74,9 +70,7 @@ export class AiTaskFileMetadataRepository
    */
   async save(metadata: AiTaskFileMetadata): Promise<void> {
     if (!metadata.taskId) {
-      throw new Error(
-        "taskId is required to save AiTaskFileMetadata",
-      );
+      throw new Error("taskId is required to save AiTaskFileMetadata");
     }
 
     const data = {

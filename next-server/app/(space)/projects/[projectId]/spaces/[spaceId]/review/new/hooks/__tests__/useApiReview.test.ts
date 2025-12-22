@@ -2,12 +2,13 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act } from "@testing-library/react";
 
 // モック関数を vi.hoisted で定義してモジュールモック内で使用可能にする
-const { mockStartReview, mockSaveResults, mockCompleteReview, mockFetch } = vi.hoisted(() => ({
-  mockStartReview: vi.fn(),
-  mockSaveResults: vi.fn(),
-  mockCompleteReview: vi.fn(),
-  mockFetch: vi.fn(),
-}));
+const { mockStartReview, mockSaveResults, mockCompleteReview, mockFetch } =
+  vi.hoisted(() => ({
+    mockStartReview: vi.fn(),
+    mockSaveResults: vi.fn(),
+    mockCompleteReview: vi.fn(),
+    mockFetch: vi.fn(),
+  }));
 
 // サーバーアクションのモック
 vi.mock("../../actions/startApiReview", () => ({
@@ -50,7 +51,11 @@ describe("useApiReview", () => {
     reviewSpaceId: testReviewSpaceId,
     name: "テストレビュー",
     documents: [
-      { name: "test.txt", type: "text" as const, content: "テストドキュメント" },
+      {
+        name: "test.txt",
+        type: "text" as const,
+        content: "テストドキュメント",
+      },
     ],
     apiEndpoint: "https://api.example.com/review",
   };
@@ -100,7 +105,9 @@ describe("useApiReview", () => {
 
       const { result } = renderHook(() => useApiReview());
 
-      let executeResult: { success: boolean; reviewTargetId: string } | undefined;
+      let executeResult:
+        | { success: boolean; reviewTargetId: string }
+        | undefined;
       await act(async () => {
         executeResult = await result.current.execute(baseInput);
       });
@@ -131,7 +138,12 @@ describe("useApiReview", () => {
         json: async () => ({
           results: [
             { checkListItemId: "item-1", evaluation: "A", comment: "OK" },
-            { checkListItemId: "item-2", evaluation: "", comment: "", error: "処理エラー" },
+            {
+              checkListItemId: "item-2",
+              evaluation: "",
+              comment: "",
+              error: "処理エラー",
+            },
             { checkListItemId: "item-3", evaluation: "B", comment: "良好" },
           ],
         }),
@@ -149,7 +161,9 @@ describe("useApiReview", () => {
 
       const { result } = renderHook(() => useApiReview());
 
-      let executeResult: { success: boolean; reviewTargetId: string } | undefined;
+      let executeResult:
+        | { success: boolean; reviewTargetId: string }
+        | undefined;
       await act(async () => {
         executeResult = await result.current.execute(baseInput);
       });
@@ -179,9 +193,24 @@ describe("useApiReview", () => {
         ok: true,
         json: async () => ({
           results: [
-            { checkListItemId: "item-1", evaluation: "", comment: "", error: "エラー1" },
-            { checkListItemId: "item-2", evaluation: "", comment: "", error: "エラー2" },
-            { checkListItemId: "item-3", evaluation: "", comment: "", error: "エラー3" },
+            {
+              checkListItemId: "item-1",
+              evaluation: "",
+              comment: "",
+              error: "エラー1",
+            },
+            {
+              checkListItemId: "item-2",
+              evaluation: "",
+              comment: "",
+              error: "エラー2",
+            },
+            {
+              checkListItemId: "item-3",
+              evaluation: "",
+              comment: "",
+              error: "エラー3",
+            },
           ],
         }),
       });
@@ -198,7 +227,9 @@ describe("useApiReview", () => {
 
       const { result } = renderHook(() => useApiReview());
 
-      let executeResult: { success: boolean; reviewTargetId: string } | undefined;
+      let executeResult:
+        | { success: boolean; reviewTargetId: string }
+        | undefined;
       await act(async () => {
         executeResult = await result.current.execute(baseInput);
       });
@@ -233,7 +264,9 @@ describe("useApiReview", () => {
 
       const { result } = renderHook(() => useApiReview());
 
-      let executeResult: { success: boolean; reviewTargetId: string } | undefined;
+      let executeResult:
+        | { success: boolean; reviewTargetId: string }
+        | undefined;
       await act(async () => {
         executeResult = await result.current.execute(baseInput);
       });
@@ -282,7 +315,9 @@ describe("useApiReview", () => {
 
       const { result } = renderHook(() => useApiReview());
 
-      let executeResult: { success: boolean; reviewTargetId: string; errorMessage?: string } | undefined;
+      let executeResult:
+        | { success: boolean; reviewTargetId: string; errorMessage?: string }
+        | undefined;
       await act(async () => {
         executeResult = await result.current.execute(baseInput);
       });

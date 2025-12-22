@@ -75,8 +75,7 @@ export const fileProcessingStep = createStep({
       if (!fileBuffers) {
         return {
           status: "failed",
-          errorMessage:
-            "RuntimeContextにファイルバッファが設定されていません",
+          errorMessage: "RuntimeContextにファイルバッファが設定されていません",
         };
       }
 
@@ -164,7 +163,10 @@ function processImageMode(
 ): string[] {
   const imageData: string[] = [];
 
-  if (bufferData.convertedImageBuffers && bufferData.convertedImageBuffers.length > 0) {
+  if (
+    bufferData.convertedImageBuffers &&
+    bufferData.convertedImageBuffers.length > 0
+  ) {
     // PDF画像変換済みの場合はconvertedImageBuffersを使用
     for (const imageBuffer of bufferData.convertedImageBuffers) {
       // Data URL形式に変換（AI APIが期待する形式）

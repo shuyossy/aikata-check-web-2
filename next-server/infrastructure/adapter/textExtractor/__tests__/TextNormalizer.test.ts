@@ -73,7 +73,9 @@ describe("TextNormalizer", () => {
       it("オプションで無効にできる", () => {
         // 注: 連続空白圧縮が有効なので、3つの空白は1つに圧縮される
         const input = "テスト   ";
-        const result = normalizer.normalize(input, { trimLineEndSpaces: false });
+        const result = normalizer.normalize(input, {
+          trimLineEndSpaces: false,
+        });
         expect(result).toBe("テスト ");
       });
     });
@@ -240,7 +242,8 @@ describe("TextNormalizer", () => {
 
     describe("複合ケース", () => {
       it("複数の正規化を同時に適用する", () => {
-        const input = "  行1   \r\n,,,\r\n  テスト    文字列   \r\n\r\n\r\n\r\n行2,";
+        const input =
+          "  行1   \r\n,,,\r\n  テスト    文字列   \r\n\r\n\r\n\r\n行2,";
         const result = normalizer.normalize(input);
         // カンマのみの行は空行に変換され、連続空行は2つまで許可される
         // 行2, は単一のカンマなので削除される

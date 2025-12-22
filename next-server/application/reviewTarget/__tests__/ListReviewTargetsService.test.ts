@@ -116,9 +116,9 @@ describe("ListReviewTargetsService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewTargetRepository.findByReviewSpaceId).mockResolvedValue(
-        testReviewTargets,
-      );
+      vi.mocked(
+        mockReviewTargetRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testReviewTargets);
 
       const command: ListReviewTargetsCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -141,9 +141,9 @@ describe("ListReviewTargetsService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewTargetRepository.findByReviewSpaceId).mockResolvedValue(
-        [],
-      );
+      vi.mocked(
+        mockReviewTargetRepository.findByReviewSpaceId,
+      ).mockResolvedValue([]);
 
       const command: ListReviewTargetsCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -161,9 +161,9 @@ describe("ListReviewTargetsService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewTargetRepository.findByReviewSpaceId).mockResolvedValue(
-        testReviewTargets,
-      );
+      vi.mocked(
+        mockReviewTargetRepository.findByReviewSpaceId,
+      ).mockResolvedValue(testReviewTargets);
 
       const command: ListReviewTargetsCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -180,9 +180,9 @@ describe("ListReviewTargetsService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewTargetRepository.findByReviewSpaceId).mockResolvedValue(
-        [testReviewTargets[0]],
-      );
+      vi.mocked(
+        mockReviewTargetRepository.findByReviewSpaceId,
+      ).mockResolvedValue([testReviewTargets[0]]);
 
       const command: ListReviewTargetsCommand = {
         reviewSpaceId: testReviewSpaceId,
@@ -198,8 +198,12 @@ describe("ListReviewTargetsService", () => {
       expect(dto.createdAt).toBe(now);
       expect(dto.updatedAt).toBe(now);
       // 一覧DTOにはreviewSpaceIdやreviewSettingsは含まれない
-      expect((dto as unknown as Record<string, unknown>).reviewSpaceId).toBeUndefined();
-      expect((dto as unknown as Record<string, unknown>).reviewSettings).toBeUndefined();
+      expect(
+        (dto as unknown as Record<string, unknown>).reviewSpaceId,
+      ).toBeUndefined();
+      expect(
+        (dto as unknown as Record<string, unknown>).reviewSettings,
+      ).toBeUndefined();
     });
   });
 

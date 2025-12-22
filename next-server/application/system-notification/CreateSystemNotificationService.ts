@@ -1,5 +1,8 @@
 import { ISystemNotificationRepository } from "@/application/shared/port/repository";
-import { SystemNotification, SystemNotificationDto } from "@/domain/system-notification";
+import {
+  SystemNotification,
+  SystemNotificationDto,
+} from "@/domain/system-notification";
 
 /**
  * システム通知作成コマンド
@@ -27,7 +30,9 @@ export class CreateSystemNotificationService {
    * @param command 作成コマンド
    * @returns 作成されたシステム通知DTO
    */
-  async execute(command: CreateSystemNotificationCommand): Promise<SystemNotificationDto> {
+  async execute(
+    command: CreateSystemNotificationCommand,
+  ): Promise<SystemNotificationDto> {
     const { message, displayOrder, isActive } = command;
 
     const notification = SystemNotification.create({

@@ -15,7 +15,9 @@ function createTestExcelBuffer(
     XLSX.utils.book_append_sheet(workbook, worksheet, sheet.name);
   }
 
-  return Buffer.from(XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }));
+  return Buffer.from(
+    XLSX.write(workbook, { type: "buffer", bookType: "xlsx" }),
+  );
 }
 
 describe("XlsxSheetJsStrategy", () => {

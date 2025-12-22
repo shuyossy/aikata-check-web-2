@@ -10,7 +10,7 @@ vi.mock(
     LargeDocumentResultCacheRepository: vi.fn().mockImplementation(() => ({
       getMaxTotalChunksForDocument: mockGetMaxTotalChunksForDocument,
     })),
-  })
+  }),
 );
 
 // loggerをモック
@@ -113,7 +113,9 @@ describe("getTotalChunksStep", () => {
       } as any);
 
       // Assert
-      expect(mockGetMaxTotalChunksForDocument).toHaveBeenCalledWith(testDocumentCacheId);
+      expect(mockGetMaxTotalChunksForDocument).toHaveBeenCalledWith(
+        testDocumentCacheId,
+      );
     });
 
     it("入力データがそのまま出力に含まれる", async () => {
@@ -149,7 +151,7 @@ describe("getTotalChunksStep", () => {
     it("リポジトリアクセスエラー時bailが呼ばれる", async () => {
       // Arrange
       mockGetMaxTotalChunksForDocument.mockRejectedValue(
-        new Error("データベース接続エラー")
+        new Error("データベース接続エラー"),
       );
       const bailMock = createBailMock();
 
@@ -173,7 +175,7 @@ describe("getTotalChunksStep", () => {
       expect(bailMock).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-        })
+        }),
       );
     });
 
@@ -202,7 +204,7 @@ describe("getTotalChunksStep", () => {
       expect(bailMock).toHaveBeenCalledWith(
         expect.objectContaining({
           status: "failed",
-        })
+        }),
       );
     });
   });

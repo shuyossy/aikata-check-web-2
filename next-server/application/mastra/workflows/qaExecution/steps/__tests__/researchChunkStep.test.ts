@@ -23,7 +23,8 @@ vi.mock("@/application/mastra/lib/util", () => ({
 
 describe("researchChunkStep", () => {
   // テストデータ
-  const testQuestion = "このドキュメントの安全性についてどのように評価されましたか？";
+  const testQuestion =
+    "このドキュメントの安全性についてどのように評価されましたか？";
   const testFileName = "セキュリティガイドライン.docx";
   const testResearchContent = "セキュリティに関する記述を調査";
   const testReasoning = "セキュリティ評価に関する質問のため";
@@ -80,7 +81,8 @@ describe("researchChunkStep", () => {
   describe("正常系", () => {
     it("テキストチャンク調査が正常に完了する", async () => {
       // Arrange
-      const expectedResult = "セキュリティガイドラインの第3章にAES-256暗号化に関する記述があります。";
+      const expectedResult =
+        "セキュリティガイドラインの第3章にAES-256暗号化に関する記述があります。";
       mockGenerateLegacy.mockResolvedValue({
         text: expectedResult,
       });
@@ -118,7 +120,8 @@ describe("researchChunkStep", () => {
 
     it("画像チャンク調査が正常に完了する", async () => {
       // Arrange
-      const expectedResult = "画像を分析した結果、セキュリティに関する図表が含まれています。";
+      const expectedResult =
+        "画像を分析した結果、セキュリティに関する図表が含まれています。";
       mockGenerateLegacy.mockResolvedValue({
         text: expectedResult,
       });
@@ -222,7 +225,9 @@ describe("researchChunkStep", () => {
       // Assert
       const callArgs = mockGenerateLegacy.mock.calls[0];
       const options = callArgs[1];
-      expect(options.runtimeContext.get("researchContent")).toBe(testResearchContent);
+      expect(options.runtimeContext.get("researchContent")).toBe(
+        testResearchContent,
+      );
       expect(options.runtimeContext.get("totalChunks")).toBe(5);
       expect(options.runtimeContext.get("chunkIndex")).toBe(2);
       expect(options.runtimeContext.get("fileName")).toBe(testFileName);
@@ -338,7 +343,7 @@ describe("researchChunkStep", () => {
           status: "failed",
           errorMessage: "調査対象のコンテンツが見つかりませんでした。",
           finishReason: "error",
-        })
+        }),
       );
     });
 
@@ -378,7 +383,7 @@ describe("researchChunkStep", () => {
         expect.objectContaining({
           status: "failed",
           finishReason: "error",
-        })
+        }),
       );
     });
 
@@ -416,15 +421,18 @@ describe("researchChunkStep", () => {
         expect.objectContaining({
           status: "failed",
           finishReason: "error",
-        })
+        }),
       );
     });
 
     it("コンテキスト長エラー時はfinishReason='content_length'で成功を返す", async () => {
       // Arrange
-      const { judgeErrorIsContentLengthError } = await import("@/application/mastra/lib/util");
+      const { judgeErrorIsContentLengthError } =
+        await import("@/application/mastra/lib/util");
       vi.mocked(judgeErrorIsContentLengthError).mockReturnValue(true);
-      mockGenerateLegacy.mockRejectedValue(new Error("context_length_exceeded"));
+      mockGenerateLegacy.mockRejectedValue(
+        new Error("context_length_exceeded"),
+      );
 
       // Act
       const result = await researchChunkStep.execute({
@@ -489,7 +497,7 @@ describe("researchChunkStep", () => {
         expect.objectContaining({
           status: "failed",
           errorMessage: "調査対象のコンテンツが見つかりませんでした。",
-        })
+        }),
       );
     });
   });

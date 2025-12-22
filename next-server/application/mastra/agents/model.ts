@@ -1,4 +1,4 @@
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import type { RuntimeContext } from "@mastra/core/di";
 import type { BaseRuntimeContext } from "../types";
 import { aiConfigError } from "@/lib/server/error";
@@ -11,11 +11,15 @@ import { aiConfigError } from "@/lib/server/error";
  * @param runtimeContext - RuntimeContext（オプション）
  * @returns OpenAI互換のチャットモデル
  */
-export const getModel = (runtimeContext?: RuntimeContext<BaseRuntimeContext>) => {
+export const getModel = ({
+  runtimeContext,
+}: {
+  runtimeContext: RuntimeContext<BaseRuntimeContext>;
+}) => {
   // RuntimeContextから確定済みのAPI設定を取得（環境変数フォールバック）
-  const apiKey = runtimeContext?.get("aiApiKey") || process.env.AI_API_KEY;
-  const apiUrl = runtimeContext?.get("aiApiUrl") || process.env.AI_API_URL;
-  const apiModel = runtimeContext?.get("aiApiModel") || process.env.AI_API_MODEL;
+  const apiKey = runtimeContext.get("aiApiKey") || process.env.AI_API_KEY;
+  const apiUrl = runtimeContext.get("aiApiUrl") || process.env.AI_API_URL;
+  const apiModel = runtimeContext.get("aiApiModel") || process.env.AI_API_MODEL;
 
   if (!apiKey) {
     throw aiConfigError("AI_CONFIG_API_KEY_MISSING");
@@ -30,7 +34,7 @@ export const getModel = (runtimeContext?: RuntimeContext<BaseRuntimeContext>) =>
   }
 
   return createOpenAICompatible({
-    name: 'openAICompatibleModel',
+    name: "openAICompatibleModel",
     apiKey,
     baseURL: apiUrl,
   }).chatModel(apiModel);

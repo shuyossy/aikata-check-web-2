@@ -1,5 +1,8 @@
 import { ISystemNotificationRepository } from "@/application/shared/port/repository";
-import { SystemNotificationId, SystemNotificationDto } from "@/domain/system-notification";
+import {
+  SystemNotificationId,
+  SystemNotificationDto,
+} from "@/domain/system-notification";
 import { domainValidationError } from "@/lib/server/error";
 
 /**
@@ -31,12 +34,15 @@ export class UpdateSystemNotificationService {
    * @returns 更新されたシステム通知DTO
    * @throws ドメインバリデーションエラー - 通知が存在しない場合
    */
-  async execute(command: UpdateSystemNotificationCommand): Promise<SystemNotificationDto> {
+  async execute(
+    command: UpdateSystemNotificationCommand,
+  ): Promise<SystemNotificationDto> {
     const { id, message, displayOrder, isActive } = command;
 
     // 対象の通知を取得
     const notificationId = SystemNotificationId.reconstruct(id);
-    const notification = await this.systemNotificationRepository.findById(notificationId);
+    const notification =
+      await this.systemNotificationRepository.findById(notificationId);
 
     if (!notification) {
       throw domainValidationError("SYSTEM_NOTIFICATION_NOT_FOUND");

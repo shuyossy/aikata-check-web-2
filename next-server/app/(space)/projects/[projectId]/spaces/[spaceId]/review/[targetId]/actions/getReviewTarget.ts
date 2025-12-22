@@ -17,7 +17,7 @@ export const getReviewTargetAction = authenticatedAction
   .schema(
     z.object({
       reviewTargetId: z.string().uuid(),
-    })
+    }),
   )
   .action(async ({ parsedInput, ctx }) => {
     const { reviewTargetId } = parsedInput;
@@ -33,7 +33,7 @@ export const getReviewTargetAction = authenticatedAction
       reviewTargetRepository,
       reviewResultRepository,
       reviewSpaceRepository,
-      projectRepository
+      projectRepository,
     );
 
     const result = await service.execute({

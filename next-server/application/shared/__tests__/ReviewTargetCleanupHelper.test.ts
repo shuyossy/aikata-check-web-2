@@ -97,7 +97,9 @@ describe("ReviewTargetCleanupHelper", () => {
 
     mockReviewTargetRepository = {
       findById: vi.fn(),
-      findByReviewSpaceId: vi.fn().mockResolvedValue([createTestReviewTarget()]),
+      findByReviewSpaceId: vi
+        .fn()
+        .mockResolvedValue([createTestReviewTarget()]),
       countByReviewSpaceId: vi.fn(),
       save: vi.fn(),
       delete: vi.fn(),
@@ -115,7 +117,9 @@ describe("ReviewTargetCleanupHelper", () => {
       deleteByStatus: vi.fn(),
       findByReviewTargetId: vi.fn().mockResolvedValue(null),
       deleteByReviewTargetId: vi.fn(),
-      findChecklistGenerationTaskByReviewSpaceId: vi.fn().mockResolvedValue(null),
+      findChecklistGenerationTaskByReviewSpaceId: vi
+        .fn()
+        .mockResolvedValue(null),
       deleteChecklistGenerationTaskByReviewSpaceId: vi.fn(),
     };
 
@@ -175,8 +179,14 @@ describe("ReviewTargetCleanupHelper", () => {
       await helperWithRegistry.cleanupReviewTargets(testReviewSpaceId);
 
       // キャンセル中フラグが設定・解除されることを確認
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(1, true);
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(2, false);
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(
+        1,
+        true,
+      );
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(
+        2,
+        false,
+      );
       // ワークフローがキャンセルされたことを確認
       expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(testAiTaskId);
     });
@@ -234,7 +244,9 @@ describe("ReviewTargetCleanupHelper", () => {
         helperWithRegistry.cleanupReviewTargets(testReviewSpaceId),
       ).resolves.toBeUndefined();
       // キャンセル中フラグが解除されることを確認
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenLastCalledWith(false);
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenLastCalledWith(
+        false,
+      );
     });
   });
 
@@ -259,7 +271,9 @@ describe("ReviewTargetCleanupHelper", () => {
     });
 
     it("AIタスクがない場合でもキャッシュは削除される", async () => {
-      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(null);
+      vi.mocked(mockAiTaskRepository.findByReviewTargetId).mockResolvedValue(
+        null,
+      );
 
       await helper.cleanupSingleReviewTarget(testReviewTargetId);
 
@@ -269,7 +283,9 @@ describe("ReviewTargetCleanupHelper", () => {
       );
       // タスク関連は呼ばれない
       expect(TaskFileHelper.deleteTaskFiles).not.toHaveBeenCalled();
-      expect(mockAiTaskRepository.deleteByReviewTargetId).not.toHaveBeenCalled();
+      expect(
+        mockAiTaskRepository.deleteByReviewTargetId,
+      ).not.toHaveBeenCalled();
     });
   });
 
@@ -296,11 +312,19 @@ describe("ReviewTargetCleanupHelper", () => {
         mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId,
       ).mockResolvedValue(createTestChecklistTask("processing"));
 
-      await helperWithRegistry.cleanupChecklistGenerationTask(testReviewSpaceId);
+      await helperWithRegistry.cleanupChecklistGenerationTask(
+        testReviewSpaceId,
+      );
 
       // キャンセル中フラグが設定・解除されることを確認
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(1, true);
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(2, false);
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(
+        1,
+        true,
+      );
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(
+        2,
+        false,
+      );
       // ワークフローがキャンセルされたことを確認
       expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(
         testChecklistTaskId,
@@ -334,7 +358,9 @@ describe("ReviewTargetCleanupHelper", () => {
         helperWithRegistry.cleanupChecklistGenerationTask(testReviewSpaceId),
       ).resolves.toBeUndefined();
       // キャンセル中フラグが解除されることを確認
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenLastCalledWith(false);
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenLastCalledWith(
+        false,
+      );
     });
   });
 
@@ -369,10 +395,9 @@ describe("ReviewTargetCleanupHelper", () => {
         updatedAt: now,
       });
 
-      vi.mocked(mockReviewTargetRepository.findByReviewSpaceId).mockResolvedValue([
-        reviewTarget1,
-        reviewTarget2,
-      ]);
+      vi.mocked(
+        mockReviewTargetRepository.findByReviewSpaceId,
+      ).mockResolvedValue([reviewTarget1, reviewTarget2]);
 
       await helper.cleanupReviewTargets(testReviewSpaceId);
 

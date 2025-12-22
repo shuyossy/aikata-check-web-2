@@ -100,10 +100,8 @@ export function ReviewExecutionClient({
 
   // レビュー設定
   const [reviewSettings, setReviewSettings] = useState<ReviewSettingsValue>({
-    additionalInstructions:
-      defaultReviewSettings?.additionalInstructions ?? "",
-    concurrentReviewItems:
-      defaultReviewSettings?.concurrentReviewItems ?? 1,
+    additionalInstructions: defaultReviewSettings?.additionalInstructions ?? "",
+    concurrentReviewItems: defaultReviewSettings?.concurrentReviewItems ?? 1,
     commentFormat:
       defaultReviewSettings?.commentFormat ?? DEFAULT_COMMENT_FORMAT,
     evaluationCriteria:
@@ -128,17 +126,17 @@ export function ReviewExecutionClient({
         showSuccess(getMessage("SUCCESS_REVIEW_STARTED"));
         // レビュー結果画面に遷移
         router.push(
-          `/projects/${projectId}/spaces/${spaceId}/review/${result.data?.reviewTargetId}`
+          `/projects/${projectId}/spaces/${spaceId}/review/${result.data?.reviewTargetId}`,
         );
       },
       onError: ({ error: actionError }) => {
         const message = extractServerErrorMessage(
           actionError,
-          "レビュー実行に失敗しました"
+          "レビュー実行に失敗しました",
         );
         showError(message);
       },
-    }
+    },
   );
 
   // UI用の統合ローディングフラグ
@@ -167,7 +165,7 @@ export function ReviewExecutionClient({
     const hasChanges = updatedFiles.some(
       (f, i) =>
         f.status !== newFiles[i].status ||
-        f.processMode !== newFiles[i].processMode
+        f.processMode !== newFiles[i].processMode,
     );
     if (hasChanges) {
       setFiles(updatedFiles);
@@ -214,13 +212,21 @@ export function ReviewExecutionClient({
     if (reviewType === "api" && !isValidUrl(apiEndpoint)) return false;
 
     return true;
-  }, [name, files, checklistCount, reviewSettings.evaluationCriteria, reviewType, apiEndpoint, isValidUrl]);
+  }, [
+    name,
+    files,
+    checklistCount,
+    reviewSettings.evaluationCriteria,
+    reviewType,
+    apiEndpoint,
+    isValidUrl,
+  ]);
 
   /**
    * PDF画像変換を実行し、ファイルリストを更新
    */
   const processPdfFiles = async (
-    currentFiles: UploadedFile[]
+    currentFiles: UploadedFile[],
   ): Promise<UploadedFile[]> => {
     const result: UploadedFile[] = [];
 
@@ -256,7 +262,7 @@ export function ReviewExecutionClient({
     reviewSpaceId: string,
     reviewName: string,
     settings: ReviewSettingsValue,
-    type: ReviewTypeValue
+    type: ReviewTypeValue,
   ): FormData => {
     const formData = new FormData();
 
@@ -273,7 +279,7 @@ export function ReviewExecutionClient({
         concurrentReviewItems: settings.concurrentReviewItems,
         commentFormat: settings.commentFormat || null,
         evaluationCriteria: settings.evaluationCriteria,
-      })
+      }),
     );
 
     // メタデータ配列を構築
@@ -296,7 +302,11 @@ export function ReviewExecutionClient({
 
       // 画像モードの場合は変換済み画像のみを送信（元ファイルは不要）
       // テキストモードの場合は元ファイルのみを送信
-      if (file.processMode === "image" && file.convertedImages && file.convertedImages.length > 0) {
+      if (
+        file.processMode === "image" &&
+        file.convertedImages &&
+        file.convertedImages.length > 0
+      ) {
         file.convertedImages.forEach((img, imgIndex) => {
           formData.append(`file_${index}_image_${imgIndex}`, img);
         });
@@ -314,7 +324,7 @@ export function ReviewExecutionClient({
    * ファイルを外部API用ドキュメント形式に変換
    */
   const convertToExternalDocuments = async (
-    processedFiles: UploadedFile[]
+    processedFiles: UploadedFile[],
   ): Promise<ExternalReviewDocument[]> => {
     const documents: ExternalReviewDocument[] = [];
 
@@ -365,7 +375,8 @@ export function ReviewExecutionClient({
           documents,
           apiEndpoint,
           reviewSettings: {
-            additionalInstructions: reviewSettings.additionalInstructions || null,
+            additionalInstructions:
+              reviewSettings.additionalInstructions || null,
             concurrentReviewItems: reviewSettings.concurrentReviewItems,
             commentFormat: reviewSettings.commentFormat || null,
             evaluationCriteria: reviewSettings.evaluationCriteria,
@@ -375,10 +386,12 @@ export function ReviewExecutionClient({
         if (result.success) {
           showSuccess(getMessage("SUCCESS_API_REVIEW_COMPLETED"));
           router.push(
-            `/projects/${projectId}/spaces/${spaceId}/review/${result.reviewTargetId}`
+            `/projects/${projectId}/spaces/${spaceId}/review/${result.reviewTargetId}`,
           );
         } else {
-          showError(result.errorMessage || getMessage("ERROR_API_REVIEW_FAILED"));
+          showError(
+            result.errorMessage || getMessage("ERROR_API_REVIEW_FAILED"),
+          );
         }
       } else {
         // 通常のレビュー（small/large）
@@ -387,23 +400,39 @@ export function ReviewExecutionClient({
           spaceId,
           name.trim(),
           reviewSettings,
-          reviewType
+          reviewType,
         );
 
         executeReview(formData);
       }
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : getMessage("ERROR_PDF_CONVERSION_FAILED");
+        error instanceof Error
+          ? error.message
+          : getMessage("ERROR_PDF_CONVERSION_FAILED");
       showError(errorMessage);
       setIsConverting(false);
     }
-  }, [canExecute, files, spaceId, name, reviewSettings, reviewType, apiEndpoint, executeReview, executeApiReview, projectId, router]);
+  }, [
+    canExecute,
+    files,
+    spaceId,
+    name,
+    reviewSettings,
+    reviewType,
+    apiEndpoint,
+    executeReview,
+    executeApiReview,
+    projectId,
+    router,
+  ]);
 
   // 外部APIレビューの進捗表示
   const progressPercentage = useMemo(() => {
     if (apiProgress.totalChunks === 0) return 0;
-    return Math.round((apiProgress.completedChunks / apiProgress.totalChunks) * 100);
+    return Math.round(
+      (apiProgress.completedChunks / apiProgress.totalChunks) * 100,
+    );
   }, [apiProgress.completedChunks, apiProgress.totalChunks]);
 
   return (
@@ -458,7 +487,7 @@ export function ReviewExecutionClient({
                       className="mt-2"
                       onClick={() =>
                         router.push(
-                          `/projects/${projectId}/spaces/${spaceId}/checklist`
+                          `/projects/${projectId}/spaces/${spaceId}/checklist`,
                         )
                       }
                     >
@@ -548,7 +577,10 @@ export function ReviewExecutionClient({
                     size="sm"
                     className="text-blue-600 hover:text-blue-800 text-sm p-0 h-auto"
                     onClick={() =>
-                      window.open(`/projects/${projectId}/spaces/${spaceId}/api-spec`, '_blank')
+                      window.open(
+                        `/projects/${projectId}/spaces/${spaceId}/api-spec`,
+                        "_blank",
+                      )
                     }
                   >
                     <ExternalLink className="w-3 h-3 mr-1" />
@@ -584,14 +616,18 @@ export function ReviewExecutionClient({
                     外部API呼び出し中...
                   </span>
                   <span className="text-sm text-blue-700">
-                    {apiProgress.completedChunks} / {apiProgress.totalChunks} チャンク完了
+                    {apiProgress.completedChunks} / {apiProgress.totalChunks}{" "}
+                    チャンク完了
                   </span>
                 </div>
                 <Progress value={progressPercentage} className="h-2" />
                 <p className="mt-2 text-xs text-blue-600">
-                  {apiProgress.status === "starting" && "レビューを開始しています..."}
-                  {apiProgress.status === "processing" && `チャンク ${apiProgress.currentChunk + 1} を処理中`}
-                  {apiProgress.status === "completing" && "レビューを完了しています..."}
+                  {apiProgress.status === "starting" &&
+                    "レビューを開始しています..."}
+                  {apiProgress.status === "processing" &&
+                    `チャンク ${apiProgress.currentChunk + 1} を処理中`}
+                  {apiProgress.status === "completing" &&
+                    "レビューを完了しています..."}
                 </p>
               </div>
             )}
@@ -615,12 +651,16 @@ export function ReviewExecutionClient({
                 {isProcessing ? (
                   <>
                     <Loader2 className="w-5 h-5 animate-spin" />
-                    {reviewType === "api" ? "外部API呼び出し中..." : "レビュー実行中..."}
+                    {reviewType === "api"
+                      ? "外部API呼び出し中..."
+                      : "レビュー実行中..."}
                   </>
                 ) : (
                   <>
                     <PlayCircle className="w-5 h-5" />
-                    {reviewType === "api" ? "外部APIでレビュー" : "レビューを実行"}
+                    {reviewType === "api"
+                      ? "外部APIでレビュー"
+                      : "レビューを実行"}
                   </>
                 )}
               </Button>

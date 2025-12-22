@@ -2,10 +2,7 @@
  * Q&A実行ワークフローで利用するヘルパー関数
  */
 
-import type {
-  ChecklistResultWithIndividual,
-  ReviewMode,
-} from "./types";
+import type { ChecklistResultWithIndividual, ReviewMode } from "./types";
 
 /**
  * レビューモードを判定する

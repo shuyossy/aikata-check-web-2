@@ -5,9 +5,8 @@ describe("ReviewSpaceDescription", () => {
   describe("正常系", () => {
     describe("create", () => {
       it("有効なスペース説明を生成できる", () => {
-        const description = ReviewSpaceDescription.create(
-          "システム設計書のレビューを実施します",
-        );
+        const description =
+          ReviewSpaceDescription.create("システム設計書のレビューを実施します");
 
         expect(description.value).toBe("システム設計書のレビューを実施します");
       });
@@ -121,7 +120,9 @@ describe("ReviewSpaceDescription", () => {
       it("1001文字以上の場合はエラーをスローする", () => {
         const tooLongDescription = "あ".repeat(1001);
 
-        expect(() => ReviewSpaceDescription.create(tooLongDescription)).toThrow();
+        expect(() =>
+          ReviewSpaceDescription.create(tooLongDescription),
+        ).toThrow();
       });
     });
   });

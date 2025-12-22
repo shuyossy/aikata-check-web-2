@@ -146,7 +146,8 @@ export class AiTaskExecutor {
       return {
         success: false,
         errorMessage:
-          normalizedError.message || "タスク実行中に予期せぬエラーが発生しました",
+          normalizedError.message ||
+          "タスク実行中に予期せぬエラーが発生しました",
       };
     }
   }
@@ -156,7 +157,9 @@ export class AiTaskExecutor {
    */
   private async loadFileBuffers(task: AiTaskDto): Promise<FileBuffersMap> {
     const fileBuffers: FileBuffersMap = new Map();
-    const payload = task.payload as unknown as ReviewTaskPayload | ChecklistGenerationTaskPayload;
+    const payload = task.payload as unknown as
+      | ReviewTaskPayload
+      | ChecklistGenerationTaskPayload;
 
     for (const fm of task.fileMetadata) {
       // ファイルIDをキーとしてバッファを格納
@@ -201,7 +204,8 @@ export class AiTaskExecutor {
     const isRetry = payload.isRetry === true;
 
     // レビュー対象を取得
-    const reviewTarget = await this.reviewTargetRepository.findById(reviewTargetId);
+    const reviewTarget =
+      await this.reviewTargetRepository.findById(reviewTargetId);
     if (!reviewTarget) {
       return {
         success: false,
@@ -212,10 +216,15 @@ export class AiTaskExecutor {
     // リトライの場合、対象レビュー結果を削除
     if (isRetry && payload.resultsToDeleteIds) {
       for (const resultId of payload.resultsToDeleteIds) {
-        await this.reviewResultRepository.delete(ReviewResultId.reconstruct(resultId));
+        await this.reviewResultRepository.delete(
+          ReviewResultId.reconstruct(resultId),
+        );
       }
       logger.debug(
-        { reviewTargetId: payload.reviewTargetId, deletedCount: payload.resultsToDeleteIds.length },
+        {
+          reviewTargetId: payload.reviewTargetId,
+          deletedCount: payload.resultsToDeleteIds.length,
+        },
         "リトライ対象のレビュー結果を削除しました",
       );
     }
@@ -248,18 +257,20 @@ export class AiTaskExecutor {
         if (individualResults.length === 0) return;
 
         // ドキュメントキャッシュを取得してファイル名からIDをマッピング
-        const documentCaches = await this.reviewDocumentCacheRepository.findByReviewTargetId(
-          ReviewTargetId.reconstruct(targetId),
-        );
+        const documentCaches =
+          await this.reviewDocumentCacheRepository.findByReviewTargetId(
+            ReviewTargetId.reconstruct(targetId),
+          );
         const fileNameToCacheId = new Map<string, string>();
         for (const cache of documentCaches) {
           fileNameToCacheId.set(cache.fileName, cache.id.value);
         }
 
         // レビュー結果を取得してチェック項目内容からIDをマッピング
-        const reviewResults = await this.reviewResultRepository.findByReviewTargetId(
-          ReviewTargetId.reconstruct(targetId),
-        );
+        const reviewResults =
+          await this.reviewResultRepository.findByReviewTargetId(
+            ReviewTargetId.reconstruct(targetId),
+          );
         const contentToResultId = new Map<string, string>();
         for (const result of reviewResults) {
           contentToResultId.set(result.checkListItemContent, result.id.value);
@@ -268,8 +279,12 @@ export class AiTaskExecutor {
         // 個別結果を保存
         const cacheEntries = [];
         for (const result of individualResults) {
-          const reviewDocumentCacheId = fileNameToCacheId.get(result.documentName);
-          const reviewResultId = contentToResultId.get(result.checklistItemContent);
+          const reviewDocumentCacheId = fileNameToCacheId.get(
+            result.documentName,
+          );
+          const reviewResultId = contentToResultId.get(
+            result.checklistItemContent,
+          );
 
           if (reviewDocumentCacheId && reviewResultId) {
             cacheEntries.push({
@@ -317,7 +332,10 @@ export class AiTaskExecutor {
         runtimeContext.set("cachedDocuments", cachedDocuments);
         runtimeContext.set("useCachedDocuments", true);
         logger.debug(
-          { reviewTargetId: payload.reviewTargetId, cachedCount: cachedDocuments.length },
+          {
+            reviewTargetId: payload.reviewTargetId,
+            cachedCount: cachedDocuments.length,
+          },
           "キャッシュモードでレビューを実行します",
         );
       } else {
@@ -392,7 +410,8 @@ export class AiTaskExecutor {
         await this.reviewTargetRepository.save(errorTarget);
         return {
           success: false,
-          errorMessage: checkResult.errorMessage || "レビューワークフローに失敗しました",
+          errorMessage:
+            checkResult.errorMessage || "レビューワークフローに失敗しました",
         };
       }
 
@@ -406,10 +425,17 @@ export class AiTaskExecutor {
       }
 
       const workflowResult = result.result as
-        | { status: string; reviewResults?: SingleReviewResult[]; errorMessage?: string }
+        | {
+            status: string;
+            reviewResults?: SingleReviewResult[];
+            errorMessage?: string;
+          }
         | undefined;
 
-      if (!workflowResult?.reviewResults || workflowResult.reviewResults.length === 0) {
+      if (
+        !workflowResult?.reviewResults ||
+        workflowResult.reviewResults.length === 0
+      ) {
         const errorTarget = reviewingTarget.markAsError();
         await this.reviewTargetRepository.save(errorTarget);
         return {
@@ -429,7 +455,9 @@ export class AiTaskExecutor {
           resultCount: workflowResult.reviewResults.length,
           isRetry,
         },
-        isRetry ? "リトライレビュータスクが正常に完了しました" : "レビュータスクが正常に完了しました",
+        isRetry
+          ? "リトライレビュータスクが正常に完了しました"
+          : "レビュータスクが正常に完了しました",
       );
 
       return { success: true };
@@ -451,7 +479,10 @@ export class AiTaskExecutor {
   private async loadCachedDocuments(
     reviewTargetId: ReviewTargetId,
   ): Promise<CachedDocument[]> {
-    const caches = await this.reviewDocumentCacheRepository.findByReviewTargetId(reviewTargetId);
+    const caches =
+      await this.reviewDocumentCacheRepository.findByReviewTargetId(
+        reviewTargetId,
+      );
     const cachedDocuments: CachedDocument[] = [];
 
     for (const cache of caches) {
@@ -460,7 +491,9 @@ export class AiTaskExecutor {
       }
 
       if (cache.isTextMode()) {
-        const textContent = await ReviewCacheHelper.loadTextCache(cache.cachePath!);
+        const textContent = await ReviewCacheHelper.loadTextCache(
+          cache.cachePath!,
+        );
         cachedDocuments.push({
           id: cache.id.value,
           name: cache.fileName,
@@ -469,7 +502,9 @@ export class AiTaskExecutor {
           textContent,
         });
       } else {
-        const imageData = await ReviewCacheHelper.loadImageCache(cache.cachePath!);
+        const imageData = await ReviewCacheHelper.loadImageCache(
+          cache.cachePath!,
+        );
         cachedDocuments.push({
           id: cache.id.value,
           name: cache.fileName,
@@ -530,7 +565,9 @@ export class AiTaskExecutor {
     // ワークフロー結果の検証
     const checkResult = checkWorkflowResult(result);
     if (checkResult.status !== "success") {
-      const errorMessage = checkResult.errorMessage || "チェックリスト生成ワークフローに失敗しました";
+      const errorMessage =
+        checkResult.errorMessage ||
+        "チェックリスト生成ワークフローに失敗しました";
       // エラーメッセージをレビュースペースに保存
       await this.saveChecklistGenerationError(reviewSpaceId, errorMessage);
       return {
@@ -552,7 +589,10 @@ export class AiTaskExecutor {
       | { status: string; generatedItems?: string[]; errorMessage?: string }
       | undefined;
 
-    if (!workflowResult?.generatedItems || workflowResult.generatedItems.length === 0) {
+    if (
+      !workflowResult?.generatedItems ||
+      workflowResult.generatedItems.length === 0
+    ) {
       const errorMessage = "チェックリストが生成されませんでした";
       await this.saveChecklistGenerationError(reviewSpaceId, errorMessage);
       return {
@@ -603,7 +643,10 @@ export class AiTaskExecutor {
       );
     } catch (error) {
       logger.warn(
-        { err: normalizeUnknownError(error), reviewSpaceId: reviewSpaceId.value },
+        {
+          err: normalizeUnknownError(error),
+          reviewSpaceId: reviewSpaceId.value,
+        },
         "チェックリスト生成エラーの保存に失敗しました",
       );
     }
@@ -626,7 +669,10 @@ export class AiTaskExecutor {
       );
     } catch (error) {
       logger.warn(
-        { err: normalizeUnknownError(error), reviewSpaceId: reviewSpaceId.value },
+        {
+          err: normalizeUnknownError(error),
+          reviewSpaceId: reviewSpaceId.value,
+        },
         "チェックリスト生成エラーのクリアに失敗しました",
       );
     }

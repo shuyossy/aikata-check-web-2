@@ -19,7 +19,10 @@ export default async function ProjectsPage() {
   const projectRepository = new ProjectRepository();
 
   // 初期データ取得
-  const service = new ListUserProjectsService(projectRepository, userRepository);
+  const service = new ListUserProjectsService(
+    projectRepository,
+    userRepository,
+  );
   const initialData = await service.execute({
     userId: authUser.userId,
     page: 1,

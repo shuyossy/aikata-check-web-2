@@ -69,7 +69,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: testCheckListItems,
           // concurrentReviewItems未指定
-        })
+        }),
       );
 
       // Assert
@@ -86,7 +86,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: testCheckListItems,
           concurrentReviewItems: 10, // 項目数（5）より大きい
-        })
+        }),
       );
 
       // Assert
@@ -103,7 +103,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: testCheckListItems,
           concurrentReviewItems: 1,
-        })
+        }),
       );
 
       // Assert
@@ -143,7 +143,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: testCheckListItems,
           concurrentReviewItems: 2,
-        })
+        }),
       );
 
       // Assert
@@ -161,7 +161,7 @@ describe("classifyChecklistStep", () => {
       const allIds = result.chunks?.flat().map((item) => item.id) ?? [];
       expect(allIds).toHaveLength(5);
       expect(new Set(allIds)).toEqual(
-        new Set(testCheckListItems.map((item) => item.id))
+        new Set(testCheckListItems.map((item) => item.id)),
       );
     });
 
@@ -188,7 +188,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: testCheckListItems,
           concurrentReviewItems: 2,
-        })
+        }),
       );
 
       // Assert
@@ -198,7 +198,7 @@ describe("classifyChecklistStep", () => {
       const allIds = result.chunks?.flat().map((item) => item.id) ?? [];
       expect(allIds).toContain("check-5");
       expect(new Set(allIds)).toEqual(
-        new Set(testCheckListItems.map((item) => item.id))
+        new Set(testCheckListItems.map((item) => item.id)),
       );
     });
 
@@ -208,7 +208,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: [],
           concurrentReviewItems: 2,
-        })
+        }),
       );
 
       // Assert
@@ -222,7 +222,7 @@ describe("classifyChecklistStep", () => {
     it("AIカテゴリ分類がエラーの場合、単純分割にフォールバックすること", async () => {
       // Arrange
       mockChecklistCategoryAgentGenerateLegacy.mockRejectedValue(
-        new Error("AI APIエラー")
+        new Error("AI APIエラー"),
       );
 
       // Act
@@ -230,7 +230,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: testCheckListItems,
           concurrentReviewItems: 2,
-        })
+        }),
       );
 
       // Assert: エラーではなくフォールバックで成功
@@ -255,7 +255,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: testCheckListItems,
           concurrentReviewItems: 2,
-        })
+        }),
       );
 
       // Assert: フォールバックで成功
@@ -271,7 +271,7 @@ describe("classifyChecklistStep", () => {
     it("5項目を2件ずつ分割すると3チャンク（2,2,1）になること", async () => {
       // エラーが発生するようにモックを設定してフォールバックをテスト
       mockChecklistCategoryAgentGenerateLegacy.mockRejectedValue(
-        new Error("AI error")
+        new Error("AI error"),
       );
 
       // Act
@@ -279,7 +279,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: testCheckListItems,
           concurrentReviewItems: 2,
-        })
+        }),
       );
 
       // Assert: フォールバックによる均等分割
@@ -297,7 +297,7 @@ describe("classifyChecklistStep", () => {
         { id: "check-6", content: "追加のチェック項目" },
       ];
       mockChecklistCategoryAgentGenerateLegacy.mockRejectedValue(
-        new Error("AI error")
+        new Error("AI error"),
       );
 
       // Act
@@ -305,7 +305,7 @@ describe("classifyChecklistStep", () => {
         createStepParams({
           checkListItems: sixItems,
           concurrentReviewItems: 3,
-        })
+        }),
       );
 
       // Assert

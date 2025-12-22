@@ -5,7 +5,11 @@ import { useEffect, useRef, useCallback, useState } from "react";
 /**
  * SSE接続状態
  */
-export type SseConnectionState = "connecting" | "connected" | "disconnected" | "error";
+export type SseConnectionState =
+  | "connecting"
+  | "connected"
+  | "disconnected"
+  | "error";
 
 /**
  * SSE購読フックのオプション
@@ -62,7 +66,8 @@ export function useSseSubscription<T>({
   onDisconnected,
   autoConnect = true,
 }: UseSseSubscriptionOptions<T>): UseSseSubscriptionResult {
-  const [connectionState, setConnectionState] = useState<SseConnectionState>("disconnected");
+  const [connectionState, setConnectionState] =
+    useState<SseConnectionState>("disconnected");
   const eventSourceRef = useRef<EventSource | null>(null);
   const onEventRef = useRef(onEvent);
   const onErrorRef = useRef(onError);

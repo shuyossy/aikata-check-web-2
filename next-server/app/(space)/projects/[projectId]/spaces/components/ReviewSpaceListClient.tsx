@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useState, useCallback } from 'react';
-import Link from 'next/link';
+import { useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Search,
   Plus,
@@ -11,18 +11,18 @@ import {
   Settings,
   Key,
   KeySquare,
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ReviewSpaceCard } from '@/components/reviewSpace';
-import { Breadcrumb } from '@/components/layout/Breadcrumb';
-import { AvatarGroup } from '@/components/ui/AvatarGroup';
-import { listProjectReviewSpacesAction } from '../actions';
-import { useAction } from 'next-safe-action/hooks';
-import { ReviewSpaceListItemDto } from '@/domain/reviewSpace';
-import { ProjectDto } from '@/domain/project';
-import { useServerActionError } from '@/hooks';
-import { ListProjectReviewSpacesResult } from '@/application/reviewSpace';
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ReviewSpaceCard } from "@/components/reviewSpace";
+import { Breadcrumb } from "@/components/layout/Breadcrumb";
+import { AvatarGroup } from "@/components/ui/AvatarGroup";
+import { listProjectReviewSpacesAction } from "../actions";
+import { useAction } from "next-safe-action/hooks";
+import { ReviewSpaceListItemDto } from "@/domain/reviewSpace";
+import { ProjectDto } from "@/domain/project";
+import { useServerActionError } from "@/hooks";
+import { ListProjectReviewSpacesResult } from "@/application/reviewSpace";
 
 interface ReviewSpaceListClientProps {
   projectId: string;
@@ -40,9 +40,9 @@ export function ReviewSpaceListClient({
   initialData,
 }: ReviewSpaceListClientProps) {
   const [spaces, setSpaces] = useState<ReviewSpaceListItemDto[]>(
-    initialData.spaces
+    initialData.spaces,
   );
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [totalCount, setTotalCount] = useState(initialData.total);
   const [currentPage, setCurrentPage] = useState(initialData.page);
   const { error, clearError, handleError } = useServerActionError();
@@ -59,9 +59,9 @@ export function ReviewSpaceListClient({
         }
       },
       onError: ({ error: actionError }) => {
-        handleError(actionError, 'レビュースペース一覧の取得に失敗しました。');
+        handleError(actionError, "レビュースペース一覧の取得に失敗しました。");
       },
-    }
+    },
   );
 
   // 検索実行
@@ -77,7 +77,7 @@ export function ReviewSpaceListClient({
 
   // Enterキーで検索
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleSearch();
     }
   };
@@ -158,7 +158,7 @@ export function ReviewSpaceListClient({
                 説明
               </label>
               <p className="text-sm text-gray-600">
-                {project.description || '説明なし'}
+                {project.description || "説明なし"}
               </p>
             </div>
 
@@ -239,8 +239,8 @@ export function ReviewSpaceListClient({
           </h3>
           <p className="mt-2 text-gray-600">
             {searchQuery
-              ? '検索条件に一致するレビュースペースが見つかりませんでした'
-              : '新規スペースを作成して始めましょう'}
+              ? "検索条件に一致するレビュースペースが見つかりませんでした"
+              : "新規スペースを作成して始めましょう"}
           </p>
         </div>
       ) : (

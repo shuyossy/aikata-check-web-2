@@ -97,7 +97,8 @@ describe("SystemNotification", () => {
       const laterDate = new Date("2024-06-01T00:00:00.000Z");
       vi.setSystemTime(laterDate);
 
-      const updatedNotification = notification.updateMessage("新しいお知らせです。");
+      const updatedNotification =
+        notification.updateMessage("新しいお知らせです。");
 
       expect(updatedNotification.message).toBe("新しいお知らせです。");
       expect(updatedNotification.updatedAt).toEqual(laterDate);

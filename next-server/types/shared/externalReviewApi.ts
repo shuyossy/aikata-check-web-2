@@ -29,7 +29,9 @@ export const externalReviewDocumentSchema = z.object({
   content: z.string(),
 });
 
-export type ExternalReviewDocument = z.infer<typeof externalReviewDocumentSchema>;
+export type ExternalReviewDocument = z.infer<
+  typeof externalReviewDocumentSchema
+>;
 
 // ===============================================
 // チェックリストスキーマ
@@ -45,7 +47,9 @@ export const externalReviewCheckListItemSchema = z.object({
   content: z.string(),
 });
 
-export type ExternalReviewCheckListItem = z.infer<typeof externalReviewCheckListItemSchema>;
+export type ExternalReviewCheckListItem = z.infer<
+  typeof externalReviewCheckListItemSchema
+>;
 
 // ===============================================
 // 評価基準スキーマ
@@ -61,7 +65,9 @@ export const externalReviewEvaluationCriterionSchema = z.object({
   description: z.string(),
 });
 
-export type ExternalReviewEvaluationCriterion = z.infer<typeof externalReviewEvaluationCriterionSchema>;
+export type ExternalReviewEvaluationCriterion = z.infer<
+  typeof externalReviewEvaluationCriterionSchema
+>;
 
 // ===============================================
 // レビュー設定スキーマ
@@ -76,10 +82,14 @@ export const externalReviewSettingsSchema = z.object({
   /** コメントフォーマット（レビューコメントのフォーマット指定） */
   commentFormat: z.string().nullable().optional(),
   /** 評価基準 */
-  evaluationCriteria: z.array(externalReviewEvaluationCriterionSchema).optional(),
+  evaluationCriteria: z
+    .array(externalReviewEvaluationCriterionSchema)
+    .optional(),
 });
 
-export type ExternalReviewSettings = z.infer<typeof externalReviewSettingsSchema>;
+export type ExternalReviewSettings = z.infer<
+  typeof externalReviewSettingsSchema
+>;
 
 // ===============================================
 // リクエストスキーマ
@@ -117,7 +127,9 @@ export const externalReviewResultItemSchema = z.object({
   error: z.string().optional(),
 });
 
-export type ExternalReviewResultItem = z.infer<typeof externalReviewResultItemSchema>;
+export type ExternalReviewResultItem = z.infer<
+  typeof externalReviewResultItemSchema
+>;
 
 /**
  * 外部APIからのレスポンススキーマ
@@ -127,7 +139,9 @@ export const externalReviewResponseSchema = z.object({
   results: z.array(externalReviewResultItemSchema),
 });
 
-export type ExternalReviewResponse = z.infer<typeof externalReviewResponseSchema>;
+export type ExternalReviewResponse = z.infer<
+  typeof externalReviewResponseSchema
+>;
 
 // ===============================================
 // バリデーション関数

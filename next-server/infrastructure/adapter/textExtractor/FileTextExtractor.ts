@@ -56,7 +56,10 @@ export class FileTextExtractor implements IFileTextExtractor {
     const shouldNormalize = options?.normalize !== false;
 
     if (shouldNormalize) {
-      return this.normalizer.normalize(result.content, options?.normalizerOptions);
+      return this.normalizer.normalize(
+        result.content,
+        options?.normalizerOptions,
+      );
     }
 
     return result.content;

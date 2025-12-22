@@ -88,7 +88,9 @@ export class ListReviewTargetsService {
       await this.reviewTargetRepository.findByReviewSpaceId(reviewSpaceIdVo);
 
     // limitが指定されている場合は結果を制限
-    const limitedTargets = limit ? reviewTargets.slice(0, limit) : reviewTargets;
+    const limitedTargets = limit
+      ? reviewTargets.slice(0, limit)
+      : reviewTargets;
 
     return {
       reviewTargets: limitedTargets.map((r) => ({

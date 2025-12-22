@@ -7,7 +7,10 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { RuntimeContext } from "@mastra/core/di";
-import type { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
+import type {
+  IProjectRepository,
+  ISystemSettingRepository,
+} from "@/application/shared/port/repository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import type { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
@@ -16,9 +19,15 @@ import type { IReviewDocumentCacheRepository } from "@/application/shared/port/r
 import type { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
 import type { IAiTaskRepository } from "@/application/shared/port/repository/IAiTaskRepository";
 import type { IAiTaskFileMetadataRepository } from "@/application/shared/port/repository/IAiTaskFileMetadataRepository";
-import { GenerateCheckListByAIService, type GenerateCheckListByAICommand } from "@/application/checkListItem/GenerateCheckListByAIService";
+import {
+  GenerateCheckListByAIService,
+  type GenerateCheckListByAICommand,
+} from "@/application/checkListItem/GenerateCheckListByAIService";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
-import { AiTaskExecutor, type ChecklistGenerationTaskPayload } from "@/application/aiTask/AiTaskExecutor";
+import {
+  AiTaskExecutor,
+  type ChecklistGenerationTaskPayload,
+} from "@/application/aiTask/AiTaskExecutor";
 import type { AiTaskDto, AiTask } from "@/domain/aiTask";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project, ProjectId } from "@/domain/project";
@@ -124,9 +133,9 @@ vi.mock("@/application/mastra/agents", () => ({
 // ワークフロー制御フローは実際に実行する
 // ========================================
 vi.mock("@/application/mastra/workflows/shared", async () => {
-  const actual = await vi.importActual<typeof import("@/application/mastra/workflows/shared")>(
-    "@/application/mastra/workflows/shared"
-  );
+  const actual = await vi.importActual<
+    typeof import("@/application/mastra/workflows/shared")
+  >("@/application/mastra/workflows/shared");
   return {
     ...actual,
     fileProcessingStep: {
@@ -145,12 +154,12 @@ vi.mock("@/application/mastra/workflows/shared", async () => {
 // ========================================
 vi.mock("@/application/mastra", async () => {
   // 実際のワークフローとユーティリティをインポート
-  const workflowUtils = await vi.importActual<typeof import("@/application/mastra/lib/workflowUtils")>(
-    "@/application/mastra/lib/workflowUtils"
-  );
-  const checklistGenerationWorkflowModule = await vi.importActual<typeof import("@/application/mastra/workflows/checklistGeneration")>(
-    "@/application/mastra/workflows/checklistGeneration"
-  );
+  const workflowUtils = await vi.importActual<
+    typeof import("@/application/mastra/lib/workflowUtils")
+  >("@/application/mastra/lib/workflowUtils");
+  const checklistGenerationWorkflowModule = await vi.importActual<
+    typeof import("@/application/mastra/workflows/checklistGeneration")
+  >("@/application/mastra/workflows/checklistGeneration");
 
   return {
     // mastraオブジェクトのモック：実際のワークフローを返す
@@ -166,10 +175,13 @@ vi.mock("@/application/mastra", async () => {
     checkWorkflowResult: workflowUtils.checkWorkflowResult,
     checkStatuses: workflowUtils.checkStatuses,
     // ワークフローとスキーマのエクスポート
-    checklistGenerationWorkflow: checklistGenerationWorkflowModule.checklistGenerationWorkflow,
-    rawUploadFileMetaSchema: checklistGenerationWorkflowModule.rawUploadFileMetaSchema,
+    checklistGenerationWorkflow:
+      checklistGenerationWorkflowModule.checklistGenerationWorkflow,
+    rawUploadFileMetaSchema:
+      checklistGenerationWorkflowModule.rawUploadFileMetaSchema,
     extractedFileSchema: checklistGenerationWorkflowModule.extractedFileSchema,
-    FILE_BUFFERS_CONTEXT_KEY: checklistGenerationWorkflowModule.FILE_BUFFERS_CONTEXT_KEY,
+    FILE_BUFFERS_CONTEXT_KEY:
+      checklistGenerationWorkflowModule.FILE_BUFFERS_CONTEXT_KEY,
   };
 });
 
@@ -178,7 +190,7 @@ vi.mock("@/application/mastra", async () => {
 // ========================================
 vi.mock("@/application/aiTask", async () => {
   const actual = await vi.importActual<typeof import("@/application/aiTask")>(
-    "@/application/aiTask"
+    "@/application/aiTask",
   );
   return {
     ...actual,
@@ -197,7 +209,7 @@ vi.mock("@/application/aiTask", async () => {
  */
 const createTestFileMeta = (
   processMode: "text" | "image" = "text",
-  index: number = 0
+  index: number = 0,
 ): RawUploadFileMeta => ({
   id: `file-${index}`,
   name: processMode === "text" ? `test-${index}.txt` : `test-${index}.pdf`,
@@ -246,7 +258,7 @@ interface RuntimeContextExpectations {
 
 const assertRuntimeContext = (
   runtimeContext: { get: (key: string) => unknown } | null,
-  expectations: RuntimeContextExpectations
+  expectations: RuntimeContextExpectations,
 ): void => {
   expect(runtimeContext).not.toBeNull();
 
@@ -283,7 +295,9 @@ const assertRuntimeContext = (
   }
 
   if (expectations.mapHasKeys) {
-    for (const [contextKey, expectedMapKeys] of Object.entries(expectations.mapHasKeys)) {
+    for (const [contextKey, expectedMapKeys] of Object.entries(
+      expectations.mapHasKeys,
+    )) {
       const map = runtimeContext!.get(contextKey) as Map<string, unknown>;
       expect(map).toBeInstanceOf(Map);
       for (const mapKey of expectedMapKeys) {
@@ -307,7 +321,7 @@ interface ExpectedTaskPayload {
 
 const assertSavedTaskPayload = (
   mockSave: ReturnType<typeof vi.fn>,
-  expected: ExpectedTaskPayload
+  expected: ExpectedTaskPayload,
 ): void => {
   expect(mockSave).toHaveBeenCalledTimes(1);
   const savedTask = vi.mocked(mockSave).mock.calls[0][0] as AiTask;
@@ -316,7 +330,8 @@ const assertSavedTaskPayload = (
   expect(savedTask.taskType.value).toBe(expected.taskType);
 
   // ペイロード検証
-  const payload = savedTask.payload as unknown as ChecklistGenerationTaskPayload;
+  const payload =
+    savedTask.payload as unknown as ChecklistGenerationTaskPayload;
   expect(payload.reviewSpaceId).toBe(expected.reviewSpaceId);
   expect(payload.userId).toBe(expected.userId);
   expect(payload.checklistRequirements).toBe(expected.checklistRequirements);
@@ -343,18 +358,20 @@ const assertSavedTaskPayload = (
 const assertUpdateChecklistGenerationError = (
   mockUpdate: ReturnType<typeof vi.fn>,
   expectedReviewSpaceId: string,
-  expectedError: string | null
+  expectedError: string | null,
 ): void => {
   expect(mockUpdate).toHaveBeenCalledTimes(1);
-  const [reviewSpaceId, error] = vi.mocked(mockUpdate).mock.calls[0] as [{ value: string }, string | null];
+  const [reviewSpaceId, error] = vi.mocked(mockUpdate).mock.calls[0] as [
+    { value: string },
+    string | null,
+  ];
   expect(reviewSpaceId.value).toBe(expectedReviewSpaceId);
   if (expectedError === null) {
     expect(error).toBeNull();
   } else {
     expect(typeof error).toBe("string");
   }
-};;
-
+};
 
 // ========================================
 // テスト本体
@@ -476,14 +493,15 @@ describe("AIチェックリスト生成 結合テスト", () => {
     deleteByReviewTargetId: vi.fn(),
   };
 
-  const mockLargeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository = {
-    save: vi.fn(),
-    saveMany: vi.fn(),
-    findByReviewTargetId: vi.fn(),
-    deleteByReviewTargetId: vi.fn(),
-    findChecklistResultsWithIndividualResults: vi.fn(),
-    getMaxTotalChunksForDocument: vi.fn(),
-  };
+  const mockLargeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository =
+    {
+      save: vi.fn(),
+      saveMany: vi.fn(),
+      findByReviewTargetId: vi.fn(),
+      deleteByReviewTargetId: vi.fn(),
+      findChecklistResultsWithIndividualResults: vi.fn(),
+      getMaxTotalChunksForDocument: vi.fn(),
+    };
 
   // サービスとエグゼキューター
   let queueService: AiTaskQueueService;
@@ -495,7 +513,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
    */
   const createTestChecklistTaskDto = (
     files: RawUploadFileMeta[],
-    checklistRequirements: string
+    checklistRequirements: string,
   ): AiTaskDto => ({
     id: testTaskId,
     taskType: "checklist_generation",
@@ -544,14 +562,22 @@ describe("AIチェックリスト生成 結合テスト", () => {
     process.env.AI_API_MODEL = "test-model";
 
     // リポジトリのデフォルト戻り値設定
-    vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+    vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+      testReviewSpace,
+    );
     vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
     // システム設定はnullを返す（環境変数で代替）
     vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(null);
     vi.mocked(mockAiTaskRepository.save).mockResolvedValue(undefined);
-    vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(1);
-    vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(undefined);
-    vi.mocked(mockReviewSpaceRepository.updateChecklistGenerationError).mockResolvedValue(undefined);
+    vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(
+      1,
+    );
+    vi.mocked(mockCheckListItemRepository.bulkInsert).mockResolvedValue(
+      undefined,
+    );
+    vi.mocked(
+      mockReviewSpaceRepository.updateChecklistGenerationError,
+    ).mockResolvedValue(undefined);
 
     // ワーカー起動モック
     mockStartWorkersForApiKeyHash.mockResolvedValue(undefined);
@@ -573,9 +599,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
     // AIエージェントのデフォルトモック設定
     mockTopicExtractionAgentGenerateLegacy.mockResolvedValue({
       object: {
-        topics: [
-          { title: "デフォルトトピック", reason: "デフォルト理由" },
-        ],
+        topics: [{ title: "デフォルトトピック", reason: "デフォルト理由" }],
       },
     });
 
@@ -594,14 +618,14 @@ describe("AIチェックリスト生成 結合テスト", () => {
     // サービスとエグゼキューターの初期化
     queueService = new AiTaskQueueService(
       mockAiTaskRepository,
-      mockAiTaskFileMetadataRepository
+      mockAiTaskFileMetadataRepository,
     );
 
     service = new GenerateCheckListByAIService(
       mockReviewSpaceRepository,
       mockProjectRepository,
       mockSystemSettingRepository,
-      queueService
+      queueService,
     );
 
     executor = new AiTaskExecutor(
@@ -610,9 +634,8 @@ describe("AIチェックリスト生成 結合テスト", () => {
       mockCheckListItemRepository,
       mockReviewDocumentCacheRepository,
       mockReviewSpaceRepository,
-      mockLargeDocumentResultCacheRepository
+      mockLargeDocumentResultCacheRepository,
     );
-
   });
 
   afterEach(() => {
@@ -628,7 +651,8 @@ describe("AIチェックリスト生成 結合テスト", () => {
         // Arrange
         const testFiles: RawUploadFileMeta[] = [createTestFileMeta("text", 0)];
         const testFileBuffers = createTestFileBuffers(testFiles);
-        const checklistRequirements = "セキュリティに関するチェックリストを作成";
+        const checklistRequirements =
+          "セキュリティに関するチェックリストを作成";
 
         // fileProcessingStepのモック設定
         mockFileProcessingStep.mockResolvedValue({
@@ -664,7 +688,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
 
         mockChecklistRefinementAgentGenerateLegacy.mockResolvedValue({
           object: {
-            refinedChecklists: ["精査済みチェック項目1", "精査済みチェック項目2"],
+            refinedChecklists: [
+              "精査済みチェック項目1",
+              "精査済みチェック項目2",
+            ],
           },
         });
 
@@ -699,7 +726,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
         });
 
         // Act 2: エグゼキューターでタスク実行（実際のワークフローを実行）
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         const executorResult = await executor.execute(taskDto);
 
         // Assert 2: 実行結果の検証
@@ -710,10 +740,13 @@ describe("AIチェックリスト生成 結合テスト", () => {
         expect(mockFileProcessingStep).toHaveBeenCalled();
         expect(mockTopicExtractionAgentGenerateLegacy).toHaveBeenCalledTimes(1);
         expect(mockTopicChecklistAgentGenerateLegacy).toHaveBeenCalledTimes(2); // 2トピック分
-        expect(mockChecklistRefinementAgentGenerateLegacy).toHaveBeenCalledTimes(1);
+        expect(
+          mockChecklistRefinementAgentGenerateLegacy,
+        ).toHaveBeenCalledTimes(1);
 
         // bulkInsertに渡された引数を検証
-        const bulkInsertCall = vi.mocked(mockCheckListItemRepository.bulkInsert).mock.calls[0];
+        const bulkInsertCall = vi.mocked(mockCheckListItemRepository.bulkInsert)
+          .mock.calls[0];
         const savedItems = bulkInsertCall[0] as CheckListItem[];
         expect(savedItems.length).toBe(2);
         expect(savedItems[0].content.value).toBe("精査済みチェック項目1");
@@ -723,7 +756,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         assertUpdateChecklistGenerationError(
           mockReviewSpaceRepository.updateChecklistGenerationError,
           testReviewSpaceId,
-          null
+          null,
         );
       });
 
@@ -734,14 +767,16 @@ describe("AIチェックリスト生成 結合テスト", () => {
 
         // エージェント呼び出し時にRuntimeContextをキャプチャ
         let capturedRuntimeContext: RuntimeContext | null = null;
-        mockTopicExtractionAgentGenerateLegacy.mockImplementation(async (_message, options) => {
-          capturedRuntimeContext = options.runtimeContext;
-          return {
-            object: {
-              topics: [{ title: "テストトピック", reason: "テスト理由" }],
-            },
-          };
-        });
+        mockTopicExtractionAgentGenerateLegacy.mockImplementation(
+          async (_message, options) => {
+            capturedRuntimeContext = options.runtimeContext;
+            return {
+              object: {
+                topics: [{ title: "テストトピック", reason: "テスト理由" }],
+              },
+            };
+          },
+        );
 
         mockTopicChecklistAgentGenerateLegacy.mockResolvedValue({
           object: { checklistItems: ["チェック項目1"] },
@@ -752,7 +787,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
         });
 
         // Act
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         await executor.execute(taskDto);
 
         // Assert: RuntimeContextにAI API設定が含まれていることを確認
@@ -777,30 +815,34 @@ describe("AIチェックリスト生成 結合テスト", () => {
 
         // fileProcessingStepでRuntimeContextをキャプチャ
         let capturedFileBuffers: FileBuffersMap | null = null;
-        mockFileProcessingStep.mockImplementation(async ({ runtimeContext }) => {
-          if (runtimeContext) {
-            capturedFileBuffers = runtimeContext.get(FILE_BUFFERS_CONTEXT_KEY) as FileBuffersMap;
-          }
-          return {
-            status: "success",
-            extractedFiles: [
-              {
-                id: "file-0",
-                name: "test-0.txt",
-                type: "text/plain",
-                processMode: "text",
-                textContent: "テストドキュメント",
-              },
-              {
-                id: "file-1",
-                name: "test-1.pdf",
-                type: "application/pdf",
-                processMode: "image",
-                imageData: ["base64image1", "base64image2"],
-              },
-            ],
-          };
-        });
+        mockFileProcessingStep.mockImplementation(
+          async ({ runtimeContext }) => {
+            if (runtimeContext) {
+              capturedFileBuffers = runtimeContext.get(
+                FILE_BUFFERS_CONTEXT_KEY,
+              ) as FileBuffersMap;
+            }
+            return {
+              status: "success",
+              extractedFiles: [
+                {
+                  id: "file-0",
+                  name: "test-0.txt",
+                  type: "text/plain",
+                  processMode: "text",
+                  textContent: "テストドキュメント",
+                },
+                {
+                  id: "file-1",
+                  name: "test-1.pdf",
+                  type: "application/pdf",
+                  processMode: "image",
+                  imageData: ["base64image1", "base64image2"],
+                },
+              ],
+            };
+          },
+        );
 
         mockTopicExtractionAgentGenerateLegacy.mockResolvedValue({
           object: { topics: [{ title: "テストトピック", reason: "理由" }] },
@@ -815,7 +857,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
         });
 
         // Act
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         await executor.execute(taskDto);
 
         // Assert: ファイルバッファがRuntimeContextに正しく設定されていること
@@ -873,7 +918,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
         });
 
         // Act
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         const result = await executor.execute(taskDto);
 
         // Assert
@@ -881,12 +929,11 @@ describe("AIチェックリスト生成 結合テスト", () => {
         expect(mockCheckListItemRepository.bulkInsert).toHaveBeenCalled();
 
         // エージェントに画像が渡されていることを確認
-        const topicExtractionCallArgs = mockTopicExtractionAgentGenerateLegacy.mock.calls[0];
+        const topicExtractionCallArgs =
+          mockTopicExtractionAgentGenerateLegacy.mock.calls[0];
         const message = topicExtractionCallArgs[0];
         expect(message.content).toEqual(
-          expect.arrayContaining([
-            expect.objectContaining({ type: "image" }),
-          ])
+          expect.arrayContaining([expect.objectContaining({ type: "image" })]),
         );
       });
     });
@@ -939,7 +986,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
         });
 
         // Act
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         const result = await executor.execute(taskDto);
 
         // Assert
@@ -947,13 +997,14 @@ describe("AIチェックリスト生成 結合テスト", () => {
         expect(mockCheckListItemRepository.bulkInsert).toHaveBeenCalled();
 
         // メッセージにテキストと画像の両方が含まれることを確認
-        const topicExtractionCallArgs = mockTopicExtractionAgentGenerateLegacy.mock.calls[0];
+        const topicExtractionCallArgs =
+          mockTopicExtractionAgentGenerateLegacy.mock.calls[0];
         const message = topicExtractionCallArgs[0];
         expect(message.content).toEqual(
           expect.arrayContaining([
             expect.objectContaining({ type: "text" }),
             expect.objectContaining({ type: "image" }),
-          ])
+          ]),
         );
       });
     });
@@ -968,19 +1019,26 @@ describe("AIチェックリスト生成 結合テスト", () => {
 
         // トピック抽出エージェントが失敗するようにモック
         mockTopicExtractionAgentGenerateLegacy.mockRejectedValue(
-          new Error("API呼び出しエラー")
+          new Error("API呼び出しエラー"),
         );
 
         // Act
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         const result = await executor.execute(taskDto);
 
         // Assert
         expect(result.success).toBe(false);
         expect(result.errorMessage).toBeDefined();
         // ReviewSpaceIdを検証（エラーメッセージは正規化されて「予期せぬエラー」になる可能性がある）
-        expect(mockReviewSpaceRepository.updateChecklistGenerationError).toHaveBeenCalledTimes(1);
-        const [reviewSpaceId, errorMessage] = mockReviewSpaceRepository.updateChecklistGenerationError.mock.calls[0];
+        expect(
+          mockReviewSpaceRepository.updateChecklistGenerationError,
+        ).toHaveBeenCalledTimes(1);
+        const [reviewSpaceId, errorMessage] =
+          mockReviewSpaceRepository.updateChecklistGenerationError.mock
+            .calls[0];
         expect(reviewSpaceId.value).toBe(testReviewSpaceId);
         expect(errorMessage).toBeDefined();
         expect(typeof errorMessage).toBe("string");
@@ -999,7 +1057,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
         });
 
         // Act
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         const result = await executor.execute(taskDto);
 
         // Assert
@@ -1009,7 +1070,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         assertUpdateChecklistGenerationError(
           mockReviewSpaceRepository.updateChecklistGenerationError,
           testReviewSpaceId,
-          "ファイル処理"
+          "ファイル処理",
         );
         // エージェントは呼ばれない
         expect(mockTopicExtractionAgentGenerateLegacy).not.toHaveBeenCalled();
@@ -1035,7 +1096,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
         });
 
         // Act
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         const result = await executor.execute(taskDto);
 
         // Assert
@@ -1045,7 +1109,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         assertUpdateChecklistGenerationError(
           mockReviewSpaceRepository.updateChecklistGenerationError,
           testReviewSpaceId,
-          "チェックリスト"
+          "チェックリスト",
         );
       });
 
@@ -1060,7 +1124,10 @@ describe("AIチェックリスト生成 結合テスト", () => {
         });
 
         // Act
-        const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+        const taskDto = createTestChecklistTaskDto(
+          testFiles,
+          checklistRequirements,
+        );
         const result = await executor.execute(taskDto);
 
         // Assert
@@ -1122,12 +1189,16 @@ describe("AIチェックリスト生成 結合テスト", () => {
           id: testProjectId,
           name: "テストプロジェクト",
           description: null,
-          members: [{ userId: "550e8400-e29b-41d4-a716-446655449999", createdAt: now }], // testUserIdは含まれていない
+          members: [
+            { userId: "550e8400-e29b-41d4-a716-446655449999", createdAt: now },
+          ], // testUserIdは含まれていない
           encryptedApiKey: null,
           createdAt: now,
           updatedAt: now,
         });
-        vi.mocked(mockProjectRepository.findById).mockResolvedValue(projectWithoutMember);
+        vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+          projectWithoutMember,
+        );
 
         const testFiles: RawUploadFileMeta[] = [createTestFileMeta("text", 0)];
         const command: GenerateCheckListByAICommand = {
@@ -1160,7 +1231,9 @@ describe("AIチェックリスト生成 結合テスト", () => {
       });
 
       mockTopicChecklistAgentGenerateLegacy
-        .mockResolvedValueOnce({ object: { checklistItems: ["精査項目A", "精査項目B"] } })
+        .mockResolvedValueOnce({
+          object: { checklistItems: ["精査項目A", "精査項目B"] },
+        })
         .mockResolvedValueOnce({ object: { checklistItems: ["精査項目C"] } });
 
       mockChecklistRefinementAgentGenerateLegacy.mockResolvedValue({
@@ -1168,20 +1241,26 @@ describe("AIチェックリスト生成 結合テスト", () => {
       });
 
       // Act
-      const taskDto = createTestChecklistTaskDto(testFiles, checklistRequirements);
+      const taskDto = createTestChecklistTaskDto(
+        testFiles,
+        checklistRequirements,
+      );
       const result = await executor.execute(taskDto);
 
       // Assert
       expect(result.success).toBe(true);
       expect(mockCheckListItemRepository.bulkInsert).toHaveBeenCalledTimes(1);
 
-      const bulkInsertCall = vi.mocked(mockCheckListItemRepository.bulkInsert).mock.calls[0];
+      const bulkInsertCall = vi.mocked(mockCheckListItemRepository.bulkInsert)
+        .mock.calls[0];
       const savedItems = bulkInsertCall[0] as CheckListItem[];
 
       expect(savedItems.length).toBe(3);
       savedItems.forEach((item) => {
         expect(item.reviewSpaceId.value).toBe(testReviewSpaceId);
-        expect(["精査項目A", "精査項目B", "精査項目C"]).toContain(item.content.value);
+        expect(["精査項目A", "精査項目B", "精査項目C"]).toContain(
+          item.content.value,
+        );
       });
     });
 
@@ -1209,7 +1288,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
       assertUpdateChecklistGenerationError(
         mockReviewSpaceRepository.updateChecklistGenerationError,
         testReviewSpaceId,
-        null
+        null,
       );
     });
   });

@@ -7,7 +7,13 @@ import { ISystemSettingRepository } from "@/application/shared/port/repository/I
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { IProjectRepository } from "@/application/shared/port/repository/IProjectRepository";
 import { IEventBroker } from "@/application/shared/port/push/IEventBroker";
-import { QaHistory, QaHistoryId, Answer, ResearchSummary, QaStatus } from "@/domain/qaHistory";
+import {
+  QaHistory,
+  QaHistoryId,
+  Answer,
+  ResearchSummary,
+  QaStatus,
+} from "@/domain/qaHistory";
 import { ReviewTargetId } from "@/domain/reviewTarget";
 import { ProjectId } from "@/domain/project";
 import { getLogger } from "@/lib/server/logger";
@@ -69,16 +75,25 @@ export class StartQaWorkflowService {
     }
 
     // ステータスをprocessingに更新
-    await this.qaHistoryRepository.updateStatus(qaHistoryIdVo, QaStatus.processing());
+    await this.qaHistoryRepository.updateStatus(
+      qaHistoryIdVo,
+      QaStatus.processing(),
+    );
 
     // レビュー対象を取得
-    const reviewTarget = await this.reviewTargetRepository.findById(qaHistory.reviewTargetId);
+    const reviewTarget = await this.reviewTargetRepository.findById(
+      qaHistory.reviewTargetId,
+    );
     if (!reviewTarget) {
       throw new Error("レビュー対象が見つかりません");
     }
 
     // 非同期でワークフロー実行
-    this.executeQaWorkflow(qaHistoryIdVo, userId, qaHistory.reviewTargetId).catch((error) => {
+    this.executeQaWorkflow(
+      qaHistoryIdVo,
+      userId,
+      qaHistory.reviewTargetId,
+    ).catch((error) => {
       logger.error({ err: error, qaHistoryId }, "Q&A処理が失敗しました");
     });
   }
@@ -102,53 +117,78 @@ export class StartQaWorkflowService {
       }
 
       // 選択されたチェックリスト項目をパース（JSON配列）
-      const selectedChecklistItemContents: string[] = JSON.parse(qaHistory.checkListItemContent.value);
+      const selectedChecklistItemContents: string[] = JSON.parse(
+        qaHistory.checkListItemContent.value,
+      );
 
       // レビュー結果を取得（選択されたチェック項目のみフィルタリング）
-      const allReviewResults = await this.reviewResultRepository.findByReviewTargetId(reviewTargetId);
+      const allReviewResults =
+        await this.reviewResultRepository.findByReviewTargetId(reviewTargetId);
       const reviewResults = allReviewResults.filter((r) =>
-        selectedChecklistItemContents.includes(r.checkListItemContent)
+        selectedChecklistItemContents.includes(r.checkListItemContent),
       );
 
       // 大量レビューの個別結果を取得（選択されたチェック項目のみ）
-      const largeDocumentResults = await this.largeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults(
-        reviewTargetId,
-        selectedChecklistItemContents,
-      );
+      const largeDocumentResults =
+        await this.largeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults(
+          reviewTargetId,
+          selectedChecklistItemContents,
+        );
 
       // チェックリスト結果と個別結果のマップを作成
-      const individualResultsMap = new Map<string, Array<{ documentId: string; comment: string; individualFileName: string }>>();
+      const individualResultsMap = new Map<
+        string,
+        Array<{
+          documentId: string;
+          comment: string;
+          individualFileName: string;
+        }>
+      >();
       for (const result of largeDocumentResults) {
-        individualResultsMap.set(result.checklistItemContent, result.individualResults);
+        individualResultsMap.set(
+          result.checklistItemContent,
+          result.individualResults,
+        );
       }
 
       // チェックリスト結果を構築
-      const checklistResults: ChecklistResultWithIndividual[] = reviewResults.map((result) => ({
-        checklistResult: {
-          id: result.id.value,
-          content: result.checkListItemContent,
-          evaluation: result.evaluation?.value ?? null,
-          comment: result.comment?.value ?? null,
-        },
-        // 大量レビューの個別結果がある場合はここに含める
-        individualResults: individualResultsMap.get(result.checkListItemContent),
-      }));
+      const checklistResults: ChecklistResultWithIndividual[] =
+        reviewResults.map((result) => ({
+          checklistResult: {
+            id: result.id.value,
+            content: result.checkListItemContent,
+            evaluation: result.evaluation?.value ?? null,
+            comment: result.comment?.value ?? null,
+          },
+          // 大量レビューの個別結果がある場合はここに含める
+          individualResults: individualResultsMap.get(
+            result.checkListItemContent,
+          ),
+        }));
 
       // ドキュメントキャッシュを取得
-      const documentCaches = await this.reviewDocumentCacheRepository.findByReviewTargetId(reviewTargetId);
+      const documentCaches =
+        await this.reviewDocumentCacheRepository.findByReviewTargetId(
+          reviewTargetId,
+        );
 
       // 利用可能なドキュメントリストを構築
-      const availableDocuments: AvailableDocument[] = documentCaches.map((cache) => ({
-        id: cache.id.value,
-        fileName: cache.fileName,
-      }));
+      const availableDocuments: AvailableDocument[] = documentCaches.map(
+        (cache) => ({
+          id: cache.id.value,
+          fileName: cache.fileName,
+        }),
+      );
 
       // レビュー対象からプロジェクトを取得してAPI設定を解決
-      const reviewTarget = await this.reviewTargetRepository.findById(reviewTargetId);
+      const reviewTarget =
+        await this.reviewTargetRepository.findById(reviewTargetId);
       if (!reviewTarget) {
         throw new Error("レビュー対象が見つかりません");
       }
-      const reviewSpace = await this.reviewSpaceRepository.findById(reviewTarget.reviewSpaceId);
+      const reviewSpace = await this.reviewSpaceRepository.findById(
+        reviewTarget.reviewSpaceId,
+      );
       if (!reviewSpace) {
         throw new Error("レビュースペースが見つかりません");
       }
@@ -160,10 +200,14 @@ export class StartQaWorkflowService {
 
       // API設定を取得（プロジェクト設定 > 管理者設定 > 環境変数）
       const systemSetting = await this.systemSettingRepository.find();
-      const aiApiConfig = resolveAiApiConfig(project.encryptedApiKey, systemSetting);
+      const aiApiConfig = resolveAiApiConfig(
+        project.encryptedApiKey,
+        systemSetting,
+      );
 
       // RuntimeContext作成
-      const runtimeContext = new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
+      const runtimeContext =
+        new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
       runtimeContext.set("eventBroker", this.eventBroker);
       runtimeContext.set("userId", userId);
       runtimeContext.set("qaHistoryId", qaHistoryId.value);
@@ -194,18 +238,22 @@ export class StartQaWorkflowService {
         throw new Error("Q&A処理に失敗しました");
       }
 
-      const output = workflowResult.result as QaExecutionWorkflowOutput | undefined;
+      const output = workflowResult.result as
+        | QaExecutionWorkflowOutput
+        | undefined;
 
       if (!output || output.status === "failed" || !output.answer) {
         throw new Error(output?.errorMessage || "回答の生成に失敗しました");
       }
 
       // Q&A履歴を更新
-      const researchSummaryItems = (output.researchSummary || []).map((r: ResearchResult) => ({
-        documentName: r.documentName,
-        researchContent: r.researchContent,
-        researchResult: r.researchResult,
-      }));
+      const researchSummaryItems = (output.researchSummary || []).map(
+        (r: ResearchResult) => ({
+          documentName: r.documentName,
+          researchContent: r.researchContent,
+          researchResult: r.researchResult,
+        }),
+      );
       await this.qaHistoryRepository.updateAnswer(
         qaHistoryId,
         Answer.create(output.answer),
@@ -221,12 +269,15 @@ export class StartQaWorkflowService {
         },
       };
       this.eventBroker.broadcast(`qa:${qaHistoryId.value}`, completeEvent);
-
     } catch (error) {
-      logger.error({ err: error, qaHistoryId: qaHistoryId.value }, "Q&Aワークフロー実行中にエラーが発生しました");
+      logger.error(
+        { err: error, qaHistoryId: qaHistoryId.value },
+        "Q&Aワークフロー実行中にエラーが発生しました",
+      );
 
       // エラーを記録
-      const errorMessage = error instanceof Error ? error.message : "予期せぬエラーが発生しました";
+      const errorMessage =
+        error instanceof Error ? error.message : "予期せぬエラーが発生しました";
       await this.qaHistoryRepository.updateError(qaHistoryId, errorMessage);
 
       // エラーイベントをブロードキャスト（全購読者に配信）

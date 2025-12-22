@@ -5,7 +5,9 @@ describe("CheckListItemContent", () => {
   describe("正常系", () => {
     describe("create", () => {
       it("有効な内容でチェック項目内容を生成できる", () => {
-        const content = CheckListItemContent.create("要件定義書との整合性が確保されているか");
+        const content = CheckListItemContent.create(
+          "要件定義書との整合性が確保されているか",
+        );
 
         expect(content.value).toBe("要件定義書との整合性が確保されているか");
       });

@@ -52,10 +52,7 @@ export class ReviewTargetCleanupHelper {
       const taskId = aiTask.id.value;
 
       // PROCESSING状態の場合、ワークフローをキャンセル
-      if (
-        aiTask.status.value === "processing" &&
-        this.workflowRunRegistry
-      ) {
+      if (aiTask.status.value === "processing" && this.workflowRunRegistry) {
         await this.cancelWorkflow(taskId, reviewTargetId);
       }
 

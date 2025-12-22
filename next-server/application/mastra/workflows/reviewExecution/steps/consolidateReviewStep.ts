@@ -3,7 +3,10 @@ import { z } from "zod";
 import type { RuntimeContext } from "@mastra/core/di";
 import { consolidateReviewAgent } from "../../../agents";
 import { baseStepOutputSchema } from "../../schema";
-import { createRuntimeContext, judgeFinishReason } from "../../../lib/agentUtils";
+import {
+  createRuntimeContext,
+  judgeFinishReason,
+} from "../../../lib/agentUtils";
 import { normalizeUnknownError, workflowError } from "@/lib/server/error";
 import { formatMessage } from "@/lib/server/messages";
 import type { ConsolidateReviewAgentRuntimeContext } from "../../../agents";
@@ -64,8 +67,12 @@ export const consolidateReviewOutputSchema = baseStepOutputSchema.extend({
   reviewResults: z.array(singleReviewResultSchema).optional(),
 });
 
-export type ConsolidateReviewInput = z.infer<typeof consolidateReviewInputSchema>;
-export type ConsolidateReviewOutput = z.infer<typeof consolidateReviewOutputSchema>;
+export type ConsolidateReviewInput = z.infer<
+  typeof consolidateReviewInputSchema
+>;
+export type ConsolidateReviewOutput = z.infer<
+  typeof consolidateReviewOutputSchema
+>;
 
 /**
  * 最大リトライ回数
@@ -135,8 +142,12 @@ export const consolidateReviewStep = createStep({
     const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
     const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
     const reviewTargetId = typedWorkflowRuntimeContext?.get("reviewTargetId");
-    const onReviewResultSaved = typedWorkflowRuntimeContext?.get("onReviewResultSaved");
-    const onIndividualResultsSaved = typedWorkflowRuntimeContext?.get("onIndividualResultsSaved");
+    const onReviewResultSaved = typedWorkflowRuntimeContext?.get(
+      "onReviewResultSaved",
+    );
+    const onIndividualResultsSaved = typedWorkflowRuntimeContext?.get(
+      "onIndividualResultsSaved",
+    );
 
     try {
       // 評価基準のラベル一覧を取得
@@ -249,8 +260,9 @@ Please provide a consolidated review that synthesizes all individual document re
         );
 
         // finishReasonを確認
-        const { success: finishSuccess } =
-          judgeFinishReason(result.finishReason);
+        const { success: finishSuccess } = judgeFinishReason(
+          result.finishReason,
+        );
         if (!finishSuccess) {
           throw workflowError("WORKFLOW_AI_API_ERROR");
         }
@@ -310,7 +322,9 @@ Please provide a consolidated review that synthesizes all individual document re
           checkListItemContent: item.content,
           evaluation: null,
           comment: null,
-          errorMessage: formatMessage("REVIEW_AI_OUTPUT_MISSING_CHECKLIST_RESULT"),
+          errorMessage: formatMessage(
+            "REVIEW_AI_OUTPUT_MISSING_CHECKLIST_RESULT",
+          ),
         };
         reviewResults.push(errorResult);
         errorResults.push(errorResult);
@@ -322,7 +336,11 @@ Please provide a consolidated review that synthesizes all individual document re
       }
 
       // 大量レビューの個別結果をDB保存（Q&A機能で使用）
-      if (reviewTargetId && onIndividualResultsSaved && documentsWithReviewResults.length > 0) {
+      if (
+        reviewTargetId &&
+        onIndividualResultsSaved &&
+        documentsWithReviewResults.length > 0
+      ) {
         try {
           // チェックリストIDからチェック項目内容へのマッピングを作成
           const checklistIdToContent = new Map<string, string>();
@@ -334,7 +352,9 @@ Please provide a consolidated review that synthesizes all individual document re
           const individualResults: IndividualDocumentResult[] = [];
           for (const doc of documentsWithReviewResults) {
             for (const result of doc.reviewResults) {
-              const checklistItemContent = checklistIdToContent.get(result.checklistId);
+              const checklistItemContent = checklistIdToContent.get(
+                result.checklistId,
+              );
               if (checklistItemContent) {
                 individualResults.push({
                   documentId: doc.documentId,

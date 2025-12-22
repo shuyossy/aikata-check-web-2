@@ -1,8 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import {
-  ListAllUsersService,
-  ListAllUsersQuery,
-} from "../ListAllUsersService";
+import { ListAllUsersService, ListAllUsersQuery } from "../ListAllUsersService";
 import { IUserRepository } from "@/application/shared/port/repository";
 import { User } from "@/domain/user";
 

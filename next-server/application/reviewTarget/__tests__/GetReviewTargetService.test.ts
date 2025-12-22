@@ -141,9 +141,9 @@ describe("GetReviewTargetService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        testReviewResults,
-      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(testReviewResults);
 
       const command: GetReviewTargetCommand = {
         reviewTargetId: testReviewTargetId,
@@ -173,9 +173,9 @@ describe("GetReviewTargetService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        testReviewResults,
-      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(testReviewResults);
 
       const command: GetReviewTargetCommand = {
         reviewTargetId: testReviewTargetId,
@@ -186,9 +186,13 @@ describe("GetReviewTargetService", () => {
 
       expect(result.reviewResults).toHaveLength(2);
       expect(result.reviewResults[0].id).toBe(testReviewResultId1);
-      expect(result.reviewResults[0].checkListItemContent).toBe("セキュリティ要件を満たしているか");
+      expect(result.reviewResults[0].checkListItemContent).toBe(
+        "セキュリティ要件を満たしているか",
+      );
       expect(result.reviewResults[1].id).toBe(testReviewResultId2);
-      expect(result.reviewResults[1].checkListItemContent).toBe("エラーハンドリングが適切か");
+      expect(result.reviewResults[1].checkListItemContent).toBe(
+        "エラーハンドリングが適切か",
+      );
     });
 
     it("レビュー設定がnullでも正しく取得できる", async () => {
@@ -210,9 +214,9 @@ describe("GetReviewTargetService", () => {
         testReviewSpace,
       );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        [],
-      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue([]);
 
       const command: GetReviewTargetCommand = {
         reviewTargetId: testReviewTargetId,

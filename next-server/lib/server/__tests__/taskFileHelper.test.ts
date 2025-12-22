@@ -64,9 +64,7 @@ describe("TaskFileHelper", () => {
         testFileId,
         "document",
       );
-      expect(filePath).toBe(
-        path.join("./queue_files", testTaskId, testFileId),
-      );
+      expect(filePath).toBe(path.join("./queue_files", testTaskId, testFileId));
     });
   });
 
@@ -199,7 +197,9 @@ describe("TaskFileHelper", () => {
 
       await TaskFileHelper.ensureBaseDir();
 
-      expect(fs.mkdir).toHaveBeenCalledWith("./queue_files", { recursive: true });
+      expect(fs.mkdir).toHaveBeenCalledWith("./queue_files", {
+        recursive: true,
+      });
     });
   });
 

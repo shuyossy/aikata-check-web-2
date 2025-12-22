@@ -15,7 +15,10 @@ describe("createCombinedMessage", () => {
         },
       ];
 
-      const result = createCombinedMessage(files, "Please analyze this document");
+      const result = createCombinedMessage(
+        files,
+        "Please analyze this document",
+      );
 
       expect(result).toHaveLength(2);
       // 最初のテキストはプロンプトとファイル名
@@ -48,7 +51,10 @@ describe("createCombinedMessage", () => {
         },
       ];
 
-      const result = createCombinedMessage(files, "Please analyze these documents");
+      const result = createCombinedMessage(
+        files,
+        "Please analyze these documents",
+      );
 
       expect(result).toHaveLength(3);
       // 最初のテキストはプロンプトとファイル名一覧
@@ -119,7 +125,10 @@ describe("createCombinedMessage", () => {
         },
       ];
 
-      const result = createCombinedMessage(files, "Please analyze this document");
+      const result = createCombinedMessage(
+        files,
+        "Please analyze this document",
+      );
 
       expect(result).toHaveLength(3);
       // 最初のテキストはプロンプトとファイル名
@@ -262,7 +271,10 @@ describe("createCombinedMessage", () => {
         },
       ];
 
-      const result = createCombinedMessage(files, "Please analyze all documents");
+      const result = createCombinedMessage(
+        files,
+        "Please analyze all documents",
+      );
 
       // プロンプト(1) + テキスト1(1) + 画像2ページ(説明2 + 画像2 = 4) + テキスト2(1) = 7
       expect(result).toHaveLength(7);

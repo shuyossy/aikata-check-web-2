@@ -43,7 +43,7 @@ describe("useReviewResultsPolling", () => {
     describe("isPollingの値", () => {
       it('status === "reviewing"の場合、isPollingがtrueになる', () => {
         const { result } = renderHook(() =>
-          useReviewResultsPolling({ currentStatus: "reviewing" })
+          useReviewResultsPolling({ currentStatus: "reviewing" }),
         );
 
         expect(result.current.isPolling).toBe(true);
@@ -51,7 +51,7 @@ describe("useReviewResultsPolling", () => {
 
       it('status === "queued"の場合、isPollingがtrueになる', () => {
         const { result } = renderHook(() =>
-          useReviewResultsPolling({ currentStatus: "queued" })
+          useReviewResultsPolling({ currentStatus: "queued" }),
         );
 
         expect(result.current.isPolling).toBe(true);
@@ -59,7 +59,7 @@ describe("useReviewResultsPolling", () => {
 
       it('status === "completed"の場合、isPollingがfalseになる', () => {
         const { result } = renderHook(() =>
-          useReviewResultsPolling({ currentStatus: "completed" })
+          useReviewResultsPolling({ currentStatus: "completed" }),
         );
 
         expect(result.current.isPolling).toBe(false);
@@ -67,7 +67,7 @@ describe("useReviewResultsPolling", () => {
 
       it('status === "error"の場合、isPollingがfalseになる', () => {
         const { result } = renderHook(() =>
-          useReviewResultsPolling({ currentStatus: "error" })
+          useReviewResultsPolling({ currentStatus: "error" }),
         );
 
         expect(result.current.isPolling).toBe(false);
@@ -75,7 +75,7 @@ describe("useReviewResultsPolling", () => {
 
       it('status === "pending"の場合、isPollingがfalseになる', () => {
         const { result } = renderHook(() =>
-          useReviewResultsPolling({ currentStatus: "pending" })
+          useReviewResultsPolling({ currentStatus: "pending" }),
         );
 
         expect(result.current.isPolling).toBe(false);
@@ -85,7 +85,7 @@ describe("useReviewResultsPolling", () => {
     describe("ポーリング動作", () => {
       it('status === "reviewing"の場合、10秒間隔でrouter.refresh()が呼ばれる', async () => {
         renderHook(() =>
-          useReviewResultsPolling({ currentStatus: "reviewing" })
+          useReviewResultsPolling({ currentStatus: "reviewing" }),
         );
 
         // 初期状態では呼ばれていない
@@ -111,9 +111,7 @@ describe("useReviewResultsPolling", () => {
       });
 
       it('status === "queued"の場合、10秒間隔でrouter.refresh()が呼ばれる', async () => {
-        renderHook(() =>
-          useReviewResultsPolling({ currentStatus: "queued" })
-        );
+        renderHook(() => useReviewResultsPolling({ currentStatus: "queued" }));
 
         // 初期状態では呼ばれていない
         expect(mockRefresh).not.toHaveBeenCalled();
@@ -133,7 +131,7 @@ describe("useReviewResultsPolling", () => {
 
       it('status !== "reviewing" && status !== "queued"の場合、router.refresh()は呼ばれない', async () => {
         renderHook(() =>
-          useReviewResultsPolling({ currentStatus: "completed" })
+          useReviewResultsPolling({ currentStatus: "completed" }),
         );
 
         // 10秒経過
@@ -152,7 +150,7 @@ describe("useReviewResultsPolling", () => {
       it("ステータスがreviewingからcompletedに変わった場合、ポーリングが停止する", async () => {
         const { rerender } = renderHook(
           ({ currentStatus }) => useReviewResultsPolling({ currentStatus }),
-          { initialProps: { currentStatus: "reviewing" } }
+          { initialProps: { currentStatus: "reviewing" } },
         );
 
         // ポーリング開始を確認
@@ -177,7 +175,7 @@ describe("useReviewResultsPolling", () => {
       it("ステータスがcompletedからreviewingに変わった場合、ポーリングが開始する", async () => {
         const { rerender } = renderHook(
           ({ currentStatus }) => useReviewResultsPolling({ currentStatus }),
-          { initialProps: { currentStatus: "completed" } }
+          { initialProps: { currentStatus: "completed" } },
         );
 
         // ポーリングなしを確認
@@ -201,7 +199,7 @@ describe("useReviewResultsPolling", () => {
   describe("クリーンアップ処理", () => {
     it("コンポーネントアンマウント時にインターバルがクリアされる", async () => {
       const { unmount } = renderHook(() =>
-        useReviewResultsPolling({ currentStatus: "reviewing" })
+        useReviewResultsPolling({ currentStatus: "reviewing" }),
       );
 
       // アンマウント前に一度ポーリングを確認
@@ -226,7 +224,7 @@ describe("useReviewResultsPolling", () => {
     it("ステータス変更時に古いインターバルがクリアされる", async () => {
       const { rerender } = renderHook(
         ({ currentStatus }) => useReviewResultsPolling({ currentStatus }),
-        { initialProps: { currentStatus: "reviewing" } }
+        { initialProps: { currentStatus: "reviewing" } },
       );
 
       // 5秒経過（半分）
@@ -247,9 +245,7 @@ describe("useReviewResultsPolling", () => {
 
   describe("境界値テスト", () => {
     it("9999ミリ秒ではポーリングが発火しない", async () => {
-      renderHook(() =>
-        useReviewResultsPolling({ currentStatus: "reviewing" })
-      );
+      renderHook(() => useReviewResultsPolling({ currentStatus: "reviewing" }));
 
       await act(async () => {
         vi.advanceTimersByTime(9999);
@@ -258,9 +254,7 @@ describe("useReviewResultsPolling", () => {
     });
 
     it("10000ミリ秒でちょうどポーリングが発火する", async () => {
-      renderHook(() =>
-        useReviewResultsPolling({ currentStatus: "reviewing" })
-      );
+      renderHook(() => useReviewResultsPolling({ currentStatus: "reviewing" }));
 
       await act(async () => {
         vi.advanceTimersByTime(10000);

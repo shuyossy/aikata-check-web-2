@@ -43,7 +43,8 @@ describe("DocxExtractorStrategy", () => {
     });
 
     it("日本語を含むWord文書を正しく処理する", async () => {
-      const mockContent = "チェックリスト\n\n項目1：確認事項\n項目2：レビュー観点";
+      const mockContent =
+        "チェックリスト\n\n項目1：確認事項\n項目2：レビュー観点";
       vi.mocked(mammoth.extractRawText).mockResolvedValueOnce({
         value: mockContent,
         messages: [],

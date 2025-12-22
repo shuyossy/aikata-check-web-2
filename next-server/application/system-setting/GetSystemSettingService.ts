@@ -21,7 +21,9 @@ export interface GetSystemSettingResultDto {
  * 管理者画面での設定表示に使用
  */
 export class GetSystemSettingService {
-  constructor(private readonly systemSettingRepository: ISystemSettingRepository) {}
+  constructor(
+    private readonly systemSettingRepository: ISystemSettingRepository,
+  ) {}
 
   /**
    * システム設定を取得する

@@ -45,7 +45,10 @@ export function ReviewTypeSelector({
         <div className="flex items-start space-x-3 p-3 border rounded-lg bg-white hover:bg-gray-50">
           <RadioGroupItem value="small" id="review-small" className="mt-1" />
           <div className="flex-1">
-            <Label htmlFor="review-small" className="font-medium cursor-pointer">
+            <Label
+              htmlFor="review-small"
+              className="font-medium cursor-pointer"
+            >
               少量レビュー
               {previousType === "small" && (
                 <span className="ml-2 text-xs text-gray-500">(前回の設定)</span>
@@ -61,7 +64,10 @@ export function ReviewTypeSelector({
         <div className="flex items-start space-x-3 p-3 border rounded-lg bg-white hover:bg-gray-50">
           <RadioGroupItem value="large" id="review-large" className="mt-1" />
           <div className="flex-1">
-            <Label htmlFor="review-large" className="font-medium cursor-pointer">
+            <Label
+              htmlFor="review-large"
+              className="font-medium cursor-pointer"
+            >
               大量レビュー
               {previousType === "large" && (
                 <span className="ml-2 text-xs text-gray-500">(前回の設定)</span>
@@ -75,12 +81,10 @@ export function ReviewTypeSelector({
 
         {/* API呼び出し（オプション） */}
         {showApiOption && (
-          <div className={`flex items-start space-x-3 p-3 border rounded-lg bg-white hover:bg-gray-50 ${value === "api" ? "border-amber-300 bg-amber-50" : ""}`}>
-            <RadioGroupItem
-              value="api"
-              id="review-api"
-              className="mt-1"
-            />
+          <div
+            className={`flex items-start space-x-3 p-3 border rounded-lg bg-white hover:bg-gray-50 ${value === "api" ? "border-amber-300 bg-amber-50" : ""}`}
+          >
+            <RadioGroupItem value="api" id="review-api" className="mt-1" />
             <div className="flex-1">
               <Label
                 htmlFor="review-api"
@@ -88,7 +92,9 @@ export function ReviewTypeSelector({
               >
                 API呼び出し
                 {previousType === "api" && (
-                  <span className="ml-2 text-xs text-gray-500">(前回の設定)</span>
+                  <span className="ml-2 text-xs text-gray-500">
+                    (前回の設定)
+                  </span>
                 )}
               </Label>
               <p className="text-sm text-gray-500">
@@ -104,7 +110,9 @@ export function ReviewTypeSelector({
         <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
           <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-amber-800">
-            <p className="font-medium mb-1">API呼び出しを選択すると以下の機能が利用できなくなります：</p>
+            <p className="font-medium mb-1">
+              API呼び出しを選択すると以下の機能が利用できなくなります：
+            </p>
             <ul className="list-disc list-inside space-y-1 text-amber-700">
               <li>リトライ機能</li>
               <li>Q&A機能</li>

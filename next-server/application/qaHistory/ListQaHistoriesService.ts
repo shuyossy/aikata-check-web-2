@@ -72,19 +72,25 @@ export class ListQaHistoriesService {
    * @param command 取得コマンド
    * @returns Q&A履歴一覧
    */
-  async execute(command: ListQaHistoriesCommand): Promise<ListQaHistoriesResult> {
+  async execute(
+    command: ListQaHistoriesCommand,
+  ): Promise<ListQaHistoriesResult> {
     const { reviewTargetId, userId, limit = 20, offset = 0 } = command;
 
     // レビュー対象の存在確認
     const reviewTargetIdVo = ReviewTargetId.reconstruct(reviewTargetId);
-    const reviewTarget = await this.reviewTargetRepository.findById(reviewTargetIdVo);
+    const reviewTarget =
+      await this.reviewTargetRepository.findById(reviewTargetIdVo);
     if (!reviewTarget) {
       throw domainValidationError("REVIEW_TARGET_NOT_FOUND");
     }
 
     // レビュースペースの存在確認
-    const reviewSpaceIdVo = ReviewSpaceId.reconstruct(reviewTarget.reviewSpaceId.value);
-    const reviewSpace = await this.reviewSpaceRepository.findById(reviewSpaceIdVo);
+    const reviewSpaceIdVo = ReviewSpaceId.reconstruct(
+      reviewTarget.reviewSpaceId.value,
+    );
+    const reviewSpace =
+      await this.reviewSpaceRepository.findById(reviewSpaceIdVo);
     if (!reviewSpace) {
       throw domainValidationError("REVIEW_SPACE_NOT_FOUND");
     }
@@ -101,10 +107,11 @@ export class ListQaHistoriesService {
     }
 
     // Q&A履歴を取得
-    const { items, total } = await this.qaHistoryRepository.findByReviewTargetId(
-      reviewTargetIdVo,
-      { limit, offset },
-    );
+    const { items, total } =
+      await this.qaHistoryRepository.findByReviewTargetId(reviewTargetIdVo, {
+        limit,
+        offset,
+      });
 
     return {
       items: items.map((qaHistory) => ({
@@ -112,7 +119,9 @@ export class ListQaHistoriesService {
         question: qaHistory.question.value,
         checklistItemContent: qaHistory.checkListItemContent.value,
         answer: qaHistory.answer?.value ?? null,
-        researchSummary: qaHistory.researchSummary ? JSON.stringify(qaHistory.researchSummary.toJson()) : null,
+        researchSummary: qaHistory.researchSummary
+          ? JSON.stringify(qaHistory.researchSummary.toJson())
+          : null,
         status: qaHistory.status.value,
         errorMessage: qaHistory.errorMessage,
         createdAt: qaHistory.createdAt,

@@ -10,7 +10,10 @@ const logger = getLogger();
  * 環境変数AI_QUEUE_POLLING_INTERVAL_MSで設定可能（デフォルト: 10000ms）
  */
 const getPollingIntervalMs = (): number => {
-  const interval = parseInt(process.env.AI_QUEUE_POLLING_INTERVAL_MS || "10000", 10);
+  const interval = parseInt(
+    process.env.AI_QUEUE_POLLING_INTERVAL_MS || "10000",
+    10,
+  );
   return isNaN(interval) || interval < 1000 ? 10000 : interval;
 };
 
@@ -177,9 +180,7 @@ export class AiTaskWorker {
             await this.queueService.failTask({
               taskId: this._currentTaskId,
               errorMessage:
-                error instanceof Error
-                  ? error.message
-                  : "ワーカーループエラー",
+                error instanceof Error ? error.message : "ワーカーループエラー",
             });
           } catch (failError) {
             logger.error(

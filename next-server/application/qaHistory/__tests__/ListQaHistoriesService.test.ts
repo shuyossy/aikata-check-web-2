@@ -4,7 +4,15 @@ import type { IQaHistoryRepository } from "@/application/shared/port/repository/
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import type { IProjectRepository } from "@/application/shared/port/repository";
-import { QaHistory, QaHistoryId, Question, CheckListItemContent, Answer, ResearchSummary, QaStatus } from "@/domain/qaHistory";
+import {
+  QaHistory,
+  QaHistoryId,
+  Question,
+  CheckListItemContent,
+  Answer,
+  ResearchSummary,
+  QaStatus,
+} from "@/domain/qaHistory";
 import { ReviewTargetId } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
@@ -41,7 +49,11 @@ describe("ListQaHistoriesService", () => {
     hasMember: vi.fn((userId: string) => memberIds.includes(userId)),
   });
 
-  const createMockQaHistory = (options?: { answer?: string; researchSummary?: any; status?: string }) => {
+  const createMockQaHistory = (options?: {
+    answer?: string;
+    researchSummary?: any;
+    status?: string;
+  }) => {
     return QaHistory.reconstruct({
       id: QaHistoryId.reconstruct(testQaHistoryId),
       reviewTargetId: ReviewTargetId.reconstruct(testReviewTargetId),
@@ -49,8 +61,13 @@ describe("ListQaHistoriesService", () => {
       question: Question.create("テスト質問"),
       checkListItemContent: CheckListItemContent.create("チェック項目内容"),
       answer: options?.answer ? Answer.create(options.answer) : null,
-      researchSummary: options?.researchSummary ? ResearchSummary.create(options.researchSummary) : null,
-      status: options?.status === "completed" ? QaStatus.completed() : QaStatus.processing(),
+      researchSummary: options?.researchSummary
+        ? ResearchSummary.create(options.researchSummary)
+        : null,
+      status:
+        options?.status === "completed"
+          ? QaStatus.completed()
+          : QaStatus.processing(),
       errorMessage: null,
       createdAt: new Date("2024-01-01T00:00:00Z"),
       updatedAt: new Date("2024-01-01T00:00:00Z"),
@@ -105,18 +122,30 @@ describe("ListQaHistoriesService", () => {
       const mockQaHistory = createMockQaHistory({
         answer: "テスト回答",
         researchSummary: [
-          { documentName: "test.docx", researchContent: "調査内容", researchResult: "調査結果" },
+          {
+            documentName: "test.docx",
+            researchContent: "調査内容",
+            researchResult: "調査結果",
+          },
         ],
         status: "completed",
       });
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
-      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue({
-        items: [mockQaHistory],
-        total: 1,
-      });
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
+      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue(
+        {
+          items: [mockQaHistory],
+          total: 1,
+        },
+      );
 
       // Act
       const result = await service.execute({
@@ -152,13 +181,21 @@ describe("ListQaHistoriesService", () => {
 
     it("ページネーションパラメータが正しく渡される", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
-      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue({
-        items: [],
-        total: 0,
-      });
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
+      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue(
+        {
+          items: [],
+          total: 0,
+        },
+      );
 
       // Act
       await service.execute({
@@ -177,13 +214,21 @@ describe("ListQaHistoriesService", () => {
 
     it("デフォルトのページネーションパラメータが使用される", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
-      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue({
-        items: [],
-        total: 0,
-      });
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
+      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue(
+        {
+          items: [],
+          total: 0,
+        },
+      );
 
       // Act
       await service.execute({
@@ -202,13 +247,21 @@ describe("ListQaHistoriesService", () => {
       // Arrange
       const mockQaHistory = createMockQaHistory();
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
-      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue({
-        items: [mockQaHistory],
-        total: 1,
-      });
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
+      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue(
+        {
+          items: [mockQaHistory],
+          total: 1,
+        },
+      );
 
       // Act
       const result = await service.execute({
@@ -224,13 +277,21 @@ describe("ListQaHistoriesService", () => {
 
     it("空の履歴一覧を取得する場合も正常に返される", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
-      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue({
-        items: [],
-        total: 0,
-      });
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
+      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue(
+        {
+          items: [],
+          total: 0,
+        },
+      );
 
       // Act
       const result = await service.execute({
@@ -252,7 +313,9 @@ describe("ListQaHistoriesService", () => {
         reviewTargetId: ReviewTargetId.reconstruct(testReviewTargetId),
         userId: UserId.reconstruct(testUserId),
         question: Question.create("複数項目に関する質問"),
-        checkListItemContent: CheckListItemContent.create(JSON.stringify(multipleItems)),
+        checkListItemContent: CheckListItemContent.create(
+          JSON.stringify(multipleItems),
+        ),
         answer: Answer.create("複数項目への回答"),
         researchSummary: null,
         status: QaStatus.completed(),
@@ -261,13 +324,21 @@ describe("ListQaHistoriesService", () => {
         updatedAt: new Date("2024-01-01T00:00:00Z"),
       });
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([testUserId]) as any);
-      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue({
-        items: [mockQaHistory],
-        total: 1,
-      });
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([testUserId]) as any,
+      );
+      vi.mocked(mockQaHistoryRepository.findByReviewTargetId).mockResolvedValue(
+        {
+          items: [mockQaHistory],
+          total: 1,
+        },
+      );
 
       // Act
       const result = await service.execute({
@@ -303,7 +374,9 @@ describe("ListQaHistoriesService", () => {
 
     it("レビュースペースが見つからない場合はエラーを投げる", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
       vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(null);
 
       // Act & Assert
@@ -317,8 +390,12 @@ describe("ListQaHistoriesService", () => {
 
     it("プロジェクトが見つからない場合はエラーを投げる", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
       vi.mocked(mockProjectRepository.findById).mockResolvedValue(null);
 
       // Act & Assert
@@ -332,9 +409,15 @@ describe("ListQaHistoriesService", () => {
 
     it("プロジェクトメンバーでない場合はエラーを投げる", async () => {
       // Arrange
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(createMockReviewTarget() as any);
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(createMockReviewSpace() as any);
-      vi.mocked(mockProjectRepository.findById).mockResolvedValue(createMockProject([]) as any); // メンバーなし
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        createMockReviewTarget() as any,
+      );
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        createMockReviewSpace() as any,
+      );
+      vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+        createMockProject([]) as any,
+      ); // メンバーなし
 
       // Act & Assert
       await expect(

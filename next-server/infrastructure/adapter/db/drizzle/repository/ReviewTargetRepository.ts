@@ -4,10 +4,7 @@ import {
   FindReviewTargetsOptions,
 } from "@/application/shared/port/repository/IReviewTargetRepository";
 import { ReviewSpaceId, ReviewSettingsProps } from "@/domain/reviewSpace";
-import {
-  ReviewTarget,
-  ReviewTargetId,
-} from "@/domain/reviewTarget";
+import { ReviewTarget, ReviewTargetId } from "@/domain/reviewTarget";
 import { db } from "../index";
 import { reviewTargets } from "@/drizzle/schema";
 

@@ -93,8 +93,12 @@ describe("ExportCheckListToCsvService", () => {
         createMockCheckListItem("項目2"),
         createMockCheckListItem("項目3"),
       ];
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(3);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(mockItems);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(3);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(mockItems);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -111,8 +115,12 @@ describe("ExportCheckListToCsvService", () => {
         createMockCheckListItem("項目1\n改行あり"),
         createMockCheckListItem("項目2"),
       ];
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(2);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(mockItems);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(2);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(mockItems);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -129,8 +137,12 @@ describe("ExportCheckListToCsvService", () => {
         createMockCheckListItem("項目1,カンマあり"),
         createMockCheckListItem("項目2"),
       ];
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(2);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(mockItems);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(2);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(mockItems);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -147,8 +159,12 @@ describe("ExportCheckListToCsvService", () => {
         createMockCheckListItem('項目1"クォートあり'),
         createMockCheckListItem("項目2"),
       ];
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(2);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(mockItems);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(2);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(mockItems);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -162,8 +178,12 @@ describe("ExportCheckListToCsvService", () => {
 
     it("UTF-8 BOMが付与される", async () => {
       const mockItems = [createMockCheckListItem("項目1")];
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(1);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(mockItems);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(mockItems);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -177,8 +197,12 @@ describe("ExportCheckListToCsvService", () => {
       const mockItems = [
         createMockCheckListItem('項目1,カンマと"クォート"と\n改行'),
       ];
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(1);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(mockItems);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(mockItems);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -193,8 +217,12 @@ describe("ExportCheckListToCsvService", () => {
 
     it("単一のチェック項目をエクスポートできる", async () => {
       const mockItems = [createMockCheckListItem("単一項目")];
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(1);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(mockItems);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(mockItems);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -210,8 +238,12 @@ describe("ExportCheckListToCsvService", () => {
       const mockItems = Array.from({ length: 10000 }, (_, i) =>
         createMockCheckListItem(`項目${i + 1}`),
       );
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(10000);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(mockItems);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(10000);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(mockItems);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -261,7 +293,9 @@ describe("ExportCheckListToCsvService", () => {
     });
 
     it("チェック項目が0件の場合はエラー", async () => {
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(0);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(0);
 
       await expect(
         service.execute({
@@ -272,21 +306,27 @@ describe("ExportCheckListToCsvService", () => {
     });
 
     it("チェック項目が上限（10000件）を超える場合はエラー", async () => {
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(10001);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(10001);
 
       await expect(
         service.execute({
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
         }),
-      ).rejects.toMatchObject({ messageCode: "CHECK_LIST_EXPORT_TOO_MANY_ITEMS" });
+      ).rejects.toMatchObject({
+        messageCode: "CHECK_LIST_EXPORT_TOO_MANY_ITEMS",
+      });
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(1);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockRejectedValue(
-        new Error("DB Error"),
-      );
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockRejectedValue(new Error("DB Error"));
 
       await expect(
         service.execute({

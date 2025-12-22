@@ -1,6 +1,9 @@
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
+import {
+  IProjectRepository,
+  IAiTaskRepository,
+} from "@/application/shared/port/repository";
 import { type IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
 import { ReviewTargetId } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
@@ -72,7 +75,8 @@ export class DeleteReviewTargetService {
     }
 
     // レビュー対象に紐づくAIタスクを検索し、ワークフローキャンセル・ファイル削除を行う
-    const aiTask = await this.aiTaskRepository.findByReviewTargetId(reviewTargetId);
+    const aiTask =
+      await this.aiTaskRepository.findByReviewTargetId(reviewTargetId);
     if (aiTask) {
       const taskId = aiTask.id.value;
 
@@ -82,12 +86,18 @@ export class DeleteReviewTargetService {
           // キャンセル中フラグを設定（新規タスクのデキューをブロック）
           this.workflowRunRegistry.setCancelling(true);
 
-          logger.info({ taskId, reviewTargetId }, "ワークフローのキャンセルを開始します");
+          logger.info(
+            { taskId, reviewTargetId },
+            "ワークフローのキャンセルを開始します",
+          );
 
           // ワークフローをキャンセル
           const cancelled = await this.workflowRunRegistry.cancel(taskId);
           if (cancelled) {
-            logger.info({ taskId, reviewTargetId }, "ワークフローのキャンセルが完了しました");
+            logger.info(
+              { taskId, reviewTargetId },
+              "ワークフローのキャンセルが完了しました",
+            );
           } else {
             logger.warn(
               { taskId, reviewTargetId },

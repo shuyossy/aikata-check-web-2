@@ -1,4 +1,7 @@
-import { IUserRepository, FindAllUsersOptions } from "@/application/shared/port/repository";
+import {
+  IUserRepository,
+  FindAllUsersOptions,
+} from "@/application/shared/port/repository";
 import { UserDto } from "@/domain/user";
 
 /**

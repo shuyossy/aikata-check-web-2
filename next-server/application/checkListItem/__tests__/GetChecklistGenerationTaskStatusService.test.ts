@@ -85,7 +85,9 @@ describe("GetChecklistGenerationTaskStatusService", () => {
       delete: vi.fn(),
       deleteByStatus: vi.fn(),
       deleteByReviewTargetId: vi.fn(),
-      findChecklistGenerationTaskByReviewSpaceId: vi.fn().mockResolvedValue(null),
+      findChecklistGenerationTaskByReviewSpaceId: vi
+        .fn()
+        .mockResolvedValue(null),
       deleteChecklistGenerationTaskByReviewSpaceId: vi.fn(),
     };
     mockReviewSpaceRepository = {
@@ -126,8 +128,9 @@ describe("GetChecklistGenerationTaskStatusService", () => {
     });
 
     it("キュー待機中のタスクが存在する場合はqueued状態を返す", async () => {
-      vi.mocked(mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId)
-        .mockResolvedValue(mockQueuedTask);
+      vi.mocked(
+        mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId,
+      ).mockResolvedValue(mockQueuedTask);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -143,8 +146,9 @@ describe("GetChecklistGenerationTaskStatusService", () => {
     });
 
     it("処理中のタスクが存在する場合はprocessing状態を返す", async () => {
-      vi.mocked(mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId)
-        .mockResolvedValue(mockProcessingTask);
+      vi.mocked(
+        mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId,
+      ).mockResolvedValue(mockProcessingTask);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -169,7 +173,9 @@ describe("GetChecklistGenerationTaskStatusService", () => {
         updatedAt: new Date(),
         checklistGenerationError: "チェックリスト生成に失敗しました",
       });
-      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(mockReviewSpaceWithError);
+      vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+        mockReviewSpaceWithError,
+      );
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -220,8 +226,9 @@ describe("GetChecklistGenerationTaskStatusService", () => {
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {
-      vi.mocked(mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId)
-        .mockRejectedValue(new Error("DB Error"));
+      vi.mocked(
+        mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId,
+      ).mockRejectedValue(new Error("DB Error"));
 
       await expect(
         service.execute({

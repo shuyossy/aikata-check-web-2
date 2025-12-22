@@ -23,7 +23,9 @@ interface ReviewSpacePageProps {
  * レビュー対象一覧ページ（サーバコンポーネント）
  * 初期データ取得を行い、クライアントコンポーネントに渡す
  */
-export default async function ReviewSpacePage({ params }: ReviewSpacePageProps) {
+export default async function ReviewSpacePage({
+  params,
+}: ReviewSpacePageProps) {
   const { projectId, spaceId } = await params;
 
   // 認証チェック
@@ -82,7 +84,7 @@ export default async function ReviewSpacePage({ params }: ReviewSpacePageProps) 
   const listReviewTargetsService = new ListReviewTargetsService(
     reviewTargetRepository,
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
 
   const reviewTargetsData = await listReviewTargetsService.execute({

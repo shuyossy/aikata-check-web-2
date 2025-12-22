@@ -2,7 +2,6 @@ import { Agent } from "@mastra/core/agent";
 import { getModel } from "./model";
 import { z } from "zod";
 import { getTopicChecklistCreationPrompt } from "./prompts";
-import type { TopicChecklistAgentRuntimeContext } from "./types";
 
 /**
  * トピック別チェックリスト生成エージェントの出力スキーマ
@@ -20,13 +19,6 @@ export type TopicChecklistOutput = z.infer<typeof topicChecklistOutputSchema>;
  */
 export const topicChecklistAgent = new Agent({
   name: "topic-checklist-agent",
-  instructions: ({
-    runtimeContext,
-  }: {
-    runtimeContext?: { get: (key: string) => unknown };
-  }) =>
-    getTopicChecklistCreationPrompt({
-      runtimeContext: runtimeContext as import("@mastra/core/di").RuntimeContext<TopicChecklistAgentRuntimeContext>,
-    }),
-  model: ({ runtimeContext }) => getModel(runtimeContext),
+  instructions: getTopicChecklistCreationPrompt,
+  model: getModel,
 });

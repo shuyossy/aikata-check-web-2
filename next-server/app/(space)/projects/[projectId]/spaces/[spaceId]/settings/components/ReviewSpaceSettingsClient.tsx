@@ -104,11 +104,10 @@ export function ReviewSpaceSettingsClient({
       reviewSpace.defaultReviewSettings?.concurrentReviewItems ??
       DEFAULT_CONCURRENT_REVIEW_ITEMS,
     commentFormat:
-      reviewSpace.defaultReviewSettings?.commentFormat ?? DEFAULT_COMMENT_FORMAT,
-    evaluationCriteria:
-      reviewSpace.defaultReviewSettings?.evaluationCriteria ?? [
-        ...DEFAULT_EVALUATION_CRITERIA,
-      ],
+      reviewSpace.defaultReviewSettings?.commentFormat ??
+      DEFAULT_COMMENT_FORMAT,
+    evaluationCriteria: reviewSpace.defaultReviewSettings
+      ?.evaluationCriteria ?? [...DEFAULT_EVALUATION_CRITERIA],
   };
 
   return (

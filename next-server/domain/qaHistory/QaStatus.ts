@@ -3,7 +3,12 @@ import { domainValidationError } from "@/lib/server/error";
 /**
  * Q&Aステータスの有効な値
  */
-export const QA_STATUS_VALUES = ["pending", "processing", "completed", "error"] as const;
+export const QA_STATUS_VALUES = [
+  "pending",
+  "processing",
+  "completed",
+  "error",
+] as const;
 export type QaStatusValue = (typeof QA_STATUS_VALUES)[number];
 
 /**

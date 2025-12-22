@@ -47,11 +47,15 @@ describe("EvaluationCriteria", () => {
         expect(criteria.items[0].label).toBe("A");
         expect(criteria.items[0].description).toBe("基準を完全に満たしている");
         expect(criteria.items[1].label).toBe("B");
-        expect(criteria.items[1].description).toBe("基準をある程度満たしている");
+        expect(criteria.items[1].description).toBe(
+          "基準をある程度満たしている",
+        );
         expect(criteria.items[2].label).toBe("C");
         expect(criteria.items[2].description).toBe("基準を満たしていない");
         expect(criteria.items[3].label).toBe("-");
-        expect(criteria.items[3].description).toBe("評価の対象外、または評価できない");
+        expect(criteria.items[3].description).toBe(
+          "評価の対象外、または評価できない",
+        );
       });
     });
 
@@ -138,7 +142,9 @@ describe("EvaluationCriteria", () => {
           EvaluationCriteria.create(null as unknown as EvaluationItemProps[]),
         ).toThrow();
         expect(() =>
-          EvaluationCriteria.create(undefined as unknown as EvaluationItemProps[]),
+          EvaluationCriteria.create(
+            undefined as unknown as EvaluationItemProps[],
+          ),
         ).toThrow();
       });
 

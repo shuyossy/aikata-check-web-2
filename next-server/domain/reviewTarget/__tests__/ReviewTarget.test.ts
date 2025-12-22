@@ -235,7 +235,10 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
+        const completedTarget = reviewTarget
+          .toQueued()
+          .startReviewing()
+          .completeReview();
 
         expect(completedTarget.canRetry()).toBe(true);
       });
@@ -258,7 +261,10 @@ describe("ReviewTarget", () => {
           reviewType: "api",
         });
 
-        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
+        const completedTarget = reviewTarget
+          .toQueued()
+          .startReviewing()
+          .completeReview();
 
         expect(completedTarget.canRetry()).toBe(false);
       });
@@ -282,7 +288,10 @@ describe("ReviewTarget", () => {
           reviewType: "small",
         });
 
-        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
+        const completedTarget = reviewTarget
+          .toQueued()
+          .startReviewing()
+          .completeReview();
 
         expect(completedTarget.canRetry()).toBe(true);
       });
@@ -294,7 +303,10 @@ describe("ReviewTarget", () => {
           reviewType: "large",
         });
 
-        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
+        const completedTarget = reviewTarget
+          .toQueued()
+          .startReviewing()
+          .completeReview();
 
         expect(completedTarget.canRetry()).toBe(true);
       });
@@ -307,7 +319,10 @@ describe("ReviewTarget", () => {
           name: "テストレビュー対象",
         });
 
-        const completedTarget = reviewTarget.toQueued().startReviewing().completeReview();
+        const completedTarget = reviewTarget
+          .toQueued()
+          .startReviewing()
+          .completeReview();
         const retryTarget = completedTarget.prepareForRetry();
 
         expect(retryTarget.status.isQueued()).toBe(true);
@@ -448,8 +463,12 @@ describe("ReviewTarget", () => {
         expect(dto.createdAt).toBeInstanceOf(Date);
         expect(dto.updatedAt).toBeInstanceOf(Date);
         // 一覧用DTOにはreviewSpaceIdやreviewSettingsは含まれない
-        expect((dto as unknown as Record<string, unknown>).reviewSpaceId).toBeUndefined();
-        expect((dto as unknown as Record<string, unknown>).reviewSettings).toBeUndefined();
+        expect(
+          (dto as unknown as Record<string, unknown>).reviewSpaceId,
+        ).toBeUndefined();
+        expect(
+          (dto as unknown as Record<string, unknown>).reviewSettings,
+        ).toBeUndefined();
       });
     });
 

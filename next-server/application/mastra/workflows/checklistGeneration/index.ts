@@ -1,11 +1,11 @@
-import { createWorkflow } from '@mastra/core/workflows';
-import { z } from 'zod';
-import { baseStepOutputSchema } from '../schema';
-import { triggerSchema } from './types';
-import { topicExtractionStep } from './steps/topicExtractionStep';
-import { topicChecklistCreationStep } from './steps/topicChecklistCreationStep';
-import { checklistRefinementStep } from './steps/checklistRefinementStep';
-import { fileProcessingStep } from '../shared';
+import { createWorkflow } from "@mastra/core/workflows";
+import { z } from "zod";
+import { baseStepOutputSchema } from "../schema";
+import { triggerSchema } from "./types";
+import { topicExtractionStep } from "./steps/topicExtractionStep";
+import { topicChecklistCreationStep } from "./steps/topicChecklistCreationStep";
+import { checklistRefinementStep } from "./steps/checklistRefinementStep";
+import { fileProcessingStep } from "../shared";
 
 /**
  * チェックリスト生成ワークフローの出力スキーマ
@@ -33,7 +33,7 @@ export type ChecklistGenerationOutput = z.infer<
  * 7. .map(): 結果を統合して最終出力に変換
  */
 export const checklistGenerationWorkflow = createWorkflow({
-  id: 'checklist-generation-workflow',
+  id: "checklist-generation-workflow",
   inputSchema: triggerSchema,
   outputSchema: checklistGenerationOutputSchema,
 })
@@ -44,19 +44,18 @@ export const checklistGenerationWorkflow = createWorkflow({
   .then(fileProcessingStep)
   .map(async ({ inputData, bail, getInitData }) => {
     // ファイル処理が失敗した場合は、bailで早期終了
-    if (inputData.status === 'failed') {
+    if (inputData.status === "failed") {
       return bail({
-        status: 'failed' as const,
-        errorMessage:
-          inputData.errorMessage || 'ファイル処理に失敗しました',
+        status: "failed" as const,
+        errorMessage: inputData.errorMessage || "ファイル処理に失敗しました",
       });
     }
 
     // 抽出されたファイルが空の場合
     if (!inputData.extractedFiles || inputData.extractedFiles.length === 0) {
       return bail({
-        status: 'failed' as const,
-        errorMessage: 'ファイルを処理できませんでした',
+        status: "failed" as const,
+        errorMessage: "ファイルを処理できませんでした",
       });
     }
 
@@ -66,25 +65,25 @@ export const checklistGenerationWorkflow = createWorkflow({
     // topicExtractionStepの入力形式に変換
     return {
       files: inputData.extractedFiles,
-      checklistRequirements: initData.checklistRequirements ?? '',
+      checklistRequirements: initData.checklistRequirements ?? "",
     };
   })
   .then(topicExtractionStep)
   .map(async ({ inputData, bail, getStepResult }) => {
     // トピック抽出が失敗した場合は、bailで早期終了
-    if (inputData.status === 'failed') {
+    if (inputData.status === "failed") {
       return bail({
-        status: 'failed' as const,
+        status: "failed" as const,
         errorMessage:
-          inputData.errorMessage || 'トピックを抽出できませんでした',
+          inputData.errorMessage || "トピックを抽出できませんでした",
       });
     }
 
     // トピックが抽出されなかった場合
     if (!inputData.topics || inputData.topics.length === 0) {
       return bail({
-        status: 'failed' as const,
-        errorMessage: 'トピックを抽出できませんでした',
+        status: "failed" as const,
+        errorMessage: "トピックを抽出できませんでした",
       });
     }
 
@@ -108,7 +107,7 @@ export const checklistGenerationWorkflow = createWorkflow({
 
     // foreachの結果は配列として返される
     for (const result of inputData) {
-      if (result.status === 'failed') {
+      if (result.status === "failed") {
         hasFailure = true;
         if (result.errorMessage) {
           errorMessages.push(result.errorMessage);
@@ -121,16 +120,16 @@ export const checklistGenerationWorkflow = createWorkflow({
     // 全て失敗した場合はエラーを返す
     if (allItems.length === 0 && hasFailure) {
       return bail({
-        status: 'failed' as const,
-        errorMessage: errorMessages.join('; '),
+        status: "failed" as const,
+        errorMessage: errorMessages.join("; "),
       });
     }
 
     // 結果が空の場合（foreachに何も渡されなかった場合）
     if (inputData.length === 0) {
       return bail({
-        status: 'failed' as const,
-        errorMessage: 'トピックを抽出できませんでした',
+        status: "failed" as const,
+        errorMessage: "トピックを抽出できませんでした",
       });
     }
 
@@ -147,9 +146,9 @@ export const checklistGenerationWorkflow = createWorkflow({
   .then(checklistRefinementStep)
   .map(async ({ inputData }) => {
     // ブラッシュアップステップが失敗した場合
-    if (inputData.status === 'failed') {
+    if (inputData.status === "failed") {
       return {
-        status: 'failed' as const,
+        status: "failed" as const,
         errorMessage: inputData.errorMessage,
       };
     }
@@ -157,25 +156,25 @@ export const checklistGenerationWorkflow = createWorkflow({
     // ブラッシュアップ後の項目がない場合
     if (!inputData.refinedItems || inputData.refinedItems.length === 0) {
       return {
-        status: 'failed' as const,
-        errorMessage: 'チェックリスト項目を生成できませんでした',
+        status: "failed" as const,
+        errorMessage: "チェックリスト項目を生成できませんでした",
       };
     }
 
     return {
-      status: 'success' as const,
+      status: "success" as const,
       generatedItems: inputData.refinedItems,
       totalCount: inputData.refinedItems.length,
     };
   })
   .commit();
 
-export { triggerSchema } from './types';
+export { triggerSchema } from "./types";
 export type {
   TriggerInput,
   Topic,
   ChecklistGenerationWorkflowRuntimeContext,
-} from './types';
+} from "./types";
 // shared typesも再エクスポート（ワークフロー利用者の便宜のため）
 export {
   rawUploadFileMetaSchema,
@@ -185,4 +184,4 @@ export {
   type ExtractedFile,
   type FileBufferData,
   type FileBuffersMap,
-} from '../shared';
+} from "../shared";

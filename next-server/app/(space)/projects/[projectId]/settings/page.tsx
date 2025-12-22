@@ -47,7 +47,7 @@ export default function ProjectSettingsPage({ params }: Props) {
         setIsInitialLoading(false);
         handleError(actionError, "プロジェクト情報の取得に失敗しました。");
       },
-    }
+    },
   );
 
   // UI用の統合ローディングフラグ
@@ -83,7 +83,7 @@ export default function ProjectSettingsPage({ params }: Props) {
       onError: ({ error: actionError }) => {
         handleError(actionError, "メンバーの更新に失敗しました。");
       },
-    }
+    },
   );
 
   const { execute: deleteProject, isPending: isDeleting } = useAction(

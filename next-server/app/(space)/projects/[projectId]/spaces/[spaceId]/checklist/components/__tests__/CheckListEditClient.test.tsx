@@ -33,7 +33,10 @@ vi.mock("next-safe-action/hooks", () => {
       const actionStr = action?.toString() || "";
 
       // bulkSaveCheckListItemsActionの場合
-      if (actionStr.includes("bulkSave") || (action && action._actionType === "bulkSave")) {
+      if (
+        actionStr.includes("bulkSave") ||
+        (action && action._actionType === "bulkSave")
+      ) {
         return {
           execute: (data: unknown) => {
             mockExecuteBulkSave(data);
@@ -44,7 +47,10 @@ vi.mock("next-safe-action/hooks", () => {
       }
 
       // exportCheckListToCsvActionの場合
-      if (actionStr.includes("exportCsv") || (action && action._actionType === "exportCsv")) {
+      if (
+        actionStr.includes("exportCsv") ||
+        (action && action._actionType === "exportCsv")
+      ) {
         return {
           execute: mockExecuteExportCsv,
           isExecuting: false,
@@ -52,7 +58,10 @@ vi.mock("next-safe-action/hooks", () => {
       }
 
       // cancelChecklistGenerationTaskActionの場合
-      if (actionStr.includes("cancelTask") || (action && action._actionType === "cancelTask")) {
+      if (
+        actionStr.includes("cancelTask") ||
+        (action && action._actionType === "cancelTask")
+      ) {
         return {
           execute: mockExecuteCancelTask,
           isExecuting: false,
@@ -73,9 +82,15 @@ vi.mock("next-safe-action/hooks", () => {
 
 // アクションモジュール全体をモック
 vi.mock("../actions", () => ({
-  bulkSaveCheckListItemsAction: Object.assign(() => {}, { _actionType: "bulkSave" }),
-  exportCheckListToCsvAction: Object.assign(() => {}, { _actionType: "exportCsv" }),
-  cancelChecklistGenerationTaskAction: Object.assign(() => {}, { _actionType: "cancelTask" }),
+  bulkSaveCheckListItemsAction: Object.assign(() => {}, {
+    _actionType: "bulkSave",
+  }),
+  exportCheckListToCsvAction: Object.assign(() => {}, {
+    _actionType: "exportCsv",
+  }),
+  cancelChecklistGenerationTaskAction: Object.assign(() => {}, {
+    _actionType: "cancelTask",
+  }),
 }));
 
 // sonnerのモック
@@ -183,16 +198,16 @@ describe("CheckListEditClient", () => {
       render(<CheckListEditClient {...baseProps} />);
 
       // 最初の項目の削除ボタンをクリック
-      const deleteButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (button) => button.querySelector("svg.lucide-trash-2")
-      );
+      const deleteButtons = screen
+        .getAllByRole("button", { name: "" })
+        .filter((button) => button.querySelector("svg.lucide-trash-2"));
       await user.click(deleteButtons[0]);
 
       // 復元ボタンが表示されることを確認（削除予定状態になった証拠）
       await waitFor(() => {
-        const restoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-          (button) => button.querySelector("svg.lucide-undo-2")
-        );
+        const restoreButtons = screen
+          .getAllByRole("button", { name: "" })
+          .filter((button) => button.querySelector("svg.lucide-undo-2"));
         expect(restoreButtons).toHaveLength(1);
       });
 
@@ -216,9 +231,9 @@ describe("CheckListEditClient", () => {
       expect(textareas).toHaveLength(4);
 
       // 新規追加された項目（最後の項目）の削除ボタンをクリック
-      const deleteButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (button) => button.querySelector("svg.lucide-trash-2")
-      );
+      const deleteButtons = screen
+        .getAllByRole("button", { name: "" })
+        .filter((button) => button.querySelector("svg.lucide-trash-2"));
       await user.click(deleteButtons[deleteButtons.length - 1]);
 
       // 項目数が3に戻っていることを確認（削除予定ではなく完全削除）
@@ -243,9 +258,9 @@ describe("CheckListEditClient", () => {
 
       // 復元ボタンが2つ表示されることを確認
       await waitFor(() => {
-        const restoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-          (button) => button.querySelector("svg.lucide-undo-2")
-        );
+        const restoreButtons = screen
+          .getAllByRole("button", { name: "" })
+          .filter((button) => button.querySelector("svg.lucide-undo-2"));
         expect(restoreButtons).toHaveLength(2);
       });
     });
@@ -257,17 +272,17 @@ describe("CheckListEditClient", () => {
       render(<CheckListEditClient {...baseProps} />);
 
       // 最初の項目を削除
-      const deleteButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (button) => button.querySelector("svg.lucide-trash-2")
-      );
+      const deleteButtons = screen
+        .getAllByRole("button", { name: "" })
+        .filter((button) => button.querySelector("svg.lucide-trash-2"));
       await user.click(deleteButtons[0]);
 
       // 復元ボタンが表示されることを確認
       let restoreButtons: HTMLElement[] = [];
       await waitFor(() => {
-        restoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-          (button) => button.querySelector("svg.lucide-undo-2")
-        );
+        restoreButtons = screen
+          .getAllByRole("button", { name: "" })
+          .filter((button) => button.querySelector("svg.lucide-undo-2"));
         expect(restoreButtons).toHaveLength(1);
       });
 
@@ -276,9 +291,9 @@ describe("CheckListEditClient", () => {
 
       // 復元ボタンがなくなり、削除ボタンに戻っていることを確認
       await waitFor(() => {
-        const currentRestoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-          (button) => button.querySelector("svg.lucide-undo-2")
-        );
+        const currentRestoreButtons = screen
+          .getAllByRole("button", { name: "" })
+          .filter((button) => button.querySelector("svg.lucide-undo-2"));
         expect(currentRestoreButtons).toHaveLength(0);
       });
 
@@ -293,16 +308,16 @@ describe("CheckListEditClient", () => {
       render(<CheckListEditClient {...baseProps} />);
 
       // 最初の項目の削除ボタンをクリック
-      const deleteButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (button) => button.querySelector("svg.lucide-trash-2")
-      );
+      const deleteButtons = screen
+        .getAllByRole("button", { name: "" })
+        .filter((button) => button.querySelector("svg.lucide-trash-2"));
       fireEvent.click(deleteButtons[0]);
 
       // 復元ボタンが表示されるまで待機（削除予定状態になったことを確認）
       await waitFor(() => {
-        const restoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-          (button) => button.querySelector("svg.lucide-undo-2")
-        );
+        const restoreButtons = screen
+          .getAllByRole("button", { name: "" })
+          .filter((button) => button.querySelector("svg.lucide-undo-2"));
         expect(restoreButtons).toHaveLength(1);
       });
 
@@ -335,9 +350,9 @@ describe("CheckListEditClient", () => {
 
       // 復元ボタンが3つ表示されるまで待機
       await waitFor(() => {
-        const restoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-          (button) => button.querySelector("svg.lucide-undo-2")
-        );
+        const restoreButtons = screen
+          .getAllByRole("button", { name: "" })
+          .filter((button) => button.querySelector("svg.lucide-undo-2"));
         expect(restoreButtons).toHaveLength(3);
       });
 
@@ -358,16 +373,16 @@ describe("CheckListEditClient", () => {
       render(<CheckListEditClient {...baseProps} />);
 
       // 最初の項目を削除予定にする
-      const deleteButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (button) => button.querySelector("svg.lucide-trash-2")
-      );
+      const deleteButtons = screen
+        .getAllByRole("button", { name: "" })
+        .filter((button) => button.querySelector("svg.lucide-trash-2"));
       fireEvent.click(deleteButtons[0]);
 
       // 復元ボタンが表示されるまで待機（削除予定状態になったことを確認）
       await waitFor(() => {
-        const restoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-          (button) => button.querySelector("svg.lucide-undo-2")
-        );
+        const restoreButtons = screen
+          .getAllByRole("button", { name: "" })
+          .filter((button) => button.querySelector("svg.lucide-undo-2"));
         expect(restoreButtons).toHaveLength(1);
       });
 
@@ -377,14 +392,15 @@ describe("CheckListEditClient", () => {
 
       // 保存成功後、削除予定アイテムがUIから消えていることを確認
       await waitFor(() => {
-        const textareas = screen.getAllByPlaceholderText("チェック項目を入力...");
+        const textareas =
+          screen.getAllByPlaceholderText("チェック項目を入力...");
         expect(textareas).toHaveLength(2); // 3から2に減少
       });
 
       // 復元ボタンもなくなっていることを確認
-      const restoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (button) => button.querySelector("svg.lucide-undo-2")
-      );
+      const restoreButtons = screen
+        .getAllByRole("button", { name: "" })
+        .filter((button) => button.querySelector("svg.lucide-undo-2"));
       expect(restoreButtons).toHaveLength(0);
     });
   });
@@ -395,9 +411,9 @@ describe("CheckListEditClient", () => {
       render(<CheckListEditClient {...baseProps} />);
 
       // 最初の項目を削除
-      const deleteButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (button) => button.querySelector("svg.lucide-trash-2")
-      );
+      const deleteButtons = screen
+        .getAllByRole("button", { name: "" })
+        .filter((button) => button.querySelector("svg.lucide-trash-2"));
       await user.click(deleteButtons[0]);
 
       // 削除予定の項目のチェックボックスが無効化されていることを確認
@@ -413,16 +429,16 @@ describe("CheckListEditClient", () => {
       render(<CheckListEditClient {...baseProps} />);
 
       // 最初の項目を削除
-      const deleteButtons = screen.getAllByRole("button", { name: "" }).filter(
-        (button) => button.querySelector("svg.lucide-trash-2")
-      );
+      const deleteButtons = screen
+        .getAllByRole("button", { name: "" })
+        .filter((button) => button.querySelector("svg.lucide-trash-2"));
       await user.click(deleteButtons[0]);
 
       // 削除予定状態になるまで待機
       await waitFor(() => {
-        const restoreButtons = screen.getAllByRole("button", { name: "" }).filter(
-          (button) => button.querySelector("svg.lucide-undo-2")
-        );
+        const restoreButtons = screen
+          .getAllByRole("button", { name: "" })
+          .filter((button) => button.querySelector("svg.lucide-undo-2"));
         expect(restoreButtons).toHaveLength(1);
       });
 

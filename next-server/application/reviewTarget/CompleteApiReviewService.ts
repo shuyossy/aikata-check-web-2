@@ -3,10 +3,7 @@ import { IReviewSpaceRepository } from "@/application/shared/port/repository/IRe
 import { IProjectRepository } from "@/application/shared/port/repository";
 import { ReviewTargetId } from "@/domain/reviewTarget";
 import { ProjectId } from "@/domain/project";
-import {
-  domainValidationError,
-  internalError,
-} from "@/lib/server/error";
+import { domainValidationError, internalError } from "@/lib/server/error";
 
 /**
  * 外部APIレビュー完了コマンド（入力DTO）

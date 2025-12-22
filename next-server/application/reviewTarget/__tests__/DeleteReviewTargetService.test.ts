@@ -5,7 +5,10 @@ import {
 } from "../DeleteReviewTargetService";
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
+import type {
+  IProjectRepository,
+  IAiTaskRepository,
+} from "@/application/shared/port/repository";
 import type { IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";
@@ -172,7 +175,9 @@ describe("DeleteReviewTargetService", () => {
       await expect(service.execute(command)).resolves.toBeUndefined();
       // AIタスクが見つからない場合、ファイル削除とタスク削除は呼ばれない
       expect(TaskFileHelper.deleteTaskFiles).not.toHaveBeenCalled();
-      expect(mockAiTaskRepository.deleteByReviewTargetId).not.toHaveBeenCalled();
+      expect(
+        mockAiTaskRepository.deleteByReviewTargetId,
+      ).not.toHaveBeenCalled();
       expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
     });
 
@@ -434,11 +439,19 @@ describe("DeleteReviewTargetService", () => {
         userId: testUserId,
       };
 
-      await expect(serviceWithRegistry.execute(command)).resolves.toBeUndefined();
+      await expect(
+        serviceWithRegistry.execute(command),
+      ).resolves.toBeUndefined();
 
       // キャンセル中フラグが設定・解除されることを確認
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(1, true);
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(2, false);
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(
+        1,
+        true,
+      );
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(
+        2,
+        false,
+      );
       // ワークフローがキャンセルされたことを確認
       expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(testAiTaskId);
       // レビュー対象が削除されたことを確認
@@ -467,10 +480,15 @@ describe("DeleteReviewTargetService", () => {
       };
 
       // エラーにならず削除処理が完了する
-      await expect(serviceWithRegistry.execute(command)).resolves.toBeUndefined();
+      await expect(
+        serviceWithRegistry.execute(command),
+      ).resolves.toBeUndefined();
 
       // キャンセル中フラグが最終的に解除されることを確認
-      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(2, false);
+      expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenNthCalledWith(
+        2,
+        false,
+      );
       // レビュー対象が削除されたことを確認
       expect(mockReviewTargetRepository.delete).toHaveBeenCalledTimes(1);
     });
@@ -492,7 +510,9 @@ describe("DeleteReviewTargetService", () => {
         userId: testUserId,
       };
 
-      await expect(serviceWithRegistry.execute(command)).resolves.toBeUndefined();
+      await expect(
+        serviceWithRegistry.execute(command),
+      ).resolves.toBeUndefined();
 
       // QUEUED状態なのでワークフローキャンセルは呼ばれない
       expect(mockWorkflowRunRegistry.cancel).not.toHaveBeenCalled();

@@ -15,7 +15,12 @@ import {
 } from "@/components/ui/dialog";
 import { importCheckListFromFileAction } from "../actions/importCheckListFromFile";
 import { extractServerErrorMessage } from "@/hooks";
-import { showError, showSuccess, getMessage, formatClientMessage } from "@/lib/client";
+import {
+  showError,
+  showSuccess,
+  getMessage,
+  formatClientMessage,
+} from "@/lib/client";
 
 interface CheckListImportModalProps {
   open: boolean;
@@ -51,7 +56,9 @@ export function CheckListImportModal({
   const { execute, isExecuting } = useAction(importCheckListFromFileAction, {
     onSuccess: (result) => {
       showSuccess(
-        formatClientMessage("SUCCESS_CHECKLIST_IMPORTED", { count: result.data?.importedCount ?? 0 }),
+        formatClientMessage("SUCCESS_CHECKLIST_IMPORTED", {
+          count: result.data?.importedCount ?? 0,
+        }),
       );
       handleClose();
       onImportSuccess();
@@ -232,7 +239,10 @@ export function CheckListImportModal({
                   setSkipHeaderRow(checked === true)
                 }
               />
-              <label htmlFor="skipHeaderRow" className="text-sm text-gray-700 cursor-pointer">
+              <label
+                htmlFor="skipHeaderRow"
+                className="text-sm text-gray-700 cursor-pointer"
+              >
                 1行目をヘッダーとしてスキップ
               </label>
             </div>

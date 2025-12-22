@@ -2,7 +2,6 @@ import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
 import { getTopicExtractionPrompt } from "./prompts";
 import { getModel } from "./model";
-import type { TopicExtractionAgentRuntimeContext } from "./types";
 
 /**
  * トピック抽出エージェントの出力スキーマ
@@ -10,8 +9,12 @@ import type { TopicExtractionAgentRuntimeContext } from "./types";
 export const topicExtractionOutputSchema = z.object({
   topics: z.array(
     z.object({
-      title: z.string().describe("トピックのタイトル"),
-      reason: z.string().describe("このトピックが必要な理由"),
+      reason: z
+        .string()
+        .describe(
+          "Reason why this topic is necessary for creating checklist items",
+        ),
+      title: z.string().describe("Extracted topic"),
     }),
   ),
 });
@@ -24,15 +27,6 @@ export type TopicExtractionOutput = z.infer<typeof topicExtractionOutputSchema>;
  */
 export const topicExtractionAgent = new Agent({
   name: "topic-extraction-agent",
-  instructions: ({
-    runtimeContext,
-  }: {
-    runtimeContext?: { get: (key: string) => unknown };
-  }) =>
-    getTopicExtractionPrompt({
-      runtimeContext: runtimeContext as
-        | import("@mastra/core/di").RuntimeContext<TopicExtractionAgentRuntimeContext>
-        | undefined,
-    }),
-  model: ({ runtimeContext }) => getModel(runtimeContext),
+  instructions: getTopicExtractionPrompt,
+  model: getModel,
 });

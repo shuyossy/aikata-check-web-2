@@ -34,10 +34,7 @@ export function NotificationList({
   return (
     <div className="divide-y divide-gray-100">
       {notifications.map((notification) => (
-        <div
-          key={notification.id}
-          className="flex items-start gap-4 py-4 px-2"
-        >
+        <div key={notification.id} className="flex items-start gap-4 py-4 px-2">
           {/* ドラッグハンドル（将来用） */}
           <div className="flex-shrink-0 pt-1 text-gray-300">
             <GripVertical className="size-5" />

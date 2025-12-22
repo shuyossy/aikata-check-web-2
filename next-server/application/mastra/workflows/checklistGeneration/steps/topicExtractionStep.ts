@@ -1,17 +1,20 @@
-import { createStep } from '@mastra/core/workflows';
-import { z } from 'zod';
-import type { RuntimeContext } from '@mastra/core/di';
+import { createStep } from "@mastra/core/workflows";
+import { z } from "zod";
+import type { RuntimeContext } from "@mastra/core/di";
 import {
   topicExtractionAgent,
   topicExtractionOutputSchema as agentOutputSchema,
-} from '../../../agents';
-import { baseStepOutputSchema } from '../../schema';
-import { topicSchema, type ChecklistGenerationWorkflowRuntimeContext } from '../types';
-import { extractedFileSchema } from '../../shared';
-import { createCombinedMessage } from '../../lib';
-import { createRuntimeContext } from '../../../lib/agentUtils';
-import { normalizeUnknownError } from '@/lib/server/error';
-import type { TopicExtractionAgentRuntimeContext } from '../../../agents';
+} from "../../../agents";
+import { baseStepOutputSchema } from "../../schema";
+import {
+  topicSchema,
+  type ChecklistGenerationWorkflowRuntimeContext,
+} from "../types";
+import { extractedFileSchema } from "../../shared";
+import { createCombinedMessage } from "../../lib";
+import { createRuntimeContext } from "../../../lib/agentUtils";
+import { normalizeUnknownError } from "@/lib/server/error";
+import type { TopicExtractionAgentRuntimeContext } from "../../../agents";
 
 /**
  * トピック抽出ステップの入力スキーマ
@@ -40,8 +43,8 @@ export type TopicExtractionStepOutput = z.infer<
  * ドキュメントから独立したトピックを抽出する
  */
 export const topicExtractionStep = createStep({
-  id: 'topic-extraction',
-  description: 'ドキュメントからトピックを抽出する',
+  id: "topic-extraction",
+  description: "ドキュメントからトピックを抽出する",
   inputSchema: topicExtractionInputSchema,
   outputSchema: topicExtractionStepOutputSchema,
   execute: async ({
@@ -55,10 +58,10 @@ export const topicExtractionStep = createStep({
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>
         | undefined;
-      const employeeId = typedWorkflowRuntimeContext?.get('employeeId');
-      const aiApiKey = typedWorkflowRuntimeContext?.get('aiApiKey');
-      const aiApiUrl = typedWorkflowRuntimeContext?.get('aiApiUrl');
-      const aiApiModel = typedWorkflowRuntimeContext?.get('aiApiModel');
+      const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
+      const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+      const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+      const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
 
       // エージェント用のRuntimeContextを作成
       const runtimeContext =
@@ -73,19 +76,19 @@ export const topicExtractionStep = createStep({
       // メッセージコンテンツを作成
       const messageContent = createCombinedMessage(
         files,
-        'Please analyze the following documents and extract independent topics for checklist creation'
+        "Please analyze the following documents and extract independent topics for checklist creation",
       );
 
       // エージェントを実行（generateLegacyを使用）
       const result = await topicExtractionAgent.generateLegacy(
         {
-          role: 'user',
+          role: "user",
           content: messageContent,
         },
         {
           output: agentOutputSchema,
           runtimeContext,
-        }
+        },
       );
 
       // 構造化出力を取得
@@ -93,13 +96,13 @@ export const topicExtractionStep = createStep({
 
       if (!output || !output.topics || output.topics.length === 0) {
         return {
-          status: 'failed',
-          errorMessage: 'トピックを抽出できませんでした',
+          status: "failed",
+          errorMessage: "トピックを抽出できませんでした",
         };
       }
 
       return {
-        status: 'success',
+        status: "success",
         topics: output.topics,
         checklistRequirements,
       };
@@ -107,7 +110,7 @@ export const topicExtractionStep = createStep({
       // エラーを正規化して統一的に処理
       const normalizedError = normalizeUnknownError(error);
       return {
-        status: 'failed',
+        status: "failed",
         errorMessage: normalizedError.message,
       };
     }

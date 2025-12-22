@@ -76,8 +76,9 @@ export class UpdateReviewSpaceService {
     }
 
     // レビュー設定の更新
-    updatedReviewSpace =
-      updatedReviewSpace.updateDefaultReviewSettings(defaultReviewSettings);
+    updatedReviewSpace = updatedReviewSpace.updateDefaultReviewSettings(
+      defaultReviewSettings,
+    );
 
     // 保存
     await this.reviewSpaceRepository.save(updatedReviewSpace);

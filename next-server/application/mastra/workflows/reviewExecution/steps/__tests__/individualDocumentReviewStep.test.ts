@@ -67,7 +67,7 @@ describe("individualDocumentReviewStep", () => {
   // stepを実行するヘルパー関数
   const executeStep = async (
     inputData: IndividualDocumentReviewInput,
-    runtimeContext = createTestRuntimeContext()
+    runtimeContext = createTestRuntimeContext(),
   ): Promise<IndividualDocumentReviewOutput> => {
     // @ts-expect-error テスト用の簡略化されたexecuteパラメータ
     return await individualDocumentReviewStep.execute({
@@ -124,7 +124,9 @@ describe("individualDocumentReviewStep", () => {
       expect(result.status).toBe("success");
       expect(result.finishReason).toBe("success");
       expect(result.reviewResults).toHaveLength(3);
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalledTimes(1);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalledTimes(1);
 
       // レビュー結果の検証
       expect(result.reviewResults).toContainEqual({
@@ -169,17 +171,25 @@ describe("individualDocumentReviewStep", () => {
       });
 
       // Assert: エージェントへの呼び出し引数を検証
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalledTimes(1);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalledTimes(1);
 
-      const callArgs = mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls[0];
+      const callArgs =
+        mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls[0];
       const message = callArgs[0];
       const textContent = message.content.find(
-        (c: { type: string; text?: string }) => c.type === "text" && c.text?.includes("Document Information")
+        (c: { type: string; text?: string }) =>
+          c.type === "text" && c.text?.includes("Document Information"),
       );
 
       // ドキュメント分割情報が含まれていることを確認
-      expect(textContent?.text).toContain("Original File Name: test-document.txt");
-      expect(textContent?.text).toContain("Current Document Name: test-document_part1.txt");
+      expect(textContent?.text).toContain(
+        "Original File Name: test-document.txt",
+      );
+      expect(textContent?.text).toContain(
+        "Current Document Name: test-document_part1.txt",
+      );
       expect(textContent?.text).toContain("This is part 1 of 3");
     });
 
@@ -203,7 +213,8 @@ describe("individualDocumentReviewStep", () => {
       });
 
       // Assert: runtimeContextにオプションが設定されていることを確認
-      const callArgs = mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls[0];
+      const callArgs =
+        mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls[0];
       const options = callArgs[1];
 
       // runtimeContextが作成されていることを確認
@@ -238,7 +249,9 @@ describe("individualDocumentReviewStep", () => {
       // Assert
       expect(result.status).toBe("success");
       expect(result.finishReason).toBe("success");
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalledTimes(2);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalledTimes(2);
       expect(result.reviewResults).toHaveLength(3);
     });
 
@@ -260,7 +273,9 @@ describe("individualDocumentReviewStep", () => {
       expect(result.finishReason).toBe("error");
       expect(result.errorMessage).toContain("最大試行回数到達");
       // 3回とも空の結果を返すため、全項目がレビューされずに最大試行回数に到達
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalledTimes(3);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalledTimes(3);
     });
   });
 
@@ -282,7 +297,9 @@ describe("individualDocumentReviewStep", () => {
       expect(result.status).toBe("failed");
       expect(result.finishReason).toBe("content_length");
       expect(result.errorMessage).toContain("長すぎてAIが処理できません");
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalledTimes(1);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalledTimes(1);
     });
 
     it("AIエラー（content-filter）の場合はエラーをスローすること", async () => {
@@ -307,7 +324,7 @@ describe("individualDocumentReviewStep", () => {
     it("エージェント実行時の例外がエラー結果として返されること", async () => {
       // Arrange
       mockIndividualDocumentReviewAgentGenerateLegacy.mockRejectedValue(
-        new Error("API呼び出しエラー")
+        new Error("API呼び出しエラー"),
       );
 
       // Act
@@ -348,19 +365,19 @@ describe("individualDocumentReviewStep", () => {
         expect.objectContaining({
           checklistId: "check-1",
           comment: "コメント1",
-        })
+        }),
       );
       expect(result.reviewResults).toContainEqual(
         expect.objectContaining({
           checklistId: "check-2",
           comment: "コメント2",
-        })
+        }),
       );
       expect(result.reviewResults).toContainEqual(
         expect.objectContaining({
           checklistId: "check-3",
           comment: "コメント3",
-        })
+        }),
       );
     });
 
@@ -393,7 +410,7 @@ describe("individualDocumentReviewStep", () => {
       expect(result.status).toBe("success");
       expect(result.reviewResults).toHaveLength(3);
       const check1Result = result.reviewResults?.find(
-        (r) => r.checklistId === "check-1"
+        (r) => r.checklistId === "check-1",
       );
       expect(check1Result?.comment).toBe("コメント1");
     });

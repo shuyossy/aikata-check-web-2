@@ -1,19 +1,19 @@
-import { createStep } from '@mastra/core/workflows';
-import type { RuntimeContext } from '@mastra/core/di';
-import { z } from 'zod';
-import { baseStepOutputSchema } from '../../schema';
+import { createStep } from "@mastra/core/workflows";
+import type { RuntimeContext } from "@mastra/core/di";
+import { z } from "zod";
+import { baseStepOutputSchema } from "../../schema";
 import {
   type QaExecutionWorkflowRuntimeContext,
   researchTaskSchema,
   availableDocumentSchema,
   checklistResultWithIndividualSchema,
-} from '../types';
-import { judgeReviewMode, buildPlanningChecklistInfo } from '../lib';
-import type { QaPlanningAgentRuntimeContext } from '@/application/mastra/agents/types';
-import { createRuntimeContext } from '@/application/mastra/lib/agentUtils';
-import { normalizeUnknownError, workflowError } from '@/lib/server/error';
-import { formatMessage } from '@/lib/server/messages';
-import { getLogger } from '@/lib/server/logger';
+} from "../types";
+import { judgeReviewMode, buildPlanningChecklistInfo } from "../lib";
+import type { QaPlanningAgentRuntimeContext } from "@/application/mastra/agents/types";
+import { createRuntimeContext } from "@/application/mastra/lib/agentUtils";
+import { normalizeUnknownError, workflowError } from "@/lib/server/error";
+import { formatMessage } from "@/lib/server/messages";
+import { getLogger } from "@/lib/server/logger";
 
 const logger = getLogger();
 
@@ -49,12 +49,12 @@ const researchTasksSchema = z.object({
     z.object({
       reasoning: z
         .string()
-        .describe('Reason for selecting this document for research'),
-      documentId: z.string().describe('Document ID to investigate'),
+        .describe("Reason for selecting this document for research"),
+      documentId: z.string().describe("Document ID to investigate"),
       researchContent: z
         .string()
-        .describe('Detailed research instructions for this document'),
-    })
+        .describe("Detailed research instructions for this document"),
+    }),
   ),
 });
 
@@ -63,11 +63,16 @@ const researchTasksSchema = z.object({
  * ユーザーの質問に答えるために必要なドキュメント調査計画を作成する
  */
 export const planQaResearchStep = createStep({
-  id: 'planQaResearchStep',
-  description: '調査計画を作成するステップ',
+  id: "planQaResearchStep",
+  description: "調査計画を作成するステップ",
   inputSchema: planQaResearchStepInputSchema,
   outputSchema: planQaResearchStepOutputSchema,
-  execute: async ({ inputData, bail, mastra, runtimeContext: workflowRuntimeContext }) => {
+  execute: async ({
+    inputData,
+    bail,
+    mastra,
+    runtimeContext: workflowRuntimeContext,
+  }) => {
     try {
       const { question, availableDocuments, checklistResults } = inputData;
 
@@ -81,9 +86,9 @@ export const planQaResearchStep = createStep({
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<QaExecutionWorkflowRuntimeContext>
         | undefined;
-      const aiApiKey = typedWorkflowRuntimeContext?.get('aiApiKey');
-      const aiApiUrl = typedWorkflowRuntimeContext?.get('aiApiUrl');
-      const aiApiModel = typedWorkflowRuntimeContext?.get('aiApiModel');
+      const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+      const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+      const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
 
       // RuntimeContext作成
       const runtimeContext =
@@ -97,7 +102,7 @@ export const planQaResearchStep = createStep({
         });
 
       // Mastraエージェント経由でAI呼び出し（構造化出力）
-      const planningAgent = mastra?.getAgent('qaPlanningAgent');
+      const planningAgent = mastra?.getAgent("qaPlanningAgent");
       if (!planningAgent) {
         throw workflowError("WORKFLOW_AGENT_NOT_FOUND");
       }
@@ -116,20 +121,20 @@ export const planQaResearchStep = createStep({
 
       if (researchTasks.length === 0) {
         return bail({
-          status: 'failed' as const,
+          status: "failed" as const,
           errorMessage: formatMessage("WORKFLOW_QA_DOCUMENT_NOT_FOUND"),
         });
       }
 
       return {
-        status: 'success' as const,
+        status: "success" as const,
         researchTasks,
       };
     } catch (error) {
-      logger.error({ err: error }, '調査計画の作成に失敗しました');
+      logger.error({ err: error }, "調査計画の作成に失敗しました");
       const normalizedError = normalizeUnknownError(error);
       return bail({
-        status: 'failed' as const,
+        status: "failed" as const,
         errorMessage: normalizedError.message,
       });
     }

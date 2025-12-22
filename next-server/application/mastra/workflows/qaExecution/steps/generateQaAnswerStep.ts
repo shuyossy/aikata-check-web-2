@@ -1,19 +1,19 @@
-import { createStep } from '@mastra/core/workflows';
-import type { RuntimeContext } from '@mastra/core/di';
-import { z } from 'zod';
-import { baseStepOutputSchema } from '../../schema';
+import { createStep } from "@mastra/core/workflows";
+import type { RuntimeContext } from "@mastra/core/di";
+import { z } from "zod";
+import { baseStepOutputSchema } from "../../schema";
 import {
   type QaExecutionWorkflowRuntimeContext,
   researchResultSchema,
   checklistResultWithIndividualSchema,
-} from '../types';
-import { judgeReviewMode, buildAnswerChecklistInfo } from '../lib';
-import type { QaAnswerAgentRuntimeContext } from '@/application/mastra/agents/types';
-import { createRuntimeContext } from '@/application/mastra/lib/agentUtils';
-import type { IEventBroker } from '@/application/shared/port/push/IEventBroker';
-import type { QaAnswerChunkEvent } from '@/application/shared/port/push/QaSseEventTypes';
-import { normalizeUnknownError, workflowError } from '@/lib/server/error';
-import { getLogger } from '@/lib/server/logger';
+} from "../types";
+import { judgeReviewMode, buildAnswerChecklistInfo } from "../lib";
+import type { QaAnswerAgentRuntimeContext } from "@/application/mastra/agents/types";
+import { createRuntimeContext } from "@/application/mastra/lib/agentUtils";
+import type { IEventBroker } from "@/application/shared/port/push/IEventBroker";
+import type { QaAnswerChunkEvent } from "@/application/shared/port/push/QaSseEventTypes";
+import { normalizeUnknownError, workflowError } from "@/lib/server/error";
+import { getLogger } from "@/lib/server/logger";
 
 const logger = getLogger();
 
@@ -47,8 +47,8 @@ export type GenerateQaAnswerStepOutput = z.infer<
  * 調査結果を統合してユーザーの質問に回答する
  */
 export const generateQaAnswerStep = createStep({
-  id: 'generateQaAnswerStep',
-  description: '最終回答を生成するステップ',
+  id: "generateQaAnswerStep",
+  description: "最終回答を生成するステップ",
   inputSchema: generateQaAnswerStepInputSchema,
   outputSchema: generateQaAnswerStepOutputSchema,
   execute: async ({
@@ -64,12 +64,18 @@ export const generateQaAnswerStep = createStep({
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<QaExecutionWorkflowRuntimeContext>
         | undefined;
-      const eventBroker = typedWorkflowRuntimeContext?.get?.('eventBroker') as IEventBroker | undefined;
-      const userId = typedWorkflowRuntimeContext?.get?.('userId') as string | undefined;
-      const qaHistoryId = typedWorkflowRuntimeContext?.get?.('qaHistoryId') as string | undefined;
-      const aiApiKey = typedWorkflowRuntimeContext?.get('aiApiKey');
-      const aiApiUrl = typedWorkflowRuntimeContext?.get('aiApiUrl');
-      const aiApiModel = typedWorkflowRuntimeContext?.get('aiApiModel');
+      const eventBroker = typedWorkflowRuntimeContext?.get?.("eventBroker") as
+        | IEventBroker
+        | undefined;
+      const userId = typedWorkflowRuntimeContext?.get?.("userId") as
+        | string
+        | undefined;
+      const qaHistoryId = typedWorkflowRuntimeContext?.get?.("qaHistoryId") as
+        | string
+        | undefined;
+      const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+      const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+      const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
 
       // レビューモードを判定
       const reviewMode = judgeReviewMode(checklistResults);
@@ -81,9 +87,9 @@ export const generateQaAnswerStep = createStep({
       const researchSummary = researchResults
         .map(
           (result) =>
-            `Document: ${result.documentName}\nResearch Findings:\n${result.researchResult}`
+            `Document: ${result.documentName}\nResearch Findings:\n${result.researchResult}`,
         )
-        .join('\n\n---\n\n');
+        .join("\n\n---\n\n");
 
       // RuntimeContext作成
       const runtimeContext = createRuntimeContext<QaAnswerAgentRuntimeContext>({
@@ -98,20 +104,20 @@ export const generateQaAnswerStep = createStep({
       const promptText = `User Question: ${question}\n\nResearch Findings:\n${researchSummary}`;
 
       // Mastraエージェント経由でAI呼び出し
-      const answerAgent = mastra?.getAgent('qaAnswerAgent');
+      const answerAgent = mastra?.getAgent("qaAnswerAgent");
       if (!answerAgent) {
         throw workflowError("WORKFLOW_AGENT_NOT_FOUND");
       }
 
       // ストリーミング対応でAI呼び出し
-      let fullAnswer = '';
+      let fullAnswer = "";
       const result = await answerAgent.generateLegacy(promptText, {
         runtimeContext,
         onStepFinish: (stepResult) => {
           // SSEでチャンクを送信
           if (stepResult.text && eventBroker && userId && qaHistoryId) {
             const chunkEvent: QaAnswerChunkEvent = {
-              type: 'answer_chunk',
+              type: "answer_chunk",
               data: { text: stepResult.text },
             };
             eventBroker.publish(userId, `qa:${qaHistoryId}`, chunkEvent);
@@ -123,15 +129,15 @@ export const generateQaAnswerStep = createStep({
       });
 
       return {
-        status: 'success' as const,
+        status: "success" as const,
         answer: result.text || fullAnswer,
         researchSummary: researchResults,
       };
     } catch (error) {
-      logger.error({ err: error }, '最終回答の生成に失敗しました');
+      logger.error({ err: error }, "最終回答の生成に失敗しました");
       const normalizedError = normalizeUnknownError(error);
       return bail({
-        status: 'failed' as const,
+        status: "failed" as const,
         errorMessage: normalizedError.message,
       });
     }

@@ -29,7 +29,8 @@ export class DeleteSystemNotificationService {
 
     // 対象の通知を取得して存在確認
     const notificationId = SystemNotificationId.reconstruct(id);
-    const notification = await this.systemNotificationRepository.findById(notificationId);
+    const notification =
+      await this.systemNotificationRepository.findById(notificationId);
 
     if (!notification) {
       throw domainValidationError("SYSTEM_NOTIFICATION_NOT_FOUND");

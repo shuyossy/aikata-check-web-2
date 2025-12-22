@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  getRequestContext,
-  runWithRequestContext,
-} from "../requestContext";
+import { getRequestContext, runWithRequestContext } from "../requestContext";
 
 describe("requestContext", () => {
   describe("getRequestContext", () => {

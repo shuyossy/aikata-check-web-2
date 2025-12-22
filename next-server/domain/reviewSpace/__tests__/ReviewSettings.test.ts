@@ -21,8 +21,12 @@ describe("ReviewSettings", () => {
       it("すべてのプロパティを持つレビュー設定を生成できる", () => {
         const settings = ReviewSettings.create(validProps);
 
-        expect(settings.additionalInstructions).toBe(validProps.additionalInstructions);
-        expect(settings.concurrentReviewItems).toBe(validProps.concurrentReviewItems);
+        expect(settings.additionalInstructions).toBe(
+          validProps.additionalInstructions,
+        );
+        expect(settings.concurrentReviewItems).toBe(
+          validProps.concurrentReviewItems,
+        );
         expect(settings.commentFormat).toBe(validProps.commentFormat);
         expect(settings.evaluationCriteria).not.toBeNull();
         expect(settings.evaluationCriteria?.items.length).toBe(4);
@@ -38,7 +42,9 @@ describe("ReviewSettings", () => {
 
         expect(settings.additionalInstructions).toBeNull();
         // 必須フィールドはデフォルト値が使用される
-        expect(settings.concurrentReviewItems).toBe(DEFAULT_CONCURRENT_REVIEW_ITEMS);
+        expect(settings.concurrentReviewItems).toBe(
+          DEFAULT_CONCURRENT_REVIEW_ITEMS,
+        );
         expect(settings.commentFormat).toBe(DEFAULT_COMMENT_FORMAT);
         expect(settings.evaluationCriteria.items.length).toBe(4);
       });
@@ -48,7 +54,9 @@ describe("ReviewSettings", () => {
 
         expect(settings.additionalInstructions).toBeNull();
         // 必須フィールドはデフォルト値が使用される
-        expect(settings.concurrentReviewItems).toBe(DEFAULT_CONCURRENT_REVIEW_ITEMS);
+        expect(settings.concurrentReviewItems).toBe(
+          DEFAULT_CONCURRENT_REVIEW_ITEMS,
+        );
         expect(settings.commentFormat).toBe(DEFAULT_COMMENT_FORMAT);
         expect(settings.evaluationCriteria.items.length).toBe(4);
       });
@@ -93,7 +101,9 @@ describe("ReviewSettings", () => {
         const settings = ReviewSettings.createDefault();
 
         expect(settings.additionalInstructions).toBeNull();
-        expect(settings.concurrentReviewItems).toBe(DEFAULT_CONCURRENT_REVIEW_ITEMS);
+        expect(settings.concurrentReviewItems).toBe(
+          DEFAULT_CONCURRENT_REVIEW_ITEMS,
+        );
         expect(settings.commentFormat).toBe(DEFAULT_COMMENT_FORMAT);
         expect(settings.evaluationCriteria).not.toBeNull();
         expect(settings.evaluationCriteria?.items.length).toBe(4);
@@ -114,8 +124,12 @@ describe("ReviewSettings", () => {
       it("既存データから復元できる", () => {
         const settings = ReviewSettings.reconstruct(validProps);
 
-        expect(settings.additionalInstructions).toBe(validProps.additionalInstructions);
-        expect(settings.concurrentReviewItems).toBe(validProps.concurrentReviewItems);
+        expect(settings.additionalInstructions).toBe(
+          validProps.additionalInstructions,
+        );
+        expect(settings.concurrentReviewItems).toBe(
+          validProps.concurrentReviewItems,
+        );
       });
     });
 
@@ -124,8 +138,12 @@ describe("ReviewSettings", () => {
         const settings = ReviewSettings.create(validProps);
         const dto = settings.toDto();
 
-        expect(dto.additionalInstructions).toBe(validProps.additionalInstructions);
-        expect(dto.concurrentReviewItems).toBe(validProps.concurrentReviewItems);
+        expect(dto.additionalInstructions).toBe(
+          validProps.additionalInstructions,
+        );
+        expect(dto.concurrentReviewItems).toBe(
+          validProps.concurrentReviewItems,
+        );
         expect(dto.commentFormat).toBe(validProps.commentFormat);
         expect(dto.evaluationCriteria).toEqual(validProps.evaluationCriteria);
       });

@@ -2,7 +2,11 @@ import { IReviewTargetRepository } from "@/application/shared/port/repository/IR
 import { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository, IReviewDocumentCacheRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
+import {
+  IProjectRepository,
+  IReviewDocumentCacheRepository,
+  ISystemSettingRepository,
+} from "@/application/shared/port/repository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { getAiTaskBootstrap } from "@/application/aiTask";
 import { ReviewTargetId, ReviewType } from "@/domain/reviewTarget";
@@ -84,7 +88,8 @@ export class RetryReviewService {
 
     // レビュー対象の存在確認
     const reviewTargetIdVo = ReviewTargetId.reconstruct(reviewTargetId);
-    const reviewTarget = await this.reviewTargetRepository.findById(reviewTargetIdVo);
+    const reviewTarget =
+      await this.reviewTargetRepository.findById(reviewTargetIdVo);
     if (!reviewTarget) {
       throw domainValidationError("REVIEW_TARGET_NOT_FOUND");
     }
@@ -95,7 +100,9 @@ export class RetryReviewService {
     }
 
     // レビュースペースの存在確認
-    const reviewSpace = await this.reviewSpaceRepository.findById(reviewTarget.reviewSpaceId);
+    const reviewSpace = await this.reviewSpaceRepository.findById(
+      reviewTarget.reviewSpaceId,
+    );
     if (!reviewSpace) {
       throw domainValidationError("REVIEW_SPACE_NOT_FOUND");
     }
@@ -113,7 +120,10 @@ export class RetryReviewService {
     }
 
     // ドキュメントキャッシュの存在確認
-    const documentCaches = await this.reviewDocumentCacheRepository.findByReviewTargetId(reviewTargetIdVo);
+    const documentCaches =
+      await this.reviewDocumentCacheRepository.findByReviewTargetId(
+        reviewTargetIdVo,
+      );
     if (documentCaches.length === 0) {
       throw domainValidationError("RETRY_NO_CACHE");
     }
@@ -125,7 +135,8 @@ export class RetryReviewService {
     }
 
     // 既存のレビュー結果を取得
-    const existingResults = await this.reviewResultRepository.findByReviewTargetId(reviewTargetIdVo);
+    const existingResults =
+      await this.reviewResultRepository.findByReviewTargetId(reviewTargetIdVo);
 
     // 対象チェックリストと削除対象結果を決定
     let targetCheckListItems: Array<{ id: string; content: string }>;
@@ -133,7 +144,9 @@ export class RetryReviewService {
 
     if (retryScope === "failed") {
       // 失敗項目のみリトライ
-      const failedResults = existingResults.filter((r) => r.errorMessage !== null);
+      const failedResults = existingResults.filter(
+        (r) => r.errorMessage !== null,
+      );
       targetCheckListItems = failedResults.map((r, idx) => ({
         id: `retry-${idx}`,
         content: r.checkListItemContent,
@@ -143,20 +156,25 @@ export class RetryReviewService {
       // 全項目リトライ
       if (useLatestChecklist) {
         // 最新のチェックリストを使用
-        const currentCheckListItems = await this.checkListItemRepository.findByReviewSpaceId(
-          reviewTarget.reviewSpaceId,
-        );
+        const currentCheckListItems =
+          await this.checkListItemRepository.findByReviewSpaceId(
+            reviewTarget.reviewSpaceId,
+          );
         targetCheckListItems = currentCheckListItems.map((item) => ({
           id: item.id.value,
           content: item.content.value,
         }));
       } else {
         // 前回のチェックリスト（スナップショット）を使用
-        const uniqueContents = new Set(existingResults.map((r) => r.checkListItemContent));
-        targetCheckListItems = Array.from(uniqueContents).map((content, idx) => ({
-          id: `snapshot-${idx}`,
-          content,
-        }));
+        const uniqueContents = new Set(
+          existingResults.map((r) => r.checkListItemContent),
+        );
+        targetCheckListItems = Array.from(uniqueContents).map(
+          (content, idx) => ({
+            id: `snapshot-${idx}`,
+            content,
+          }),
+        );
       }
       resultsToDeleteIds = existingResults.map((r) => r.id.value);
     }
@@ -169,21 +187,28 @@ export class RetryReviewService {
     }
 
     // レビュー種別を決定
-    const effectiveReviewType = reviewType ?? reviewTarget.reviewType?.value ?? "small";
+    const effectiveReviewType =
+      reviewType ?? reviewTarget.reviewType?.value ?? "small";
 
     // レビュー設定を決定（コマンドで指定がなければ前回の設定を使用）
-    const effectiveSettings = reviewSettings ?? reviewTarget.reviewSettings?.toDto() ?? null;
+    const effectiveSettings =
+      reviewSettings ?? reviewTarget.reviewSettings?.toDto() ?? null;
 
     // API設定を取得（プロジェクト設定 > 管理者設定 > 環境変数）
     const systemSetting = await this.systemSettingRepository.find();
-    const aiApiConfig = resolveAiApiConfig(project.encryptedApiKey, systemSetting);
+    const aiApiConfig = resolveAiApiConfig(
+      project.encryptedApiKey,
+      systemSetting,
+    );
 
     // ステータスをqueuedに更新
     let updatedTarget = reviewTarget.prepareForRetry();
 
     // レビュー種別が変更されていれば更新
     if (reviewType) {
-      updatedTarget = updatedTarget.withReviewType(ReviewType.create(reviewType));
+      updatedTarget = updatedTarget.withReviewType(
+        ReviewType.create(reviewType),
+      );
     }
 
     // レビュー設定が変更されていれば更新
@@ -191,10 +216,17 @@ export class RetryReviewService {
       const { ReviewSettings } = await import("@/domain/reviewSpace");
       const baseSettings = reviewTarget.reviewSettings?.toDto();
       const newSettings = ReviewSettings.create({
-        additionalInstructions: reviewSettings.additionalInstructions ?? baseSettings?.additionalInstructions ?? null,
-        concurrentReviewItems: reviewSettings.concurrentReviewItems ?? baseSettings?.concurrentReviewItems,
-        commentFormat: reviewSettings.commentFormat ?? baseSettings?.commentFormat ?? null,
-        evaluationCriteria: reviewSettings.evaluationCriteria ?? baseSettings?.evaluationCriteria,
+        additionalInstructions:
+          reviewSettings.additionalInstructions ??
+          baseSettings?.additionalInstructions ??
+          null,
+        concurrentReviewItems:
+          reviewSettings.concurrentReviewItems ??
+          baseSettings?.concurrentReviewItems,
+        commentFormat:
+          reviewSettings.commentFormat ?? baseSettings?.commentFormat ?? null,
+        evaluationCriteria:
+          reviewSettings.evaluationCriteria ?? baseSettings?.evaluationCriteria,
       });
       updatedTarget = updatedTarget.withUpdatedSettings(newSettings);
     }
@@ -216,7 +248,8 @@ export class RetryReviewService {
       checkListItems: targetCheckListItems,
       reviewSettings: effectiveSettings
         ? {
-            additionalInstructions: effectiveSettings.additionalInstructions ?? null,
+            additionalInstructions:
+              effectiveSettings.additionalInstructions ?? null,
             concurrentReviewItems: effectiveSettings.concurrentReviewItems,
             commentFormat: effectiveSettings.commentFormat ?? null,
             evaluationCriteria: effectiveSettings.evaluationCriteria,

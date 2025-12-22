@@ -5,7 +5,12 @@ import { IReviewSpaceRepository } from "@/application/shared/port/repository/IRe
 import { IProjectRepository } from "@/application/shared/port/repository";
 import { Project } from "@/domain/project";
 import { ReviewSpace } from "@/domain/reviewSpace";
-import { AiTask, AI_TASK_TYPE, AI_TASK_STATUS, AiTaskId } from "@/domain/aiTask";
+import {
+  AiTask,
+  AI_TASK_TYPE,
+  AI_TASK_STATUS,
+  AiTaskId,
+} from "@/domain/aiTask";
 import { TaskFileHelper } from "@/lib/server/taskFileHelper";
 
 // 暗号化関数をモック
@@ -95,7 +100,9 @@ describe("CancelChecklistGenerationTaskService", () => {
       delete: vi.fn().mockResolvedValue(undefined),
       deleteByStatus: vi.fn(),
       deleteByReviewTargetId: vi.fn(),
-      findChecklistGenerationTaskByReviewSpaceId: vi.fn().mockResolvedValue(mockQueuedTask),
+      findChecklistGenerationTaskByReviewSpaceId: vi
+        .fn()
+        .mockResolvedValue(mockQueuedTask),
       deleteChecklistGenerationTaskByReviewSpaceId: vi.fn(),
     };
     mockReviewSpaceRepository = {
@@ -138,8 +145,9 @@ describe("CancelChecklistGenerationTaskService", () => {
 
   describe("異常系", () => {
     it("タスクが見つからない場合はエラー", async () => {
-      vi.mocked(mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId)
-        .mockResolvedValue(null);
+      vi.mocked(
+        mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId,
+      ).mockResolvedValue(null);
 
       await expect(
         service.execute({
@@ -150,15 +158,18 @@ describe("CancelChecklistGenerationTaskService", () => {
     });
 
     it("処理中のタスクはキャンセルできない", async () => {
-      vi.mocked(mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId)
-        .mockResolvedValue(mockProcessingTask);
+      vi.mocked(
+        mockAiTaskRepository.findChecklistGenerationTaskByReviewSpaceId,
+      ).mockResolvedValue(mockProcessingTask);
 
       await expect(
         service.execute({
           reviewSpaceId: validReviewSpaceId,
           userId: validUserId,
         }),
-      ).rejects.toMatchObject({ messageCode: "AI_TASK_CANNOT_CANCEL_PROCESSING" });
+      ).rejects.toMatchObject({
+        messageCode: "AI_TASK_CANNOT_CANCEL_PROCESSING",
+      });
     });
 
     it("存在しないレビュースペースの場合はエラー", async () => {

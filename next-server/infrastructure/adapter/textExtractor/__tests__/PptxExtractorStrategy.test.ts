@@ -26,8 +26,11 @@ describe("PptxExtractorStrategy", () => {
 
   describe("正常系", () => {
     it("PowerPoint文書からテキストを抽出する", async () => {
-      const mockContent = "スライド1のタイトル\n\nスライド1の内容\n\nスライド2のタイトル";
-      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(mockContent);
+      const mockContent =
+        "スライド1のタイトル\n\nスライド1の内容\n\nスライド2のタイトル";
+      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(
+        mockContent,
+      );
 
       const buffer = Buffer.from("dummy pptx content");
       const result = await strategy.extract(buffer);
@@ -41,7 +44,9 @@ describe("PptxExtractorStrategy", () => {
 
     it("日本語を含むPowerPoint文書を正しく処理する", async () => {
       const mockContent = "プレゼンテーション\n\n・概要\n・詳細\n・まとめ";
-      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(mockContent);
+      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(
+        mockContent,
+      );
 
       const buffer = Buffer.from("dummy pptx content");
       const result = await strategy.extract(buffer);
@@ -62,7 +67,9 @@ describe("PptxExtractorStrategy", () => {
     it("複数スライドを含むPowerPoint文書を処理する", async () => {
       const mockContent =
         "スライド1\n表紙\n\nスライド2\n目次\n・項目1\n・項目2\n\nスライド3\n本文";
-      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(mockContent);
+      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(
+        mockContent,
+      );
 
       const buffer = Buffer.from("dummy pptx content");
       const result = await strategy.extract(buffer);
@@ -74,8 +81,11 @@ describe("PptxExtractorStrategy", () => {
     });
 
     it("箇条書きを含むPowerPoint文書を処理する", async () => {
-      const mockContent = "チェックポイント\n\n・確認項目1\n・確認項目2\n・確認項目3";
-      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(mockContent);
+      const mockContent =
+        "チェックポイント\n\n・確認項目1\n・確認項目2\n・確認項目3";
+      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(
+        mockContent,
+      );
 
       const buffer = Buffer.from("dummy pptx content");
       const result = await strategy.extract(buffer);
@@ -87,7 +97,9 @@ describe("PptxExtractorStrategy", () => {
 
     it("オプションなしでofficeparserを呼び出す", async () => {
       const mockContent = "テスト内容";
-      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(mockContent);
+      vi.mocked(officeParser.parseOfficeAsync).mockResolvedValueOnce(
+        mockContent,
+      );
 
       const buffer = Buffer.from("dummy pptx content");
       await strategy.extract(buffer);

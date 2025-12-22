@@ -34,7 +34,7 @@ const retryReviewInputSchema = z.object({
           z.object({
             label: z.string(),
             description: z.string(),
-          })
+          }),
         )
         .optional(),
     })

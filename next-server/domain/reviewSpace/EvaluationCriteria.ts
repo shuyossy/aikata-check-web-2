@@ -53,7 +53,9 @@ export class EvaluationCriteria {
    * DBからの復元時に使用（バリデーション済みのため検証なし）
    */
   static reconstruct(items: EvaluationItemProps[]): EvaluationCriteria {
-    const evaluationItems = items.map((item) => EvaluationItem.reconstruct(item));
+    const evaluationItems = items.map((item) =>
+      EvaluationItem.reconstruct(item),
+    );
     return new EvaluationCriteria(evaluationItems);
   }
 

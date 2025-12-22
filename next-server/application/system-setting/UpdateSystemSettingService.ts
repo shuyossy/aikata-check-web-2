@@ -32,14 +32,18 @@ export interface UpdateSystemSettingResultDto {
  * 管理者画面での設定更新に使用
  */
 export class UpdateSystemSettingService {
-  constructor(private readonly systemSettingRepository: ISystemSettingRepository) {}
+  constructor(
+    private readonly systemSettingRepository: ISystemSettingRepository,
+  ) {}
 
   /**
    * システム設定を更新する
    * @param command 更新コマンド
    * @returns 更新後のシステム設定DTO
    */
-  async execute(command: UpdateSystemSettingCommand): Promise<UpdateSystemSettingResultDto> {
+  async execute(
+    command: UpdateSystemSettingCommand,
+  ): Promise<UpdateSystemSettingResultDto> {
     const { apiKey, apiUrl, apiModel } = command;
 
     // 既存の設定を取得

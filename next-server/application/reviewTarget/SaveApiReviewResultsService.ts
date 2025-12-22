@@ -5,10 +5,7 @@ import { IProjectRepository } from "@/application/shared/port/repository";
 import { ReviewTargetId } from "@/domain/reviewTarget";
 import { ReviewResult } from "@/domain/reviewResult";
 import { ProjectId } from "@/domain/project";
-import {
-  domainValidationError,
-  internalError,
-} from "@/lib/server/error";
+import { domainValidationError, internalError } from "@/lib/server/error";
 
 /**
  * 外部APIレビュー結果の入力型
@@ -74,7 +71,8 @@ export class SaveApiReviewResultsService {
   async execute(
     command: SaveApiReviewResultsCommand,
   ): Promise<SaveApiReviewResultsResult> {
-    const { reviewTargetId, userId, results, chunkIndex, totalChunks } = command;
+    const { reviewTargetId, userId, results, chunkIndex, totalChunks } =
+      command;
 
     // レビュー対象の取得
     const reviewTargetIdVo = ReviewTargetId.reconstruct(reviewTargetId);

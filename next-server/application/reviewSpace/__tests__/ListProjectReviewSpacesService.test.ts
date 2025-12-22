@@ -50,7 +50,9 @@ describe("ListProjectReviewSpacesService", () => {
   beforeEach(() => {
     mockReviewSpaceRepository = {
       findById: vi.fn(),
-      findByProjectId: vi.fn().mockResolvedValue([mockReviewSpace1, mockReviewSpace2]),
+      findByProjectId: vi
+        .fn()
+        .mockResolvedValue([mockReviewSpace1, mockReviewSpace2]),
       countByProjectId: vi.fn().mockResolvedValue(2),
       save: vi.fn(),
       delete: vi.fn(),
@@ -130,8 +132,12 @@ describe("ListProjectReviewSpacesService", () => {
     });
 
     it("空の結果を正しく返す", async () => {
-      vi.mocked(mockReviewSpaceRepository.findByProjectId).mockResolvedValue([]);
-      vi.mocked(mockReviewSpaceRepository.countByProjectId).mockResolvedValue(0);
+      vi.mocked(mockReviewSpaceRepository.findByProjectId).mockResolvedValue(
+        [],
+      );
+      vi.mocked(mockReviewSpaceRepository.countByProjectId).mockResolvedValue(
+        0,
+      );
 
       const result = await service.execute({
         projectId: validProjectId,

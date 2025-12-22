@@ -18,7 +18,11 @@ import {
   classifyChecklistStep,
   classifyChecklistOutputSchema,
 } from "./steps/classifyChecklistStep";
-import { fileProcessingStep, extractedFileSchema, type ExtractedFile } from "../shared";
+import {
+  fileProcessingStep,
+  extractedFileSchema,
+  type ExtractedFile,
+} from "../shared";
 import {
   largeDocumentReviewWorkflow,
   largeDocumentReviewOutputSchema,
@@ -156,9 +160,11 @@ const cacheCheckStep = createStep({
   outputSchema: z.object({
     useCacheMode: z.boolean(),
     // キャッシュモードの場合の結果
-    cacheResult: baseStepOutputSchema.extend({
-      extractedFiles: z.array(extractedFileSchema).optional(),
-    }).optional(),
+    cacheResult: baseStepOutputSchema
+      .extend({
+        extractedFiles: z.array(extractedFileSchema).optional(),
+      })
+      .optional(),
     // 通常モードの場合のファイル入力
     files: z.array(z.any()).optional(),
   }),
@@ -173,7 +179,8 @@ const cacheCheckStep = createStep({
 
     // キャッシュモードの場合はキャッシュからExtractedFilesを生成
     if (useCachedDocuments && cachedDocuments && cachedDocuments.length > 0) {
-      const extractedFiles = convertCachedDocumentsToExtractedFiles(cachedDocuments);
+      const extractedFiles =
+        convertCachedDocumentsToExtractedFiles(cachedDocuments);
       return {
         useCacheMode: true,
         cacheResult: {
@@ -210,14 +217,17 @@ export const reviewExecutionWorkflow = createWorkflow({
       .branch([
         // キャッシュモード: キャッシュ結果をそのまま返す
         [
-          async ({ inputData }) => (inputData as { useCacheMode?: boolean }).useCacheMode === true,
+          async ({ inputData }) =>
+            (inputData as { useCacheMode?: boolean }).useCacheMode === true,
           createWorkflow({
             id: "use-cache-result",
             inputSchema: z.object({
               useCacheMode: z.boolean(),
-              cacheResult: baseStepOutputSchema.extend({
-                extractedFiles: z.array(extractedFileSchema).optional(),
-              }).optional(),
+              cacheResult: baseStepOutputSchema
+                .extend({
+                  extractedFiles: z.array(extractedFileSchema).optional(),
+                })
+                .optional(),
               files: z.array(z.any()).optional(),
             }),
             outputSchema: baseStepOutputSchema.extend({
@@ -232,14 +242,17 @@ export const reviewExecutionWorkflow = createWorkflow({
         ],
         // 通常モード: ファイル処理を実行
         [
-          async ({ inputData }) => (inputData as { useCacheMode?: boolean }).useCacheMode === false,
+          async ({ inputData }) =>
+            (inputData as { useCacheMode?: boolean }).useCacheMode === false,
           createWorkflow({
             id: "normal-file-processing",
             inputSchema: z.object({
               useCacheMode: z.boolean(),
-              cacheResult: baseStepOutputSchema.extend({
-                extractedFiles: z.array(extractedFileSchema).optional(),
-              }).optional(),
+              cacheResult: baseStepOutputSchema
+                .extend({
+                  extractedFiles: z.array(extractedFileSchema).optional(),
+                })
+                .optional(),
               files: z.array(z.any()).optional(),
             }),
             outputSchema: baseStepOutputSchema.extend({
@@ -260,7 +273,8 @@ export const reviewExecutionWorkflow = createWorkflow({
         return {
           status: result?.status ?? "failed",
           extractedFiles: result?.extractedFiles,
-          errorMessage: (result as { errorMessage?: string } | undefined)?.errorMessage,
+          errorMessage: (result as { errorMessage?: string } | undefined)
+            ?.errorMessage,
         };
       })
       .commit(),
@@ -311,7 +325,9 @@ export const reviewExecutionWorkflow = createWorkflow({
       | ReviewExecutionWorkflowRuntimeContext["useCachedDocuments"]
       | undefined;
     if (!useCachedDocuments) {
-      const onExtractedFilesCached = runtimeContext.get("onExtractedFilesCached") as
+      const onExtractedFilesCached = runtimeContext.get(
+        "onExtractedFilesCached",
+      ) as
         | ReviewExecutionWorkflowRuntimeContext["onExtractedFilesCached"]
         | undefined;
       const reviewTargetId = runtimeContext.get("reviewTargetId") as

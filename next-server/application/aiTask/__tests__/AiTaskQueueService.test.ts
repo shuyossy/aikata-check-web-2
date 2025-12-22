@@ -88,7 +88,9 @@ describe("AiTaskQueueService", () => {
     it("テキストモードでタスクをキューに登録できる", async () => {
       // モックの設定
       vi.mocked(mockAiTaskRepository.save).mockResolvedValue(undefined);
-      vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(1);
+      vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(
+        1,
+      );
 
       const command: EnqueueTaskCommand = {
         taskType: "small_review",
@@ -125,7 +127,9 @@ describe("AiTaskQueueService", () => {
     it("画像モードでタスクをキューに登録できる", async () => {
       // モックの設定
       vi.mocked(mockAiTaskRepository.save).mockResolvedValue(undefined);
-      vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(1);
+      vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(
+        1,
+      );
 
       const command: EnqueueTaskCommand = {
         taskType: "large_review",
@@ -161,7 +165,9 @@ describe("AiTaskQueueService", () => {
     it("ファイルなしでタスクをキューに登録できる", async () => {
       // モックの設定
       vi.mocked(mockAiTaskRepository.save).mockResolvedValue(undefined);
-      vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(1);
+      vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(
+        1,
+      );
 
       const command: EnqueueTaskCommand = {
         taskType: "checklist_generation",
@@ -182,7 +188,9 @@ describe("AiTaskQueueService", () => {
   describe("dequeueTask", () => {
     it("キューからタスクを取得できる", async () => {
       const testTask = createTestAiTask(AI_TASK_STATUS.PROCESSING);
-      vi.mocked(mockAiTaskRepository.dequeueNextTask).mockResolvedValue(testTask);
+      vi.mocked(mockAiTaskRepository.dequeueNextTask).mockResolvedValue(
+        testTask,
+      );
 
       const result = await service.dequeueTask(testApiKeyHash);
 
@@ -274,7 +282,9 @@ describe("AiTaskQueueService", () => {
 
   describe("getQueueLength", () => {
     it("キュー長を取得できる", async () => {
-      vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(5);
+      vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(
+        5,
+      );
 
       const result = await service.getQueueLength(testApiKeyHash);
 

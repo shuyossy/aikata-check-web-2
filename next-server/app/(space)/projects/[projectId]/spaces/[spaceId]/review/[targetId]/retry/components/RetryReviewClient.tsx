@@ -29,7 +29,12 @@ import {
   DEFAULT_EVALUATION_CRITERIA,
   DEFAULT_COMMENT_FORMAT,
 } from "@/domain/reviewSpace";
-import { showError, showSuccess, validateEvaluationCriteria, getMessage } from "@/lib/client";
+import {
+  showError,
+  showSuccess,
+  validateEvaluationCriteria,
+  getMessage,
+} from "@/lib/client";
 import { retryReviewAction } from "../actions";
 import { extractServerErrorMessage } from "@/hooks";
 
@@ -97,15 +102,16 @@ export function RetryReviewClient({
 
   // リトライ範囲
   const [retryScope, setRetryScope] = useState<RetryScope>(
-    retryInfo.failedItemCount > 0 ? "failed" : "all"
+    retryInfo.failedItemCount > 0 ? "failed" : "all",
   );
 
   // チェックリストソース（全項目リトライ時のみ）
-  const [checklistSource, setChecklistSource] = useState<ChecklistSource>("previous");
+  const [checklistSource, setChecklistSource] =
+    useState<ChecklistSource>("previous");
 
   // レビュー種別
   const [reviewType, setReviewType] = useState<RetryReviewType>(
-    retryInfo.reviewType ?? "small"
+    retryInfo.reviewType ?? "small",
   );
 
   // レビュー設定
@@ -117,7 +123,8 @@ export function RetryReviewClient({
     commentFormat:
       retryInfo.previousSettings?.commentFormat ?? DEFAULT_COMMENT_FORMAT,
     evaluationCriteria:
-      retryInfo.previousSettings?.evaluationCriteria ?? DEFAULT_EVALUATION_CRITERIA,
+      retryInfo.previousSettings?.evaluationCriteria ??
+      DEFAULT_EVALUATION_CRITERIA,
   });
 
   // リトライ実行アクション
@@ -125,12 +132,14 @@ export function RetryReviewClient({
     onSuccess: () => {
       showSuccess(getMessage("SUCCESS_RETRY_STARTED"));
       // レビュー結果画面に遷移
-      router.push(`/projects/${projectId}/spaces/${spaceId}/review/${targetId}`);
+      router.push(
+        `/projects/${projectId}/spaces/${spaceId}/review/${targetId}`,
+      );
     },
     onError: ({ error: actionError }) => {
       const message = extractServerErrorMessage(
         actionError,
-        "リトライ実行に失敗しました"
+        "リトライ実行に失敗しました",
       );
       showError(message);
     },
@@ -190,7 +199,10 @@ export function RetryReviewClient({
   ]);
 
   // リトライ不可の理由に応じたメッセージを取得
-  const getRetryNotAllowedMessage = (): { title: string; description: string } => {
+  const getRetryNotAllowedMessage = (): {
+    title: string;
+    description: string;
+  } => {
     if (retryInfo.retryNotAllowedReason === "api_review") {
       return {
         title: "外部APIレビューはリトライできません",
@@ -237,7 +249,7 @@ export function RetryReviewClient({
                 variant="outline"
                 onClick={() =>
                   router.push(
-                    `/projects/${projectId}/spaces/${spaceId}/review/${targetId}`
+                    `/projects/${projectId}/spaces/${spaceId}/review/${targetId}`,
                   )
                 }
               >
@@ -284,7 +296,8 @@ export function RetryReviewClient({
                 </span>
               </div>
               <p className="text-gray-600">
-                「{targetName}」のレビューをリトライします。前回の設定を引き継いで実行できます。
+                「{targetName}
+                」のレビューをリトライします。前回の設定を引き継いで実行できます。
               </p>
             </div>
 
@@ -292,7 +305,9 @@ export function RetryReviewClient({
             <div className="bg-gray-50 rounded-lg p-4 mb-8">
               <div className="flex items-center gap-2 mb-3">
                 <Info className="w-5 h-5 text-gray-600" />
-                <h4 className="font-medium text-gray-900">前回のレビュー結果</h4>
+                <h4 className="font-medium text-gray-900">
+                  前回のレビュー結果
+                </h4>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <div className="text-center">
@@ -371,11 +386,7 @@ export function RetryReviewClient({
 
                 {/* 全項目 */}
                 <div className="flex items-start space-x-3 p-3 border rounded-lg bg-white hover:bg-gray-50">
-                  <RadioGroupItem
-                    value="all"
-                    id="scope-all"
-                    className="mt-1"
-                  />
+                  <RadioGroupItem value="all" id="scope-all" className="mt-1" />
                   <div className="flex-1">
                     <Label
                       htmlFor="scope-all"
@@ -416,7 +427,10 @@ export function RetryReviewClient({
                     className="space-y-2 ml-7"
                   >
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="previous" id="checklist-previous" />
+                      <RadioGroupItem
+                        value="previous"
+                        id="checklist-previous"
+                      />
                       <Label
                         htmlFor="checklist-previous"
                         className="text-sm cursor-pointer"
@@ -479,7 +493,7 @@ export function RetryReviewClient({
                 variant="outline"
                 onClick={() =>
                   router.push(
-                    `/projects/${projectId}/spaces/${spaceId}/review/${targetId}`
+                    `/projects/${projectId}/spaces/${spaceId}/review/${targetId}`,
                   )
                 }
                 disabled={isExecuting}

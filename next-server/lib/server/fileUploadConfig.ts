@@ -4,10 +4,7 @@
  */
 export const fileUploadConfig = {
   /** ファイルサイズ上限（MB） */
-  maxFileSizeMB: parseInt(
-    process.env.FILE_UPLOAD_MAX_FILE_SIZE_MB || "50",
-    10,
-  ),
+  maxFileSizeMB: parseInt(process.env.FILE_UPLOAD_MAX_FILE_SIZE_MB || "50", 10),
 
   /** ファイルサイズ上限（バイト） */
   get maxFileSizeBytes(): number {

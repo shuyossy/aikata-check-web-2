@@ -146,7 +146,7 @@ describe("AiTaskWorkerPool", () => {
     it("存在しないAPIキーハッシュに対しては何もしない", async () => {
       // Act & Assert - エラーが発生しないことを確認
       await expect(
-        workerPool.stopWorkers("non-existent-hash")
+        workerPool.stopWorkers("non-existent-hash"),
       ).resolves.toBeUndefined();
     });
   });

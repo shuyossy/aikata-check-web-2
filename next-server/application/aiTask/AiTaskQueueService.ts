@@ -138,7 +138,11 @@ export class AiTaskQueueService {
 
         let filePath = "";
 
-        if (file.processMode === "image" && file.convertedImageBuffers && file.convertedImageBuffers.length > 0) {
+        if (
+          file.processMode === "image" &&
+          file.convertedImageBuffers &&
+          file.convertedImageBuffers.length > 0
+        ) {
           // 画像モード: 変換済み画像を保存
           await TaskFileHelper.saveConvertedImages(
             task.id.value,
@@ -146,7 +150,11 @@ export class AiTaskQueueService {
             file.convertedImageBuffers,
           );
           // 画像モードでは filePath は最初の画像へのパスを設定（復元時は fileId + count で復元）
-          filePath = TaskFileHelper.getConvertedImagePath(task.id.value, metadata.id.value, 0);
+          filePath = TaskFileHelper.getConvertedImagePath(
+            task.id.value,
+            metadata.id.value,
+            0,
+          );
         } else {
           // テキストモード: 元ファイルを保存
           filePath = await TaskFileHelper.saveFile(
@@ -255,7 +263,10 @@ export class AiTaskQueueService {
     const task = await this.aiTaskRepository.findById(taskId);
 
     if (!task) {
-      logger.warn({ taskId: command.taskId }, "完了対象のタスクが見つかりません");
+      logger.warn(
+        { taskId: command.taskId },
+        "完了対象のタスクが見つかりません",
+      );
       return; // 既に削除されている場合は何もしない
     }
 
@@ -284,7 +295,10 @@ export class AiTaskQueueService {
     const task = await this.aiTaskRepository.findById(taskId);
 
     if (!task) {
-      logger.warn({ taskId: command.taskId }, "失敗対象のタスクが見つかりません");
+      logger.warn(
+        { taskId: command.taskId },
+        "失敗対象のタスクが見つかりません",
+      );
       return; // 既に削除されている場合は何もしない
     }
 

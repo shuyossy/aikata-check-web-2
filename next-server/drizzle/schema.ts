@@ -176,7 +176,9 @@ export const checkListItems = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("idx_check_list_items_review_space_id").on(table.reviewSpaceId)],
+  (table) => [
+    index("idx_check_list_items_review_space_id").on(table.reviewSpaceId),
+  ],
 );
 
 /**
@@ -318,7 +320,9 @@ export const reviewDocumentCaches = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index("idx_review_document_caches_review_target_id").on(table.reviewTargetId),
+    index("idx_review_document_caches_review_target_id").on(
+      table.reviewTargetId,
+    ),
   ],
 );
 
@@ -429,7 +433,9 @@ export const aiTaskFileMetadata = pgTable(
      * 処理モード（text: テキスト抽出, image: 画像変換）
      * 画像モードの場合、元ファイルではなく変換済み画像が保存される
      */
-    processMode: varchar("process_mode", { length: 10 }).notNull().default("text"),
+    processMode: varchar("process_mode", { length: 10 })
+      .notNull()
+      .default("text"),
     /**
      * 変換済み画像数（画像モードの場合のみ）
      * テキストモードの場合は0
@@ -440,16 +446,13 @@ export const aiTaskFileMetadata = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [
-    index("idx_ai_task_file_metadata_task_id").on(table.taskId),
-  ],
+  (table) => [index("idx_ai_task_file_metadata_task_id").on(table.taskId)],
 );
 
 /**
  * AIタスクファイルメタデータテーブルの型定義
  */
-export type AiTaskFileMetadataDbEntity =
-  typeof aiTaskFileMetadata.$inferSelect;
+export type AiTaskFileMetadataDbEntity = typeof aiTaskFileMetadata.$inferSelect;
 export type NewAiTaskFileMetadataDbEntity =
   typeof aiTaskFileMetadata.$inferInsert;
 
@@ -538,7 +541,9 @@ export const largeDocumentResultCaches = pgTable(
     /** 何番目のチャンクか（0から始まる） */
     chunkIndex: integer("chunk_index").notNull().default(0),
     /** 個別ファイル名（分割時は分割後の名前） */
-    individualFileName: varchar("individual_file_name", { length: 255 }).notNull(),
+    individualFileName: varchar("individual_file_name", {
+      length: 255,
+    }).notNull(),
     /** レコード作成日時 */
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -625,11 +630,15 @@ export const systemNotifications = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => [index("idx_system_notifications_display_order").on(table.displayOrder)],
+  (table) => [
+    index("idx_system_notifications_display_order").on(table.displayOrder),
+  ],
 );
 
 /**
  * システム通知テーブルの型定義
  */
-export type SystemNotificationDbEntity = typeof systemNotifications.$inferSelect;
-export type NewSystemNotificationDbEntity = typeof systemNotifications.$inferInsert;
+export type SystemNotificationDbEntity =
+  typeof systemNotifications.$inferSelect;
+export type NewSystemNotificationDbEntity =
+  typeof systemNotifications.$inferInsert;

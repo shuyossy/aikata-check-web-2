@@ -249,7 +249,9 @@ describe("CheckListItemContent", () => {
     });
 
     it("有効なJSON配列形式を受け入れる", () => {
-      const content = CheckListItemContent.create(JSON.stringify(["項目1", "項目2"]));
+      const content = CheckListItemContent.create(
+        JSON.stringify(["項目1", "項目2"]),
+      );
       expect(content.value).toBe('["項目1","項目2"]');
     });
 
@@ -302,7 +304,9 @@ describe("QaHistory", () => {
       const qaHistory = createTestQaHistory();
       qaHistory.startProcessing(); // processing状態に遷移
 
-      expect(() => qaHistory.startProcessing()).toThrow("処理を開始できるのはpending状態のときのみです");
+      expect(() => qaHistory.startProcessing()).toThrow(
+        "処理を開始できるのはpending状態のときのみです",
+      );
     });
   });
 
@@ -427,7 +431,11 @@ describe("QaHistory", () => {
       // 3. 完了（completed状態）
       const answer = Answer.create("回答");
       const summary = ResearchSummary.create([
-        { documentName: "test.docx", researchContent: "調査", researchResult: "結果" },
+        {
+          documentName: "test.docx",
+          researchContent: "調査",
+          researchResult: "結果",
+        },
       ]);
       qaHistory.complete(answer, summary);
       expect(qaHistory.isPending()).toBe(false);
@@ -472,7 +480,9 @@ describe("QaHistory", () => {
         updatedAt: now,
       });
 
-      expect(() => qaHistory.startProcessing()).toThrow("処理を開始できるのはpending状態のときのみです");
+      expect(() => qaHistory.startProcessing()).toThrow(
+        "処理を開始できるのはpending状態のときのみです",
+      );
     });
 
     it("error状態からstartProcessingを呼び出すとエラー", () => {
@@ -491,7 +501,9 @@ describe("QaHistory", () => {
         updatedAt: now,
       });
 
-      expect(() => qaHistory.startProcessing()).toThrow("処理を開始できるのはpending状態のときのみです");
+      expect(() => qaHistory.startProcessing()).toThrow(
+        "処理を開始できるのはpending状態のときのみです",
+      );
     });
 
     it("pending状態でもcomplete/failは可能（SSE接続なしでの直接完了ケース用）", () => {
@@ -529,7 +541,9 @@ describe("QaHistory", () => {
       qaHistory.startProcessing();
 
       // updatedAtが更新されていることを確認
-      expect(qaHistory.updatedAt.getTime()).toBeGreaterThanOrEqual(initialUpdatedAt.getTime());
+      expect(qaHistory.updatedAt.getTime()).toBeGreaterThanOrEqual(
+        initialUpdatedAt.getTime(),
+      );
     });
   });
 });

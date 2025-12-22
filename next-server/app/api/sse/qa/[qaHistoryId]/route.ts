@@ -27,7 +27,7 @@ const logger = getLogger();
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ qaHistoryId: string }> }
+  { params }: { params: Promise<{ qaHistoryId: string }> },
 ): Promise<Response> {
   const { qaHistoryId } = await params;
 
@@ -46,24 +46,37 @@ export async function GET(
     const qaHistory = await qaHistoryRepository.findById(qaHistoryIdVo);
 
     if (!qaHistory) {
-      return NextResponse.json({ error: "Q&A history not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Q&A history not found" },
+        { status: 404 },
+      );
     }
 
     // レビュー対象の取得
     const reviewTargetRepository = new ReviewTargetRepository();
-    const reviewTarget = await reviewTargetRepository.findById(qaHistory.reviewTargetId);
+    const reviewTarget = await reviewTargetRepository.findById(
+      qaHistory.reviewTargetId,
+    );
 
     if (!reviewTarget) {
-      return NextResponse.json({ error: "Review target not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Review target not found" },
+        { status: 404 },
+      );
     }
 
     // レビュースペースの取得
     const reviewSpaceRepository = new ReviewSpaceRepository();
-    const reviewSpaceId = ReviewSpaceId.reconstruct(reviewTarget.reviewSpaceId.value);
+    const reviewSpaceId = ReviewSpaceId.reconstruct(
+      reviewTarget.reviewSpaceId.value,
+    );
     const reviewSpace = await reviewSpaceRepository.findById(reviewSpaceId);
 
     if (!reviewSpace) {
-      return NextResponse.json({ error: "Review space not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Review space not found" },
+        { status: 404 },
+      );
     }
 
     // プロジェクトの権限チェック
@@ -126,7 +139,10 @@ export async function GET(
           );
           await startWorkflowService.startWorkflow(qaHistoryId, userId);
         } catch (error) {
-          logger.error({ err: error, qaHistoryId }, "ワークフロー開始に失敗しました");
+          logger.error(
+            { err: error, qaHistoryId },
+            "ワークフロー開始に失敗しました",
+          );
           // エラーイベントを送信
           const errorEvent = `data: ${JSON.stringify({ type: "error", data: { message: "処理の開始に失敗しました" } })}\n\n`;
           controller.enqueue(encoder.encode(errorEvent));
@@ -152,7 +168,10 @@ export async function GET(
       },
     });
   } catch (error) {
-    logger.error({ err: error, qaHistoryId, userId }, "Error creating SSE stream for Q&A");
+    logger.error(
+      { err: error, qaHistoryId, userId },
+      "Error creating SSE stream for Q&A",
+    );
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 },

@@ -1,4 +1,4 @@
-import type { ExtractedFile } from './shared/types';
+import type { ExtractedFile } from "./shared/types";
 
 /**
  * 複数ファイルを統合したメッセージコンテンツを作成する
@@ -8,21 +8,21 @@ import type { ExtractedFile } from './shared/types';
  */
 export function createCombinedMessage(
   files: ExtractedFile[],
-  promptText: string
+  promptText: string,
 ): Array<
-  | { type: 'text'; text: string }
-  | { type: 'image'; image: string; mimeType: string }
+  | { type: "text"; text: string }
+  | { type: "image"; image: string; mimeType: string }
 > {
   // ファイル名一覧を作成
-  const fileNames = files.map((file) => file.name).join(', ');
+  const fileNames = files.map((file) => file.name).join(", ");
 
   // メッセージコンテンツを構築
   const content: Array<
-    | { type: 'text'; text: string }
-    | { type: 'image'; image: string; mimeType: string }
+    | { type: "text"; text: string }
+    | { type: "image"; image: string; mimeType: string }
   > = [
     {
-      type: 'text',
+      type: "text",
       text: `${promptText}: ${fileNames}`,
     },
   ];
@@ -31,7 +31,7 @@ export function createCombinedMessage(
   for (const file of files) {
     // 画像として処理する場合
     if (
-      file.processMode === 'image' &&
+      file.processMode === "image" &&
       file.imageData &&
       file.imageData.length > 0
     ) {
@@ -42,22 +42,22 @@ export function createCombinedMessage(
 
         // ページ番号を含むテキスト説明を追加
         content.push({
-          type: 'text',
+          type: "text",
           text: `# ${file.name}: Page ${currentPage}/${totalPages}`,
         });
 
         // 該当ページの画像データを追加
         content.push({
-          type: 'image',
+          type: "image",
           image: file.imageData[pageIndex],
-          mimeType: 'image/png',
+          mimeType: "image/png",
         });
       }
     } else {
       // テキストモードの場合
       content.push({
-        type: 'text',
-        text: `# ${file.name}\n${file.textContent ?? ''}`,
+        type: "text",
+        text: `# ${file.name}\n${file.textContent ?? ""}`,
       });
     }
   }

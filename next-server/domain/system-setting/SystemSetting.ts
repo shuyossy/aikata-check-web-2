@@ -76,12 +76,7 @@ export class SystemSetting {
     // APIキーを暗号化
     const encryptedApiKey = apiKey ? encrypt(apiKey) : null;
 
-    return new SystemSetting(
-      encryptedApiKey,
-      apiUrl,
-      apiModel,
-      new Date(),
-    );
+    return new SystemSetting(encryptedApiKey, apiUrl, apiModel, new Date());
   }
 
   /**
@@ -90,12 +85,7 @@ export class SystemSetting {
   static reconstruct(params: ReconstructSystemSettingParams): SystemSetting {
     const { encryptedApiKey, apiUrl, apiModel, updatedAt } = params;
 
-    return new SystemSetting(
-      encryptedApiKey,
-      apiUrl,
-      apiModel,
-      updatedAt,
-    );
+    return new SystemSetting(encryptedApiKey, apiUrl, apiModel, updatedAt);
   }
 
   /**
@@ -112,7 +102,12 @@ export class SystemSetting {
     const newApiUrl = apiUrl !== null ? apiUrl : this._apiUrl;
     const newApiModel = apiModel !== null ? apiModel : this._apiModel;
 
-    return new SystemSetting(newEncryptedApiKey, newApiUrl, newApiModel, new Date());
+    return new SystemSetting(
+      newEncryptedApiKey,
+      newApiUrl,
+      newApiModel,
+      new Date(),
+    );
   }
 
   /**

@@ -2,7 +2,6 @@ import { Agent } from "@mastra/core/agent";
 import { getModel } from "./model";
 import { z } from "zod";
 import { getChecklistRefinementPrompt } from "./prompts";
-import type { ChecklistRefinementAgentRuntimeContext } from "./types";
 
 /**
  * チェックリストブラッシュアップエージェントの出力スキーマ
@@ -23,14 +22,6 @@ export type ChecklistRefinementOutput = z.infer<
  */
 export const checklistRefinementAgent = new Agent({
   name: "checklist-refinement-agent",
-  instructions: ({
-    runtimeContext,
-  }: {
-    runtimeContext?: { get: (key: string) => unknown };
-  }) =>
-    getChecklistRefinementPrompt({
-      runtimeContext:
-        runtimeContext as import("@mastra/core/di").RuntimeContext<ChecklistRefinementAgentRuntimeContext>,
-    }),
-  model: ({ runtimeContext }) => getModel(runtimeContext),
+  instructions: getChecklistRefinementPrompt,
+  model: getModel,
 });

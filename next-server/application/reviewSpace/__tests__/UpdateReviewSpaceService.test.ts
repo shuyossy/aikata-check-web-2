@@ -246,7 +246,9 @@ describe("UpdateReviewSpaceService", () => {
           description: "あ".repeat(1001),
           defaultReviewSettings: validReviewSettings,
         }),
-      ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_DESCRIPTION_TOO_LONG" });
+      ).rejects.toMatchObject({
+        messageCode: "REVIEW_SPACE_DESCRIPTION_TOO_LONG",
+      });
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {

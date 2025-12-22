@@ -129,7 +129,8 @@ describe("CompleteApiReviewService", () => {
       expect(mockReviewTargetRepository.save).toHaveBeenCalledTimes(1);
 
       // 保存されたReviewTargetのステータスがcompletedであることを確認
-      const savedTarget = vi.mocked(mockReviewTargetRepository.save).mock.calls[0][0] as ReviewTarget;
+      const savedTarget = vi.mocked(mockReviewTargetRepository.save).mock
+        .calls[0][0] as ReviewTarget;
       expect(savedTarget.status.isCompleted()).toBe(true);
     });
 
@@ -156,7 +157,8 @@ describe("CompleteApiReviewService", () => {
       expect(result.status).toBe("error");
 
       // 保存されたReviewTargetのステータスがerrorであることを確認
-      const savedTarget = vi.mocked(mockReviewTargetRepository.save).mock.calls[0][0] as ReviewTarget;
+      const savedTarget = vi.mocked(mockReviewTargetRepository.save).mock
+        .calls[0][0] as ReviewTarget;
       expect(savedTarget.status.isError()).toBe(true);
     });
 

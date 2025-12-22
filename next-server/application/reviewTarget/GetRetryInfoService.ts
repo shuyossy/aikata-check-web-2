@@ -75,7 +75,9 @@ export class GetRetryInfoService {
     }
 
     // レビュースペースの存在確認
-    const reviewSpace = await this.reviewSpaceRepository.findById(reviewTarget.reviewSpaceId);
+    const reviewSpace = await this.reviewSpaceRepository.findById(
+      reviewTarget.reviewSpaceId,
+    );
     if (!reviewSpace) {
       throw domainValidationError("REVIEW_SPACE_NOT_FOUND");
     }
@@ -127,7 +129,8 @@ export class GetRetryInfoService {
       await this.reviewDocumentCacheRepository.findByReviewTargetId(
         reviewTargetIdVo,
       );
-    const hasCachedDocuments = documentCaches.length > 0 &&
+    const hasCachedDocuments =
+      documentCaches.length > 0 &&
       documentCaches.every((cache) => cache.hasCache());
 
     // リトライ可能かどうかを判定

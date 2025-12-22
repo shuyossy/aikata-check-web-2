@@ -114,7 +114,9 @@ describe("ListReviewSpaceCheckListItemsService", () => {
       expect(result.items[0].content).toBe(
         "要件定義書との整合性が確保されているか",
       );
-      expect(result.items[1].content).toBe("セキュリティ要件が考慮されているか");
+      expect(result.items[1].content).toBe(
+        "セキュリティ要件が考慮されているか",
+      );
     });
 
     it("ページネーションが正しく適用される", async () => {
@@ -137,8 +139,12 @@ describe("ListReviewSpaceCheckListItemsService", () => {
     });
 
     it("空の結果を正しく返す", async () => {
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue([]);
-      vi.mocked(mockCheckListItemRepository.countByReviewSpaceId).mockResolvedValue(0);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue([]);
+      vi.mocked(
+        mockCheckListItemRepository.countByReviewSpaceId,
+      ).mockResolvedValue(0);
 
       const result = await service.execute({
         reviewSpaceId: validReviewSpaceId,
@@ -185,9 +191,9 @@ describe("ListReviewSpaceCheckListItemsService", () => {
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockRejectedValue(
-        new Error("DB Error"),
-      );
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockRejectedValue(new Error("DB Error"));
 
       await expect(
         service.execute({

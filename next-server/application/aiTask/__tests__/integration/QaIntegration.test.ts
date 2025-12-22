@@ -9,7 +9,10 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { RuntimeContext } from "@mastra/core/di";
-import type { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
+import type {
+  IProjectRepository,
+  ISystemSettingRepository,
+} from "@/application/shared/port/repository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
@@ -17,15 +20,44 @@ import type { IReviewDocumentCacheRepository } from "@/application/shared/port/r
 import type { ILargeDocumentResultCacheRepository } from "@/application/shared/port/repository/ILargeDocumentResultCacheRepository";
 import type { IQaHistoryRepository } from "@/application/shared/port/repository/IQaHistoryRepository";
 import type { IEventBroker } from "@/application/shared/port/push/IEventBroker";
-import { ExecuteQaService, type ExecuteQaCommand } from "@/application/qaHistory/ExecuteQaService";
+import {
+  ExecuteQaService,
+  type ExecuteQaCommand,
+} from "@/application/qaHistory/ExecuteQaService";
 import { StartQaWorkflowService } from "@/application/qaHistory/StartQaWorkflowService";
 import type { Mastra } from "@mastra/core";
-import type { QaCompleteEvent, QaErrorEvent, QaResearchStartEvent, QaResearchProgressEvent } from "@/application/shared/port/push/QaSseEventTypes";
+import type {
+  QaCompleteEvent,
+  QaErrorEvent,
+  QaResearchStartEvent,
+  QaResearchProgressEvent,
+} from "@/application/shared/port/push/QaSseEventTypes";
 import { Project, ProjectId } from "@/domain/project";
 import { ReviewSpace, ReviewSpaceId } from "@/domain/reviewSpace";
-import { ReviewTarget, ReviewTargetId, ReviewTargetStatus, ReviewDocumentCache, ReviewDocumentCacheId, REVIEW_TARGET_STATUS } from "@/domain/reviewTarget";
-import { ReviewResult, ReviewResultId, CheckListItemContent, Evaluation, Comment as ReviewComment } from "@/domain/reviewResult";
-import { QaHistory, QaHistoryId, Question, Answer, CheckListItemContent as QaCheckListItemContent, ResearchSummary, QaStatus } from "@/domain/qaHistory";
+import {
+  ReviewTarget,
+  ReviewTargetId,
+  ReviewTargetStatus,
+  ReviewDocumentCache,
+  ReviewDocumentCacheId,
+  REVIEW_TARGET_STATUS,
+} from "@/domain/reviewTarget";
+import {
+  ReviewResult,
+  ReviewResultId,
+  CheckListItemContent,
+  Evaluation,
+  Comment as ReviewComment,
+} from "@/domain/reviewResult";
+import {
+  QaHistory,
+  QaHistoryId,
+  Question,
+  Answer,
+  CheckListItemContent as QaCheckListItemContent,
+  ResearchSummary,
+  QaStatus,
+} from "@/domain/qaHistory";
 import { UserId } from "@/domain/user";
 import type { QaExecutionWorkflowRuntimeContext } from "@/application/mastra/workflows/qaExecution";
 
@@ -57,18 +89,21 @@ const {
       getAgent: (name: string) => {
         if (name === "qaPlanningAgent") {
           return {
-            generateLegacy: (...args: unknown[]) => _mockQaPlanningAgentGenerateLegacy(...args),
+            generateLegacy: (...args: unknown[]) =>
+              _mockQaPlanningAgentGenerateLegacy(...args),
           };
         }
         if (name === "qaResearchAgent") {
           return {
-            generateLegacy: (...args: unknown[]) => _mockQaResearchAgentGenerateLegacy(...args),
+            generateLegacy: (...args: unknown[]) =>
+              _mockQaResearchAgentGenerateLegacy(...args),
           };
         }
         if (name === "qaAnswerAgent") {
           // generateQaAnswerStepはgenerateLegacyを使用
           return {
-            generateLegacy: (...args: unknown[]) => _mockQaAnswerAgentGenerate(...args),
+            generateLegacy: (...args: unknown[]) =>
+              _mockQaAnswerAgentGenerate(...args),
           };
         }
         return null;
@@ -110,8 +145,7 @@ vi.mock("@/application/mastra/agents", () => ({
   },
   qaAnswerAgent: {
     // generateQaAnswerStepはgenerateLegacyを使用
-    generateLegacy: (...args: unknown[]) =>
-      mockQaAnswerAgentGenerate(...args),
+    generateLegacy: (...args: unknown[]) => mockQaAnswerAgentGenerate(...args),
   },
   // 互換性のため他のエージェントもエクスポート
   topicExtractionAgent: {},
@@ -139,120 +173,137 @@ vi.mock("@/application/mastra/agents", () => ({
 // ========================================
 
 // planQaResearchStepのモック
-vi.mock("@/application/mastra/workflows/qaExecution/steps/planQaResearchStep", async () => {
-  const actual = await vi.importActual<typeof import("@/application/mastra/workflows/qaExecution/steps/planQaResearchStep")>(
-    "@/application/mastra/workflows/qaExecution/steps/planQaResearchStep"
-  );
-  const { createStep } = await vi.importActual<typeof import("@mastra/core/workflows")>(
-    "@mastra/core/workflows"
-  );
+vi.mock(
+  "@/application/mastra/workflows/qaExecution/steps/planQaResearchStep",
+  async () => {
+    const actual = await vi.importActual<
+      typeof import("@/application/mastra/workflows/qaExecution/steps/planQaResearchStep")
+    >("@/application/mastra/workflows/qaExecution/steps/planQaResearchStep");
+    const { createStep } = await vi.importActual<
+      typeof import("@mastra/core/workflows")
+    >("@mastra/core/workflows");
 
-  // オリジナルのexecute関数を取得し、mastraを注入してラップ
-  const originalStep = actual.planQaResearchStep;
+    // オリジナルのexecute関数を取得し、mastraを注入してラップ
+    const originalStep = actual.planQaResearchStep;
 
-  return {
-    ...actual,
-    planQaResearchStep: createStep({
-      id: originalStep.id,
-      description: originalStep.description,
-      inputSchema: actual.planQaResearchStepInputSchema,
-      outputSchema: actual.planQaResearchStepOutputSchema,
-      execute: async (context) => {
-        // mastraをモックに置き換え
-        const modifiedContext = {
-          ...context,
-          mastra: mockMastraForSteps,
-        };
-        // @ts-expect-error - executeの型が複雑なためエラーを無視
-        return originalStep.execute(modifiedContext);
-      },
-    }),
-  };
-});
+    return {
+      ...actual,
+      planQaResearchStep: createStep({
+        id: originalStep.id,
+        description: originalStep.description,
+        inputSchema: actual.planQaResearchStepInputSchema,
+        outputSchema: actual.planQaResearchStepOutputSchema,
+        execute: async (context) => {
+          // mastraをモックに置き換え
+          const modifiedContext = {
+            ...context,
+            mastra: mockMastraForSteps,
+          };
+          // @ts-expect-error - executeの型が複雑なためエラーを無視
+          return originalStep.execute(modifiedContext);
+        },
+      }),
+    };
+  },
+);
 
 // researchChunkStepのモック
-vi.mock("@/application/mastra/workflows/qaExecution/steps/researchChunkStep", async () => {
-  const actual = await vi.importActual<typeof import("@/application/mastra/workflows/qaExecution/steps/researchChunkStep")>(
-    "@/application/mastra/workflows/qaExecution/steps/researchChunkStep"
-  );
-  const { createStep } = await vi.importActual<typeof import("@mastra/core/workflows")>(
-    "@mastra/core/workflows"
-  );
+vi.mock(
+  "@/application/mastra/workflows/qaExecution/steps/researchChunkStep",
+  async () => {
+    const actual = await vi.importActual<
+      typeof import("@/application/mastra/workflows/qaExecution/steps/researchChunkStep")
+    >("@/application/mastra/workflows/qaExecution/steps/researchChunkStep");
+    const { createStep } = await vi.importActual<
+      typeof import("@mastra/core/workflows")
+    >("@mastra/core/workflows");
 
-  const originalStep = actual.researchChunkStep;
+    const originalStep = actual.researchChunkStep;
 
-  return {
-    ...actual,
-    researchChunkStep: createStep({
-      id: originalStep.id,
-      description: originalStep.description,
-      inputSchema: actual.researchChunkStepInputSchema,
-      outputSchema: actual.researchChunkStepOutputSchema,
-      execute: async (context) => {
-        const modifiedContext = {
-          ...context,
-          mastra: mockMastraForSteps,
-        };
-        // @ts-expect-error - executeの型が複雑なためエラーを無視
-        return originalStep.execute(modifiedContext);
-      },
-    }),
-  };
-});
+    return {
+      ...actual,
+      researchChunkStep: createStep({
+        id: originalStep.id,
+        description: originalStep.description,
+        inputSchema: actual.researchChunkStepInputSchema,
+        outputSchema: actual.researchChunkStepOutputSchema,
+        execute: async (context) => {
+          const modifiedContext = {
+            ...context,
+            mastra: mockMastraForSteps,
+          };
+          // @ts-expect-error - executeの型が複雑なためエラーを無視
+          return originalStep.execute(modifiedContext);
+        },
+      }),
+    };
+  },
+);
 
 // generateQaAnswerStepのモック
-vi.mock("@/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep", async () => {
-  const actual = await vi.importActual<typeof import("@/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep")>(
-    "@/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep"
-  );
-  const { createStep } = await vi.importActual<typeof import("@mastra/core/workflows")>(
-    "@mastra/core/workflows"
-  );
+vi.mock(
+  "@/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep",
+  async () => {
+    const actual = await vi.importActual<
+      typeof import("@/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep")
+    >("@/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep");
+    const { createStep } = await vi.importActual<
+      typeof import("@mastra/core/workflows")
+    >("@mastra/core/workflows");
 
-  const originalStep = actual.generateQaAnswerStep;
+    const originalStep = actual.generateQaAnswerStep;
 
-  return {
-    ...actual,
-    generateQaAnswerStep: createStep({
-      id: originalStep.id,
-      description: originalStep.description,
-      inputSchema: actual.generateQaAnswerStepInputSchema,
-      outputSchema: actual.generateQaAnswerStepOutputSchema,
-      execute: async (context) => {
-        const modifiedContext = {
-          ...context,
-          mastra: mockMastraForSteps,
-        };
-        // @ts-expect-error - executeの型が複雑なためエラーを無視
-        return originalStep.execute(modifiedContext);
-      },
-    }),
-  };
-});
+    return {
+      ...actual,
+      generateQaAnswerStep: createStep({
+        id: originalStep.id,
+        description: originalStep.description,
+        inputSchema: actual.generateQaAnswerStepInputSchema,
+        outputSchema: actual.generateQaAnswerStepOutputSchema,
+        execute: async (context) => {
+          const modifiedContext = {
+            ...context,
+            mastra: mockMastraForSteps,
+          };
+          // @ts-expect-error - executeの型が複雑なためエラーを無視
+          return originalStep.execute(modifiedContext);
+        },
+      }),
+    };
+  },
+);
 
 // ========================================
 // ワークフロー内部で直接インスタンス化されるリポジトリのモック
 // ========================================
-vi.mock("@/infrastructure/adapter/db/drizzle/repository/ReviewDocumentCacheRepository", () => ({
-  ReviewDocumentCacheRepository: vi.fn().mockImplementation(() => ({
-    findById: mockReviewDocumentCacheRepositoryFindById,
-  })),
-}));
+vi.mock(
+  "@/infrastructure/adapter/db/drizzle/repository/ReviewDocumentCacheRepository",
+  () => ({
+    ReviewDocumentCacheRepository: vi.fn().mockImplementation(() => ({
+      findById: mockReviewDocumentCacheRepositoryFindById,
+    })),
+  }),
+);
 
 // LargeDocumentResultCacheRepositoryのモック（getTotalChunksStepで使用）
-vi.mock("@/infrastructure/adapter/db/drizzle/repository/LargeDocumentResultCacheRepository", () => ({
-  LargeDocumentResultCacheRepository: vi.fn().mockImplementation(() => ({
-    getMaxTotalChunksForDocument: vi.fn().mockResolvedValue(1), // デフォルトで1チャンクを返す
-  })),
-}));
+vi.mock(
+  "@/infrastructure/adapter/db/drizzle/repository/LargeDocumentResultCacheRepository",
+  () => ({
+    LargeDocumentResultCacheRepository: vi.fn().mockImplementation(() => ({
+      getMaxTotalChunksForDocument: vi.fn().mockResolvedValue(1), // デフォルトで1チャンクを返す
+    })),
+  }),
+);
 
 // ========================================
 // ReviewCacheHelperのモック
 // ========================================
 vi.mock("@/lib/server/reviewCacheHelper", () => ({
   ReviewCacheHelper: {
-    loadTextCache: (...args: unknown[]) => mockReviewCacheHelperLoadTextCache(...args),
-    loadImageCache: (...args: unknown[]) => mockReviewCacheHelperLoadImageCache(...args),
+    loadTextCache: (...args: unknown[]) =>
+      mockReviewCacheHelperLoadTextCache(...args),
+    loadImageCache: (...args: unknown[]) =>
+      mockReviewCacheHelperLoadImageCache(...args),
     saveTextCache: vi.fn().mockResolvedValue("/mock/cache/text.json"),
     saveImageCache: vi.fn().mockResolvedValue("/mock/cache/image.json"),
     deleteCache: vi.fn().mockResolvedValue(undefined),
@@ -264,12 +315,12 @@ vi.mock("@/lib/server/reviewCacheHelper", () => ({
 // ========================================
 vi.mock("@/application/mastra", async () => {
   // 実際のワークフローとユーティリティをインポート
-  const workflowUtils = await vi.importActual<typeof import("@/application/mastra/lib/workflowUtils")>(
-    "@/application/mastra/lib/workflowUtils"
-  );
-  const qaExecutionWorkflowModule = await vi.importActual<typeof import("@/application/mastra/workflows/qaExecution")>(
-    "@/application/mastra/workflows/qaExecution"
-  );
+  const workflowUtils = await vi.importActual<
+    typeof import("@/application/mastra/lib/workflowUtils")
+  >("@/application/mastra/lib/workflowUtils");
+  const qaExecutionWorkflowModule = await vi.importActual<
+    typeof import("@/application/mastra/workflows/qaExecution")
+  >("@/application/mastra/workflows/qaExecution");
 
   return {
     mastra: {
@@ -302,7 +353,7 @@ interface RuntimeContextExpectations {
 
 const assertRuntimeContext = (
   runtimeContext: { get: (key: string) => unknown } | null,
-  expectations: RuntimeContextExpectations
+  expectations: RuntimeContextExpectations,
 ): void => {
   expect(runtimeContext).not.toBeNull();
 
@@ -336,7 +387,11 @@ const createTestQaHistory = (params: {
   checkListItemContent: string;
   status: "pending" | "processing" | "completed" | "error";
   answer?: string | null;
-  researchSummary?: Array<{ documentName: string; researchContent: string; researchResult: string }> | null;
+  researchSummary?: Array<{
+    documentName: string;
+    researchContent: string;
+    researchResult: string;
+  }> | null;
   errorMessage?: string | null;
   createdAt?: Date;
   updatedAt?: Date;
@@ -347,9 +402,13 @@ const createTestQaHistory = (params: {
     reviewTargetId: ReviewTargetId.reconstruct(params.reviewTargetId),
     userId: UserId.reconstruct(params.userId),
     question: Question.create(params.question),
-    checkListItemContent: QaCheckListItemContent.create(params.checkListItemContent),
+    checkListItemContent: QaCheckListItemContent.create(
+      params.checkListItemContent,
+    ),
     answer: params.answer ? Answer.create(params.answer) : null,
-    researchSummary: params.researchSummary ? ResearchSummary.create(params.researchSummary) : null,
+    researchSummary: params.researchSummary
+      ? ResearchSummary.create(params.researchSummary)
+      : null,
     status: QaStatus.reconstruct(params.status),
     errorMessage: params.errorMessage ?? null,
     createdAt: params.createdAt ?? now,
@@ -437,24 +496,36 @@ describe("QA機能 結合テスト", () => {
       savedQaHistory = qaHistory;
       return Promise.resolve();
     }),
-    updateAnswer: vi.fn().mockImplementation((qaHistoryId: QaHistoryId, answer: Answer, researchSummary: ResearchSummary) => {
-      savedAnswer = {
-        answer: answer.value,
-        researchSummary: researchSummary.value,
-      };
-      return Promise.resolve();
-    }),
-    updateError: vi.fn().mockImplementation((qaHistoryId: QaHistoryId, errorMessage: string) => {
-      savedError = errorMessage;
-      return Promise.resolve();
-    }),
-    updateStatus: vi.fn().mockImplementation((qaHistoryId: QaHistoryId, status: QaStatus) => {
-      statusHistory.push({
-        qaHistoryId: qaHistoryId.value,
-        status: status.value,
-      });
-      return Promise.resolve();
-    }),
+    updateAnswer: vi
+      .fn()
+      .mockImplementation(
+        (
+          qaHistoryId: QaHistoryId,
+          answer: Answer,
+          researchSummary: ResearchSummary,
+        ) => {
+          savedAnswer = {
+            answer: answer.value,
+            researchSummary: researchSummary.value,
+          };
+          return Promise.resolve();
+        },
+      ),
+    updateError: vi
+      .fn()
+      .mockImplementation((qaHistoryId: QaHistoryId, errorMessage: string) => {
+        savedError = errorMessage;
+        return Promise.resolve();
+      }),
+    updateStatus: vi
+      .fn()
+      .mockImplementation((qaHistoryId: QaHistoryId, status: QaStatus) => {
+        statusHistory.push({
+          qaHistoryId: qaHistoryId.value,
+          status: status.value,
+        });
+        return Promise.resolve();
+      }),
     delete: vi.fn(),
     deleteByReviewTargetId: vi.fn(),
   };
@@ -502,14 +573,15 @@ describe("QA機能 結合テスト", () => {
     deleteByReviewTargetId: vi.fn(),
   };
 
-  const mockLargeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository = {
-    save: vi.fn(),
-    saveMany: vi.fn(),
-    findByReviewTargetId: vi.fn(),
-    deleteByReviewTargetId: vi.fn(),
-    findChecklistResultsWithIndividualResults: vi.fn(),
-    getMaxTotalChunksForDocument: vi.fn(),
-  };
+  const mockLargeDocumentResultCacheRepository: ILargeDocumentResultCacheRepository =
+    {
+      save: vi.fn(),
+      saveMany: vi.fn(),
+      findByReviewTargetId: vi.fn(),
+      deleteByReviewTargetId: vi.fn(),
+      findChecklistResultsWithIndividualResults: vi.fn(),
+      getMaxTotalChunksForDocument: vi.fn(),
+    };
 
   const mockSystemSettingRepository: ISystemSettingRepository = {
     find: vi.fn(),
@@ -559,11 +631,21 @@ describe("QA機能 結合テスト", () => {
 
     // リポジトリのデフォルト戻り値設定
     vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
-    vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
-    vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(testReviewTarget);
-    vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue([testReviewResult]);
-    vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([testDocumentCache]);
-    vi.mocked(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults).mockResolvedValue([]);
+    vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+      testReviewSpace,
+    );
+    vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+      testReviewTarget,
+    );
+    vi.mocked(
+      mockReviewResultRepository.findByReviewTargetId,
+    ).mockResolvedValue([testReviewResult]);
+    vi.mocked(
+      mockReviewDocumentCacheRepository.findByReviewTargetId,
+    ).mockResolvedValue([testDocumentCache]);
+    vi.mocked(
+      mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults,
+    ).mockResolvedValue([]);
     vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(null);
 
     // ワークフロー内部で使用するリポジトリのモック設定
@@ -576,7 +658,9 @@ describe("QA機能 結合テスト", () => {
       isTextMode: () => true,
       isImageMode: () => false,
     });
-    mockReviewCacheHelperLoadTextCache.mockResolvedValue("テストドキュメントの内容です。これはセキュリティに関する重要な情報を含んでいます。");
+    mockReviewCacheHelperLoadTextCache.mockResolvedValue(
+      "テストドキュメントの内容です。これはセキュリティに関する重要な情報を含んでいます。",
+    );
     mockReviewCacheHelperLoadImageCache.mockResolvedValue([]);
 
     // AIエージェントのデフォルトモック設定
@@ -609,7 +693,7 @@ describe("QA機能 結合テスト", () => {
       mockQaHistoryRepository,
       mockReviewTargetRepository,
       mockReviewSpaceRepository,
-      mockProjectRepository
+      mockProjectRepository,
     );
 
     startQaWorkflowService = new StartQaWorkflowService(
@@ -622,7 +706,7 @@ describe("QA機能 結合テスト", () => {
       mockReviewSpaceRepository,
       mockProjectRepository,
       mockEventBroker,
-      mockMastra
+      mockMastra,
     );
   });
 
@@ -636,7 +720,9 @@ describe("QA機能 結合テスト", () => {
       it("ExecuteQaServiceでQaHistoryがpending状態で作成されること", async () => {
         // Arrange
         const question = "セキュリティ対策は適切に実装されていますか？";
-        const checklistItemContents = ["セキュリティ対策が適切に実装されているか確認する"];
+        const checklistItemContents = [
+          "セキュリティ対策が適切に実装されているか確認する",
+        ];
 
         const command: ExecuteQaCommand = {
           reviewTargetId: testReviewTargetId,
@@ -655,7 +741,9 @@ describe("QA機能 結合テスト", () => {
         // 保存されたQaHistoryの検証
         expect(savedQaHistory).not.toBeNull();
         expect(savedQaHistory!.question.value).toBe(question);
-        expect(savedQaHistory!.checkListItemContent.value).toBe(JSON.stringify(checklistItemContents));
+        expect(savedQaHistory!.checkListItemContent.value).toBe(
+          JSON.stringify(checklistItemContents),
+        );
         expect(savedQaHistory!.reviewTargetId.value).toBe(testReviewTargetId);
         expect(savedQaHistory!.userId.value).toBe(testUserId);
         expect(savedQaHistory!.isPending()).toBe(true);
@@ -682,7 +770,9 @@ describe("QA機能 結合テスト", () => {
 
         // Assert: QaHistoryに複数のチェックリスト項目がJSON配列として保存されること
         expect(savedQaHistory).not.toBeNull();
-        const savedChecklistItems = JSON.parse(savedQaHistory!.checkListItemContent.value);
+        const savedChecklistItems = JSON.parse(
+          savedQaHistory!.checkListItemContent.value,
+        );
         expect(savedChecklistItems).toHaveLength(3);
         expect(savedChecklistItems).toEqual(checklistItemContents);
       });
@@ -719,7 +809,9 @@ describe("QA機能 結合テスト", () => {
         });
 
         // テキストキャッシュを返す
-        mockReviewCacheHelperLoadTextCache.mockResolvedValue("セキュリティ対策の詳細ドキュメント内容");
+        mockReviewCacheHelperLoadTextCache.mockResolvedValue(
+          "セキュリティ対策の詳細ドキュメント内容",
+        );
 
         // 調査結果を返す（researchChunkStepはresult.textを使用）
         mockQaResearchAgentGenerateLegacy.mockResolvedValue({
@@ -734,7 +826,8 @@ describe("QA機能 結合テスト", () => {
         });
 
         // RuntimeContext作成
-        const runtimeContext = new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
+        const runtimeContext =
+          new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
         runtimeContext.set("eventBroker", mockEventBroker);
         runtimeContext.set("userId", testUserId);
         runtimeContext.set("qaHistoryId", testQaHistoryId);
@@ -747,7 +840,9 @@ describe("QA機能 結合テスト", () => {
         const workflowResult = await run.start({
           inputData: {
             question: "セキュリティ対策について教えてください",
-            availableDocuments: [{ id: testDocumentCacheId, fileName: "test-document.txt" }],
+            availableDocuments: [
+              { id: testDocumentCacheId, fileName: "test-document.txt" },
+            ],
             checklistResults: [
               {
                 checklistResult: {
@@ -774,21 +869,24 @@ describe("QA機能 結合テスト", () => {
         const { qaExecutionWorkflow } = await import("@/application/mastra");
 
         // エージェント呼び出し時にRuntimeContextをキャプチャ
-        let capturedRuntimeContext: RuntimeContext<QaExecutionWorkflowRuntimeContext> | null = null;
-        mockQaPlanningAgentGenerateLegacy.mockImplementation(async (_message, options) => {
-          capturedRuntimeContext = options?.runtimeContext ?? null;
-          return {
-            object: {
-              tasks: [
-                {
-                  reasoning: "テスト調査",
-                  documentId: testDocumentCacheId,
-                  researchContent: "テスト内容",
-                },
-              ],
-            },
-          };
-        });
+        let capturedRuntimeContext: RuntimeContext<QaExecutionWorkflowRuntimeContext> | null =
+          null;
+        mockQaPlanningAgentGenerateLegacy.mockImplementation(
+          async (_message, options) => {
+            capturedRuntimeContext = options?.runtimeContext ?? null;
+            return {
+              object: {
+                tasks: [
+                  {
+                    reasoning: "テスト調査",
+                    documentId: testDocumentCacheId,
+                    researchContent: "テスト内容",
+                  },
+                ],
+              },
+            };
+          },
+        );
 
         // ドキュメントキャッシュを返す（isTextMode/isImageModeメソッドが必要）
         mockReviewDocumentCacheRepositoryFindById.mockResolvedValue({
@@ -802,7 +900,9 @@ describe("QA機能 結合テスト", () => {
         });
 
         // テキストキャッシュを返す
-        mockReviewCacheHelperLoadTextCache.mockResolvedValue("テストドキュメント内容");
+        mockReviewCacheHelperLoadTextCache.mockResolvedValue(
+          "テストドキュメント内容",
+        );
 
         // 調査結果を返す（researchChunkStepはresult.textを使用）
         mockQaResearchAgentGenerateLegacy.mockResolvedValue({
@@ -816,7 +916,8 @@ describe("QA機能 結合テスト", () => {
         });
 
         // RuntimeContext作成
-        const runtimeContext = new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
+        const runtimeContext =
+          new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
         runtimeContext.set("eventBroker", mockEventBroker);
         runtimeContext.set("userId", testUserId);
         runtimeContext.set("qaHistoryId", testQaHistoryId);
@@ -839,7 +940,14 @@ describe("QA機能 結合テスト", () => {
         // 注意: planQaResearchStepはエージェント用に新しいRuntimeContextを作成する
         // 含まれるのは: availableDocuments, checklistInfo, reviewMode, aiApiKey, aiApiUrl, aiApiModel
         assertRuntimeContext(capturedRuntimeContext, {
-          shouldExist: ["aiApiKey", "aiApiUrl", "aiApiModel", "availableDocuments", "checklistInfo", "reviewMode"],
+          shouldExist: [
+            "aiApiKey",
+            "aiApiUrl",
+            "aiApiModel",
+            "availableDocuments",
+            "checklistInfo",
+            "reviewMode",
+          ],
           exactValues: {
             aiApiKey: "test-api-key",
             aiApiUrl: "http://test-api-url",
@@ -918,7 +1026,9 @@ describe("QA機能 結合テスト", () => {
           createdAt: now,
           updatedAt: now,
         });
-        vi.mocked(mockProjectRepository.findById).mockResolvedValue(projectWithoutMember);
+        vi.mocked(mockProjectRepository.findById).mockResolvedValue(
+          projectWithoutMember,
+        );
 
         const command: ExecuteQaCommand = {
           reviewTargetId: testReviewTargetId,
@@ -935,11 +1045,15 @@ describe("QA機能 結合テスト", () => {
     describe("ワークフロー失敗", () => {
       it("計画エージェントがエラーを返した場合、ワークフローが失敗すること", async () => {
         // Arrange
-        const { qaExecutionWorkflow } = await import("@/application/mastra/workflows/qaExecution");
+        const { qaExecutionWorkflow } =
+          await import("@/application/mastra/workflows/qaExecution");
 
-        mockQaPlanningAgentGenerateLegacy.mockRejectedValue(new Error("AIエージェントエラー"));
+        mockQaPlanningAgentGenerateLegacy.mockRejectedValue(
+          new Error("AIエージェントエラー"),
+        );
 
-        const runtimeContext = new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
+        const runtimeContext =
+          new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
         runtimeContext.set("eventBroker", mockEventBroker);
         runtimeContext.set("userId", testUserId);
         runtimeContext.set("qaHistoryId", testQaHistoryId);
@@ -963,7 +1077,9 @@ describe("QA機能 結合テスト", () => {
         expect(workflowResult.status).toBe("success"); // Mastraワークフローは内部でエラーをハンドリング
         if (workflowResult.status === "success") {
           expect(workflowResult.result).toBeDefined();
-          expect((workflowResult.result as { status: string }).status).toBe("failed");
+          expect((workflowResult.result as { status: string }).status).toBe(
+            "failed",
+          );
         }
       });
     });
@@ -977,7 +1093,9 @@ describe("QA機能 結合テスト", () => {
       it("ExecuteQaServiceでQaHistory作成後、StartQaWorkflowServiceでワークフロー実行が正常に動作すること", async () => {
         // Arrange
         const question = "セキュリティ対策について教えてください";
-        const checklistItemContents = ["セキュリティ対策が適切に実装されているか確認する"];
+        const checklistItemContents = [
+          "セキュリティ対策が適切に実装されているか確認する",
+        ];
 
         // ExecuteQaService実行用のコマンド
         const command: ExecuteQaCommand = {
@@ -1004,10 +1122,15 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // Act 2: StartQaWorkflowServiceでワークフロー実行
-        await startQaWorkflowService.startWorkflow(executeResult.qaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(
+          executeResult.qaHistoryId,
+          testUserId,
+        );
 
         // ワークフローが非同期実行されるため、少し待つ
         await new Promise((resolve) => setTimeout(resolve, 100));
@@ -1032,7 +1155,9 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // Act
         await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
@@ -1056,12 +1181,15 @@ describe("QA機能 結合テスト", () => {
       it("individualResultsを含むチェックリスト結果がワークフローに正しく渡され、回答が生成されること", async () => {
         // Arrange
         const question = "大量ドキュメントのレビュー結果について教えてください";
-        const checklistItemContents = ["セキュリティ対策が適切に実装されているか確認する"];
+        const checklistItemContents = [
+          "セキュリティ対策が適切に実装されているか確認する",
+        ];
 
         // 大量レビューの個別結果を設定
         const largeDocumentResults = [
           {
-            checklistItemContent: "セキュリティ対策が適切に実装されているか確認する",
+            checklistItemContent:
+              "セキュリティ対策が適切に実装されているか確認する",
             individualResults: [
               {
                 documentId: testDocumentCacheId,
@@ -1076,8 +1204,9 @@ describe("QA機能 結合テスト", () => {
             ],
           },
         ];
-        vi.mocked(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults)
-          .mockResolvedValue(largeDocumentResults);
+        vi.mocked(
+          mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults,
+        ).mockResolvedValue(largeDocumentResults);
 
         // pending状態のQaHistoryを返す
         const pendingQaHistory = createTestQaHistory({
@@ -1088,24 +1217,30 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // エージェント呼び出し時のRuntimeContextをキャプチャ
         let capturedChecklistInfo: string | null = null;
-        mockQaPlanningAgentGenerateLegacy.mockImplementation(async (_message, options) => {
-          capturedChecklistInfo = options?.runtimeContext?.get?.("checklistInfo") ?? null;
-          return {
-            object: {
-              tasks: [
-                {
-                  reasoning: "セキュリティ対策の詳細を確認するため",
-                  documentId: testDocumentCacheId,
-                  researchContent: "セキュリティ対策の実装詳細を調査してください",
-                },
-              ],
-            },
-          };
-        });
+        mockQaPlanningAgentGenerateLegacy.mockImplementation(
+          async (_message, options) => {
+            capturedChecklistInfo =
+              options?.runtimeContext?.get?.("checklistInfo") ?? null;
+            return {
+              object: {
+                tasks: [
+                  {
+                    reasoning: "セキュリティ対策の詳細を確認するため",
+                    documentId: testDocumentCacheId,
+                    researchContent:
+                      "セキュリティ対策の実装詳細を調査してください",
+                  },
+                ],
+              },
+            };
+          },
+        );
 
         // 回答エージェントの成功レスポンスを設定
         mockQaAnswerAgentGenerate.mockResolvedValue({
@@ -1120,32 +1255,41 @@ describe("QA機能 結合テスト", () => {
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         // Assert 1: リポジトリが正しい引数で呼ばれること
-        expect(mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults)
-          .toHaveBeenCalledWith(
-            expect.objectContaining({ value: testReviewTargetId }),
-            checklistItemContents
-          );
+        expect(
+          mockLargeDocumentResultCacheRepository.findChecklistResultsWithIndividualResults,
+        ).toHaveBeenCalledWith(
+          expect.objectContaining({ value: testReviewTargetId }),
+          checklistItemContents,
+        );
 
         // Assert 2: individualResultsの内容がchecklistInfoに含まれていること
         expect(capturedChecklistInfo).not.toBeNull();
         expect(capturedChecklistInfo).toContain("document1.txt");
-        expect(capturedChecklistInfo).toContain("ドキュメント1のセキュリティは問題なし");
+        expect(capturedChecklistInfo).toContain(
+          "ドキュメント1のセキュリティは問題なし",
+        );
         expect(capturedChecklistInfo).toContain("document2.txt");
-        expect(capturedChecklistInfo).toContain("ドキュメント2のセキュリティは問題なし");
+        expect(capturedChecklistInfo).toContain(
+          "ドキュメント2のセキュリティは問題なし",
+        );
 
         // Assert 3: ワークフローが成功し、回答が保存されたこと
         expect(mockQaHistoryRepository.updateAnswer).toHaveBeenCalled();
         expect(savedAnswer).not.toBeNull();
         expect(savedAnswer!.answer).toBeDefined();
-        expect(savedAnswer!.answer).toContain("セキュリティ対策は適切に実装されています");
+        expect(savedAnswer!.answer).toContain(
+          "セキュリティ対策は適切に実装されています",
+        );
 
         // Assert 4: completeイベントが発行されたこと
         const broadcastCalls = vi.mocked(mockEventBroker.broadcast).mock.calls;
         const completeEvent = broadcastCalls.find(
-          (call) => (call[1] as QaCompleteEvent)?.type === "complete"
+          (call) => (call[1] as QaCompleteEvent)?.type === "complete",
         );
         expect(completeEvent).toBeDefined();
-        expect((completeEvent![1] as QaCompleteEvent).data.answer).toContain("セキュリティ対策は適切に実装されています");
+        expect((completeEvent![1] as QaCompleteEvent).data.answer).toContain(
+          "セキュリティ対策は適切に実装されています",
+        );
       });
     });
 
@@ -1164,7 +1308,9 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // 回答を返すようにモック設定
         mockQaAnswerAgentGenerate.mockResolvedValue({
@@ -1198,7 +1344,9 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // Act
         await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
@@ -1225,7 +1373,9 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // 成功する回答を返す
         mockQaAnswerAgentGenerate.mockResolvedValue({
@@ -1243,7 +1393,7 @@ describe("QA機能 結合テスト", () => {
         // completeイベントの検証
         const broadcastCalls = vi.mocked(mockEventBroker.broadcast).mock.calls;
         const completeEvent = broadcastCalls.find(
-          (call) => (call[1] as QaCompleteEvent)?.type === "complete"
+          (call) => (call[1] as QaCompleteEvent)?.type === "complete",
         );
 
         // ワークフローが成功した場合、completeイベントが発行される
@@ -1263,10 +1413,14 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // エラーを発生させる
-        mockQaPlanningAgentGenerateLegacy.mockRejectedValue(new Error("テストエラー"));
+        mockQaPlanningAgentGenerateLegacy.mockRejectedValue(
+          new Error("テストエラー"),
+        );
 
         // Act
         await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
@@ -1294,7 +1448,9 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "processing",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(processingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          processingQaHistory,
+        );
 
         // Act
         await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
@@ -1309,7 +1465,7 @@ describe("QA機能 結合テスト", () => {
 
         // Act & Assert
         await expect(
-          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId)
+          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId),
         ).rejects.toThrow("Q&A履歴が見つかりません");
       });
 
@@ -1323,12 +1479,14 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(["チェック項目"]),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
         vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(null);
 
         // Act & Assert
         await expect(
-          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId)
+          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId),
         ).rejects.toThrow("レビュー対象が見つかりません");
       });
 
@@ -1345,7 +1503,9 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // 計画ステップで空のタスクを返す（調査するドキュメントが見つからない）
         mockQaPlanningAgentGenerateLegacy.mockResolvedValue({
@@ -1380,26 +1540,31 @@ describe("QA機能 結合テスト", () => {
           checkListItemContent: JSON.stringify(checklistItemContents),
           status: "pending",
         });
-        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(pendingQaHistory);
+        vi.mocked(mockQaHistoryRepository.findById).mockResolvedValue(
+          pendingQaHistory,
+        );
 
         // RuntimeContextをキャプチャするためのモック設定
-        let capturedRuntimeContext: RuntimeContext<QaExecutionWorkflowRuntimeContext> | null = null;
-        mockQaPlanningAgentGenerateLegacy.mockImplementation(async (_message, options) => {
-          // ステップレベルのRuntimeContextはワークフローから渡される
-          // ここではplanQaResearchStepのRuntimeContextをキャプチャ
-          capturedRuntimeContext = options?.runtimeContext ?? null;
-          return {
-            object: {
-              tasks: [
-                {
-                  reasoning: "テスト",
-                  documentId: testDocumentCacheId,
-                  researchContent: "テスト調査",
-                },
-              ],
-            },
-          };
-        });
+        let capturedRuntimeContext: RuntimeContext<QaExecutionWorkflowRuntimeContext> | null =
+          null;
+        mockQaPlanningAgentGenerateLegacy.mockImplementation(
+          async (_message, options) => {
+            // ステップレベルのRuntimeContextはワークフローから渡される
+            // ここではplanQaResearchStepのRuntimeContextをキャプチャ
+            capturedRuntimeContext = options?.runtimeContext ?? null;
+            return {
+              object: {
+                tasks: [
+                  {
+                    reasoning: "テスト",
+                    documentId: testDocumentCacheId,
+                    researchContent: "テスト調査",
+                  },
+                ],
+              },
+            };
+          },
+        );
 
         // Act
         await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);

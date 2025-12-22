@@ -98,6 +98,8 @@ export class EvaluationItem {
    * 等価性の比較
    */
   equals(other: EvaluationItem): boolean {
-    return this._label === other._label && this._description === other._description;
+    return (
+      this._label === other._label && this._description === other._description
+    );
   }
 }

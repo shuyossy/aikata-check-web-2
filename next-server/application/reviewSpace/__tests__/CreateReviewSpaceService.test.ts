@@ -121,7 +121,9 @@ describe("CreateReviewSpaceService", () => {
       expect(result.defaultReviewSettings.concurrentReviewItems).toBe(
         DEFAULT_CONCURRENT_REVIEW_ITEMS,
       );
-      expect(result.defaultReviewSettings.commentFormat).toBe(DEFAULT_COMMENT_FORMAT);
+      expect(result.defaultReviewSettings.commentFormat).toBe(
+        DEFAULT_COMMENT_FORMAT,
+      );
       expect(result.defaultReviewSettings.evaluationCriteria).toEqual(
         DEFAULT_EVALUATION_CRITERIA,
       );
@@ -197,7 +199,9 @@ describe("CreateReviewSpaceService", () => {
           description: "あ".repeat(1001),
           userId: validUserId,
         }),
-      ).rejects.toMatchObject({ messageCode: "REVIEW_SPACE_DESCRIPTION_TOO_LONG" });
+      ).rejects.toMatchObject({
+        messageCode: "REVIEW_SPACE_DESCRIPTION_TOO_LONG",
+      });
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {

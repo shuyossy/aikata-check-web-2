@@ -73,7 +73,10 @@ export class TaskFileHelper {
    */
   static async loadFile(filePath: string): Promise<Buffer> {
     const buffer = await fs.readFile(filePath);
-    logger.debug({ filePath, size: buffer.length }, "タスクファイルを読み込みました");
+    logger.debug(
+      { filePath, size: buffer.length },
+      "タスクファイルを読み込みました",
+    );
     return buffer;
   }
 
@@ -85,7 +88,10 @@ export class TaskFileHelper {
     const taskDir = TaskFileHelper.getTaskDir(taskId);
     try {
       await fs.rm(taskDir, { recursive: true, force: true });
-      logger.debug({ taskId, taskDir }, "タスクファイルディレクトリを削除しました");
+      logger.debug(
+        { taskId, taskDir },
+        "タスクファイルディレクトリを削除しました",
+      );
     } catch (error) {
       // ディレクトリが存在しない場合は無視
       logger.debug(

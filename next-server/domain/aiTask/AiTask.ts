@@ -1,7 +1,11 @@
 import { createHash } from "crypto";
 import { AiTaskId } from "./AiTaskId";
 import { AiTaskType, AI_TASK_TYPE, AiTaskTypeValue } from "./AiTaskType";
-import { AiTaskStatus, AI_TASK_STATUS, AiTaskStatusValue } from "./AiTaskStatus";
+import {
+  AiTaskStatus,
+  AI_TASK_STATUS,
+  AiTaskStatusValue,
+} from "./AiTaskStatus";
 import { AiTaskPriority } from "./AiTaskPriority";
 import {
   AiTaskFileMetadata,
@@ -138,7 +142,7 @@ export class AiTask {
    */
   static reconstruct(params: ReconstructAiTaskParams): AiTask {
     const fileMetadata = params.fileMetadata.map((fm) =>
-      AiTaskFileMetadata.reconstruct(fm)
+      AiTaskFileMetadata.reconstruct(fm),
     );
     return new AiTask(
       AiTaskId.reconstruct(params.id),

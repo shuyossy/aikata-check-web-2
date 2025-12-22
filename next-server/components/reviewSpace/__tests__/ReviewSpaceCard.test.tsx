@@ -53,7 +53,9 @@ describe("ReviewSpaceCard", () => {
         ...baseSpace,
         description: null,
       };
-      render(<ReviewSpaceCard space={spaceWithoutDesc} projectId={projectId} />);
+      render(
+        <ReviewSpaceCard space={spaceWithoutDesc} projectId={projectId} />,
+      );
 
       expect(screen.getByText("説明なし")).toBeInTheDocument();
     });
@@ -63,7 +65,9 @@ describe("ReviewSpaceCard", () => {
         ...baseSpace,
         description: "",
       };
-      render(<ReviewSpaceCard space={spaceWithEmptyDesc} projectId={projectId} />);
+      render(
+        <ReviewSpaceCard space={spaceWithEmptyDesc} projectId={projectId} />,
+      );
 
       expect(screen.getByText("説明なし")).toBeInTheDocument();
     });
@@ -134,7 +138,9 @@ describe("ReviewSpaceCard", () => {
         // UTCで2024/06/20となる日付
         updatedAt: "2024-06-20T15:45:00Z",
       };
-      render(<ReviewSpaceCard space={spaceWithStringDate} projectId={projectId} />);
+      render(
+        <ReviewSpaceCard space={spaceWithStringDate} projectId={projectId} />,
+      );
 
       expect(screen.getByText(/2024\/06\/20/)).toBeInTheDocument();
     });
@@ -144,7 +150,9 @@ describe("ReviewSpaceCard", () => {
         ...baseSpace,
         description: "あ".repeat(200),
       };
-      render(<ReviewSpaceCard space={spaceWithLongDesc} projectId={projectId} />);
+      render(
+        <ReviewSpaceCard space={spaceWithLongDesc} projectId={projectId} />,
+      );
 
       // 長い説明が表示されていることを確認（line-clampで省略される）
       expect(screen.getByText("あ".repeat(200))).toBeInTheDocument();
@@ -155,7 +163,9 @@ describe("ReviewSpaceCard", () => {
         ...baseSpace,
         name: "テスト" + "あ".repeat(50),
       };
-      render(<ReviewSpaceCard space={spaceWithLongName} projectId={projectId} />);
+      render(
+        <ReviewSpaceCard space={spaceWithLongName} projectId={projectId} />,
+      );
 
       expect(screen.getByText("テスト" + "あ".repeat(50))).toBeInTheDocument();
     });

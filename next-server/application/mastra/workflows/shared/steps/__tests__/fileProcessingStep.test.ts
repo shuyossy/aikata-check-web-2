@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { RuntimeContext } from "@mastra/core/di";
 import { fileProcessingStep } from "../fileProcessingStep";
 import { FILE_BUFFERS_CONTEXT_KEY } from "../../types";
-import type { RawUploadFileMeta, FileBuffersMap, FileBufferData } from "../../types";
+import type {
+  RawUploadFileMeta,
+  FileBuffersMap,
+  FileBufferData,
+} from "../../types";
 
 // FileTextExtractorをモック
 vi.mock("@/infrastructure/adapter/textExtractor", () => ({
@@ -306,7 +310,9 @@ describe("fileProcessingStep", () => {
       } as any);
 
       expect(result.status).toBe("failed");
-      expect(result.errorMessage).toContain("ファイル「test.txt」のバッファが見つかりません");
+      expect(result.errorMessage).toContain(
+        "ファイル「test.txt」のバッファが見つかりません",
+      );
     });
 
     it("runtimeContextがundefinedの場合failedを返すこと", async () => {
@@ -340,8 +346,11 @@ describe("fileProcessingStep", () => {
 
     it("ファイルテキスト抽出でエラーが発生した場合failedを返すこと", async () => {
       // FileTextExtractorのモックをエラーを投げるように設定
-      const { FileTextExtractor } = await import("@/infrastructure/adapter/textExtractor");
-      const mockExtract = vi.fn().mockRejectedValue(new Error("テキスト抽出エラー"));
+      const { FileTextExtractor } =
+        await import("@/infrastructure/adapter/textExtractor");
+      const mockExtract = vi
+        .fn()
+        .mockRejectedValue(new Error("テキスト抽出エラー"));
       (FileTextExtractor as any).mockImplementation(() => ({
         extract: mockExtract,
       }));
@@ -377,7 +386,9 @@ describe("fileProcessingStep", () => {
       } as any);
 
       expect(result.status).toBe("failed");
-      expect(result.errorMessage).toContain("ファイル「test.txt」の処理に失敗しました");
+      expect(result.errorMessage).toContain(
+        "ファイル「test.txt」の処理に失敗しました",
+      );
     });
   });
 });

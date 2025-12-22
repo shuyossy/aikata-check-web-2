@@ -160,7 +160,8 @@ describe("SaveApiReviewResultsService", () => {
       expect(mockReviewResultRepository.saveMany).toHaveBeenCalledTimes(1);
 
       // 保存されたレビュー結果の検証
-      const savedResults = vi.mocked(mockReviewResultRepository.saveMany).mock.calls[0][0] as ReviewResult[];
+      const savedResults = vi.mocked(mockReviewResultRepository.saveMany).mock
+        .calls[0][0] as ReviewResult[];
       expect(savedResults).toHaveLength(2);
       expect(savedResults[0].checkListItemContent).toBe("チェック項目1");
       expect(savedResults[0].evaluation?.value).toBe("A");
@@ -427,7 +428,8 @@ describe("SaveApiReviewResultsService", () => {
       expect(result.savedCount).toBe(1);
 
       // 保存されたレビュー結果が成功であることを確認
-      const savedResults = vi.mocked(mockReviewResultRepository.saveMany).mock.calls[0][0] as ReviewResult[];
+      const savedResults = vi.mocked(mockReviewResultRepository.saveMany).mock
+        .calls[0][0] as ReviewResult[];
       expect(savedResults).toHaveLength(1);
       expect(savedResults[0].isSuccess()).toBe(true);
       expect(savedResults[0].evaluation?.value).toBe("A");
@@ -468,10 +470,13 @@ describe("SaveApiReviewResultsService", () => {
       expect(mockReviewResultRepository.saveMany).toHaveBeenCalledTimes(1);
 
       // 保存されたレビュー結果がエラーであることを確認
-      const savedResults = vi.mocked(mockReviewResultRepository.saveMany).mock.calls[0][0] as ReviewResult[];
+      const savedResults = vi.mocked(mockReviewResultRepository.saveMany).mock
+        .calls[0][0] as ReviewResult[];
       expect(savedResults).toHaveLength(1);
       expect(savedResults[0].isError()).toBe(true);
-      expect(savedResults[0].errorMessage).toBe("チェック項目の処理中にエラーが発生しました");
+      expect(savedResults[0].errorMessage).toBe(
+        "チェック項目の処理中にエラーが発生しました",
+      );
     });
 
     it("正常結果とエラー結果が混在する場合も適切に保存できる", async () => {
@@ -512,7 +517,8 @@ describe("SaveApiReviewResultsService", () => {
       expect(result.savedCount).toBe(2);
 
       // 保存されたレビュー結果の検証
-      const savedResults = vi.mocked(mockReviewResultRepository.saveMany).mock.calls[0][0] as ReviewResult[];
+      const savedResults = vi.mocked(mockReviewResultRepository.saveMany).mock
+        .calls[0][0] as ReviewResult[];
       expect(savedResults).toHaveLength(2);
 
       // 1つ目は成功
@@ -522,7 +528,9 @@ describe("SaveApiReviewResultsService", () => {
 
       // 2つ目はエラー
       expect(savedResults[1].isError()).toBe(true);
-      expect(savedResults[1].errorMessage).toBe("外部APIからエラーが返されました");
+      expect(savedResults[1].errorMessage).toBe(
+        "外部APIからエラーが返されました",
+      );
     });
   });
 });

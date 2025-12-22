@@ -10,7 +10,11 @@ import { Copy, Check } from "lucide-react";
 /**
  * コードブロックのコピーボタン付きラッパー
  */
-function CodeBlock({ children, className, ...props }: React.HTMLAttributes<HTMLPreElement>) {
+function CodeBlock({
+  children,
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLPreElement>) {
   const [copied, setCopied] = useState(false);
   const codeRef = React.useRef<HTMLPreElement>(null);
 
@@ -36,7 +40,7 @@ function CodeBlock({ children, className, ...props }: React.HTMLAttributes<HTMLP
         className={cn(
           "overflow-x-auto rounded-lg bg-gray-100 p-4 text-sm font-mono",
           "dark:bg-gray-800",
-          className
+          className,
         )}
         {...props}
       >
@@ -67,7 +71,7 @@ function InlineCode({ children, ...props }: React.HTMLAttributes<HTMLElement>) {
     <code
       className={cn(
         "rounded bg-gray-100 px-1.5 py-0.5 text-sm font-mono",
-        "dark:bg-gray-800"
+        "dark:bg-gray-800",
       )}
       {...props}
     >
@@ -101,9 +105,7 @@ const COMPONENTS: Components = {
   ),
 
   // 段落
-  p: ({ children }) => (
-    <p className="my-2 leading-7">{children}</p>
-  ),
+  p: ({ children }) => <p className="my-2 leading-7">{children}</p>,
 
   // リスト
   ul: ({ children }) => (
@@ -112,14 +114,10 @@ const COMPONENTS: Components = {
   ol: ({ children }) => (
     <ol className="list-decimal pl-6 my-2 space-y-1">{children}</ol>
   ),
-  li: ({ children }) => (
-    <li className="leading-7">{children}</li>
-  ),
+  li: ({ children }) => <li className="leading-7">{children}</li>,
 
   // コードブロック
-  pre: ({ children, ...props }) => (
-    <CodeBlock {...props}>{children}</CodeBlock>
-  ),
+  pre: ({ children, ...props }) => <CodeBlock {...props}>{children}</CodeBlock>,
 
   // インラインコード
   code: ({ className, children, ...props }) => {
@@ -148,7 +146,9 @@ const COMPONENTS: Components = {
   ),
   tbody: ({ children }) => <tbody>{children}</tbody>,
   tr: ({ children }) => (
-    <tr className="border-b border-gray-300 dark:border-gray-600">{children}</tr>
+    <tr className="border-b border-gray-300 dark:border-gray-600">
+      {children}
+    </tr>
   ),
   th: ({ children }) => (
     <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-left font-semibold">
@@ -222,7 +222,9 @@ export const MarkdownRenderer = memo(function MarkdownRenderer({
   }
 
   return (
-    <div className={cn("prose prose-sm max-w-none dark:prose-invert", className)}>
+    <div
+      className={cn("prose prose-sm max-w-none dark:prose-invert", className)}
+    >
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={COMPONENTS}>
         {children}
       </ReactMarkdown>

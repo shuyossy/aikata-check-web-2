@@ -1,7 +1,10 @@
 import { getServerSession } from "next-auth";
 import { redirect, notFound } from "next/navigation";
 import { authOptions } from "@/auth";
-import { GetProjectService, ListUserProjectsService } from "@/application/project";
+import {
+  GetProjectService,
+  ListUserProjectsService,
+} from "@/application/project";
 import { ListProjectReviewSpacesService } from "@/application/reviewSpace";
 import {
   ProjectRepository,
@@ -109,7 +112,12 @@ export default async function ProjectLayout({
         reviewTargets: displayTargets.map((t) => ({
           id: t.id,
           name: t.name,
-          status: t.status as "pending" | "queued" | "reviewing" | "completed" | "error",
+          status: t.status as
+            | "pending"
+            | "queued"
+            | "reviewing"
+            | "completed"
+            | "error",
         })),
         hasMore,
       };

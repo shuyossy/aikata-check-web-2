@@ -94,7 +94,8 @@ export class ReviewResult {
    * @throws ドメインバリデーションエラー - バリデーション失敗時
    */
   static createSuccess(params: CreateReviewResultSuccessParams): ReviewResult {
-    const { reviewTargetId, checkListItemContent, evaluation, comment } = params;
+    const { reviewTargetId, checkListItemContent, evaluation, comment } =
+      params;
     const now = new Date();
 
     return new ReviewResult(

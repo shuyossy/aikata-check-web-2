@@ -2,7 +2,6 @@ import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
 import { getChecklistCategorizePrompt } from "./prompts";
 import { getModel } from "./model";
-import type { ChecklistCategoryAgentRuntimeContext } from "./types";
 
 /**
  * カテゴリ分類エージェントの出力スキーマ
@@ -30,15 +29,6 @@ export type ChecklistCategoryOutput = z.infer<
  */
 export const checklistCategoryAgent = new Agent({
   name: "checklist-category-agent",
-  instructions: ({
-    runtimeContext,
-  }: {
-    runtimeContext?: { get: (key: string) => unknown };
-  }) =>
-    getChecklistCategorizePrompt({
-      runtimeContext: runtimeContext as
-        | import("@mastra/core/di").RuntimeContext<ChecklistCategoryAgentRuntimeContext>
-        | undefined,
-    }),
-  model: ({ runtimeContext }) => getModel(runtimeContext),
+  instructions: getChecklistCategorizePrompt,
+  model: getModel,
 });

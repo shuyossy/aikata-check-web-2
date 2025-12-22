@@ -21,19 +21,21 @@ const getChecklistGenerationTaskStatusSchema = z.object({
  */
 export const getChecklistGenerationTaskStatusAction = authenticatedAction
   .schema(getChecklistGenerationTaskStatusSchema)
-  .action(async ({ parsedInput, ctx }): Promise<ChecklistGenerationTaskStatusDto> => {
-    const projectRepository = new ProjectRepository();
-    const reviewSpaceRepository = new ReviewSpaceRepository();
-    const aiTaskRepository = new AiTaskRepository();
+  .action(
+    async ({ parsedInput, ctx }): Promise<ChecklistGenerationTaskStatusDto> => {
+      const projectRepository = new ProjectRepository();
+      const reviewSpaceRepository = new ReviewSpaceRepository();
+      const aiTaskRepository = new AiTaskRepository();
 
-    const service = new GetChecklistGenerationTaskStatusService(
-      aiTaskRepository,
-      reviewSpaceRepository,
-      projectRepository,
-    );
+      const service = new GetChecklistGenerationTaskStatusService(
+        aiTaskRepository,
+        reviewSpaceRepository,
+        projectRepository,
+      );
 
-    return service.execute({
-      reviewSpaceId: parsedInput.reviewSpaceId,
-      userId: ctx.auth.userId,
-    });
-  });
+      return service.execute({
+        reviewSpaceId: parsedInput.reviewSpaceId,
+        userId: ctx.auth.userId,
+      });
+    },
+  );

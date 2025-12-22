@@ -33,7 +33,11 @@ import { ReviewSpace } from "@/domain/reviewSpace";
 import { ReviewTarget } from "@/domain/reviewTarget";
 import { Project, ProjectId } from "@/domain/project";
 import { CheckListItem } from "@/domain/checkListItem";
-import type { RawUploadFileMeta, FileBuffersMap, ReviewType } from "@/application/mastra";
+import type {
+  RawUploadFileMeta,
+  FileBuffersMap,
+  ReviewType,
+} from "@/application/mastra";
 import { FILE_BUFFERS_CONTEXT_KEY } from "@/application/mastra";
 
 // ========================================
@@ -217,7 +221,7 @@ vi.mock("@/application/mastra", async () => {
 // ========================================
 vi.mock("@/application/aiTask", async () => {
   const actual = await vi.importActual<typeof import("@/application/aiTask")>(
-    "@/application/aiTask"
+    "@/application/aiTask",
   );
   return {
     ...actual,
@@ -236,7 +240,7 @@ vi.mock("@/application/aiTask", async () => {
  */
 const createTestFileMeta = (
   processMode: "text" | "image" = "text",
-  index: number = 0
+  index: number = 0,
 ): RawUploadFileMeta => ({
   id: `file-${index}`,
   name: processMode === "text" ? `test-${index}.txt` : `test-${index}.pdf`,
@@ -290,7 +294,7 @@ const createTestCheckListItems = (count: number): CheckListItem[] => {
         content: `チェック項目${i + 1}の内容`,
         createdAt: new Date(),
         updatedAt: new Date(),
-      })
+      }),
     );
   }
   return items;
@@ -310,7 +314,7 @@ interface RuntimeContextExpectations {
 
 const assertRuntimeContext = (
   runtimeContext: { get: (key: string) => unknown } | null,
-  expectations: RuntimeContextExpectations
+  expectations: RuntimeContextExpectations,
 ): void => {
   expect(runtimeContext).not.toBeNull();
 
@@ -348,7 +352,7 @@ const assertRuntimeContext = (
 
   if (expectations.mapHasKeys) {
     for (const [contextKey, expectedMapKeys] of Object.entries(
-      expectations.mapHasKeys
+      expectations.mapHasKeys,
     )) {
       const map = runtimeContext!.get(contextKey) as Map<string, unknown>;
       expect(map).toBeInstanceOf(Map);
@@ -375,7 +379,7 @@ interface ExpectedReviewTaskPayload {
 
 const assertSavedReviewTaskPayload = (
   mockSave: ReturnType<typeof vi.fn>,
-  expected: ExpectedReviewTaskPayload
+  expected: ExpectedReviewTaskPayload,
 ): void => {
   expect(mockSave).toHaveBeenCalledTimes(1);
   const savedTask = vi.mocked(mockSave).mock.calls[0][0] as AiTask;
@@ -551,7 +555,7 @@ describe("レビュー実行 結合テスト", () => {
   const createTestReviewTaskDto = (
     files: RawUploadFileMeta[],
     checkListItems: Array<{ id: string; content: string }>,
-    reviewType: ReviewType = "small"
+    reviewType: ReviewType = "small",
   ): AiTaskDto => ({
     id: testTaskId,
     taskType: reviewType === "large" ? "large_review" : "small_review",
@@ -614,21 +618,21 @@ describe("レビュー実行 結合テスト", () => {
 
     // リポジトリのデフォルト戻り値設定
     vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
-      testReviewSpace
+      testReviewSpace,
     );
     vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
     vi.mocked(mockSystemSettingRepository.find).mockResolvedValue(null);
     vi.mocked(mockAiTaskRepository.save).mockResolvedValue(undefined);
     vi.mocked(mockAiTaskRepository.countQueuedByApiKeyHash).mockResolvedValue(
-      1
+      1,
     );
-    vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(
-      testCheckListItems
-    );
+    vi.mocked(
+      mockCheckListItemRepository.findByReviewSpaceId,
+    ).mockResolvedValue(testCheckListItems);
     vi.mocked(mockReviewTargetRepository.save).mockResolvedValue(undefined);
     vi.mocked(mockReviewResultRepository.saveMany).mockResolvedValue(undefined);
     vi.mocked(mockReviewDocumentCacheRepository.save).mockResolvedValue(
-      undefined
+      undefined,
     );
 
     // ReviewTarget.findByIdのモック
@@ -644,7 +648,7 @@ describe("レビュー実行 結合テスト", () => {
           createdAt: now,
           updatedAt: now,
         });
-      }
+      },
     );
 
     // ワーカー起動モック
@@ -711,7 +715,7 @@ describe("レビュー実行 結合テスト", () => {
     // サービスとエグゼキューターの初期化
     queueService = new AiTaskQueueService(
       mockAiTaskRepository,
-      mockAiTaskFileMetadataRepository
+      mockAiTaskFileMetadataRepository,
     );
 
     service = new ExecuteReviewService(
@@ -720,7 +724,7 @@ describe("レビュー実行 結合テスト", () => {
       mockReviewSpaceRepository,
       mockProjectRepository,
       mockSystemSettingRepository,
-      queueService
+      queueService,
     );
 
     executor = new AiTaskExecutor(
@@ -729,7 +733,7 @@ describe("レビュー実行 結合テスト", () => {
       mockCheckListItemRepository,
       mockReviewDocumentCacheRepository,
       mockReviewSpaceRepository,
-      mockLargeDocumentResultCacheRepository
+      mockLargeDocumentResultCacheRepository,
     );
   });
 
@@ -798,7 +802,7 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         const executorResult = await executor.execute(taskDto);
 
@@ -810,7 +814,8 @@ describe("レビュー実行 結合テスト", () => {
         expect(mockReviewExecuteAgentGenerateLegacy).toHaveBeenCalledTimes(1);
 
         // レビュー対象ステータスがcompletedになることを確認
-        const saveCallArgs = vi.mocked(mockReviewTargetRepository.save).mock.calls;
+        const saveCallArgs = vi.mocked(mockReviewTargetRepository.save).mock
+          .calls;
         const lastSaveCall = saveCallArgs[saveCallArgs.length - 1];
         const savedTarget = lastSaveCall[0] as ReviewTarget;
         expect(savedTarget.status.value).toBe("completed");
@@ -840,14 +845,14 @@ describe("レビュー実行 結合テスト", () => {
                 },
               ],
             };
-          }
+          },
         );
 
         // Act
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         await executor.execute(taskDto);
 
@@ -876,38 +881,40 @@ describe("レビュー実行 結合テスト", () => {
 
         // fileProcessingStepでRuntimeContextをキャプチャ
         let capturedFileBuffers: FileBuffersMap | null = null;
-        mockFileProcessingStep.mockImplementation(async ({ runtimeContext }) => {
-          if (runtimeContext) {
-            capturedFileBuffers = runtimeContext.get(
-              FILE_BUFFERS_CONTEXT_KEY
-            ) as FileBuffersMap;
-          }
-          return {
-            status: "success",
-            extractedFiles: [
-              {
-                id: "file-0",
-                name: "test-0.txt",
-                type: "text/plain",
-                processMode: "text",
-                textContent: "テストドキュメント",
-              },
-              {
-                id: "file-1",
-                name: "test-1.pdf",
-                type: "application/pdf",
-                processMode: "image",
-                imageData: ["base64image1", "base64image2"],
-              },
-            ],
-          };
-        });
+        mockFileProcessingStep.mockImplementation(
+          async ({ runtimeContext }) => {
+            if (runtimeContext) {
+              capturedFileBuffers = runtimeContext.get(
+                FILE_BUFFERS_CONTEXT_KEY,
+              ) as FileBuffersMap;
+            }
+            return {
+              status: "success",
+              extractedFiles: [
+                {
+                  id: "file-0",
+                  name: "test-0.txt",
+                  type: "text/plain",
+                  processMode: "text",
+                  textContent: "テストドキュメント",
+                },
+                {
+                  id: "file-1",
+                  name: "test-1.pdf",
+                  type: "application/pdf",
+                  processMode: "image",
+                  imageData: ["base64image1", "base64image2"],
+                },
+              ],
+            };
+          },
+        );
 
         // Act
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         await executor.execute(taskDto);
 
@@ -958,7 +965,7 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         const result = await executor.execute(taskDto);
 
@@ -970,7 +977,7 @@ describe("レビュー実行 結合テスト", () => {
           mockReviewExecuteAgentGenerateLegacy.mock.calls[0];
         const message = reviewAgentCallArgs[0];
         expect(message.content).toEqual(
-          expect.arrayContaining([expect.objectContaining({ type: "image" })])
+          expect.arrayContaining([expect.objectContaining({ type: "image" })]),
         );
       });
     });
@@ -1012,7 +1019,7 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         const result = await executor.execute(taskDto);
 
@@ -1027,7 +1034,7 @@ describe("レビュー実行 結合テスト", () => {
           expect.arrayContaining([
             expect.objectContaining({ type: "text" }),
             expect.objectContaining({ type: "image" }),
-          ])
+          ]),
         );
       });
     });
@@ -1057,14 +1064,14 @@ describe("レビュー実行 結合テスト", () => {
                 },
               ],
             };
-          }
+          },
         );
 
         // Act
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         // reviewSettingsを設定
         (taskDto.payload as unknown as ReviewTaskPayload).reviewSettings = {
@@ -1081,10 +1088,10 @@ describe("レビュー実行 結合テスト", () => {
         // Assert
         expect(capturedRuntimeContext).not.toBeNull();
         expect(capturedRuntimeContext!.get("additionalInstructions")).toBe(
-          "厳格にレビューしてください"
+          "厳格にレビューしてください",
         );
         expect(capturedRuntimeContext!.get("commentFormat")).toBe(
-          "【問題点】\n【改善案】"
+          "【問題点】\n【改善案】",
         );
       });
 
@@ -1142,12 +1149,12 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         // concurrentReviewItemsを設定
         (taskDto.payload as unknown as ReviewTaskPayload).reviewSettings = {
-          ...((taskDto.payload as unknown as ReviewTaskPayload).reviewSettings ??
-            {}),
+          ...((taskDto.payload as unknown as ReviewTaskPayload)
+            .reviewSettings ?? {}),
           concurrentReviewItems: 2,
         };
 
@@ -1155,7 +1162,7 @@ describe("レビュー実行 結合テスト", () => {
 
         // Assert: AIカテゴリ分類が呼ばれる
         expect(mockChecklistCategoryAgentGenerateLegacy).toHaveBeenCalledTimes(
-          1
+          1,
         );
         // 2つのチャンクに対してレビュー
         expect(mockReviewExecuteAgentGenerateLegacy).toHaveBeenCalledTimes(2);
@@ -1175,7 +1182,7 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         await executor.execute(taskDto);
 
@@ -1195,7 +1202,7 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         await executor.execute(taskDto);
 
@@ -1215,12 +1222,13 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         await executor.execute(taskDto);
 
         // Assert
-        const saveCallArgs = vi.mocked(mockReviewTargetRepository.save).mock.calls;
+        const saveCallArgs = vi.mocked(mockReviewTargetRepository.save).mock
+          .calls;
         const lastSaveCall = saveCallArgs[saveCallArgs.length - 1];
         const savedTarget = lastSaveCall[0] as ReviewTarget;
         expect(savedTarget.status.value).toBe("completed");
@@ -1265,7 +1273,7 @@ describe("レビュー実行 結合テスト", () => {
       const taskDto = createTestReviewTaskDto(
         testFiles,
         checkListItemsPayload,
-        "large"
+        "large",
       );
       const result = await executor.execute(taskDto);
 
@@ -1274,7 +1282,7 @@ describe("レビュー実行 結合テスト", () => {
 
       // 個別レビューが2ファイル分呼ばれる
       expect(
-        mockIndividualDocumentReviewAgentGenerateLegacy
+        mockIndividualDocumentReviewAgentGenerateLegacy,
       ).toHaveBeenCalledTimes(2);
 
       // 統合レビューが1回呼ばれる
@@ -1293,7 +1301,7 @@ describe("レビュー実行 結合テスト", () => {
       const taskDto = createTestReviewTaskDto(
         testFiles,
         checkListItemsPayload,
-        "large"
+        "large",
       );
       await executor.execute(taskDto);
 
@@ -1345,7 +1353,7 @@ describe("レビュー実行 結合テスト", () => {
         },
       ];
       vi.mocked(
-        mockReviewDocumentCacheRepository.findByReviewTargetId
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
       ).mockResolvedValue(mockDocumentCaches as never);
 
       // レビュー結果をモック（onIndividualResultsSavedで参照される）
@@ -1353,20 +1361,22 @@ describe("レビュー実行 結合テスト", () => {
         id: { value: `result-${index}` },
         checkListItemContent: item.content.value,
       }));
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(
-        mockReviewResults as never
-      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockReviewResults as never);
 
       // Act
       const taskDto = createTestReviewTaskDto(
         testFiles,
         checkListItemsPayload,
-        "large"
+        "large",
       );
       await executor.execute(taskDto);
 
       // Assert: 個別結果キャッシュの保存が呼ばれることを確認
-      expect(mockLargeDocumentResultCacheRepository.saveMany).toHaveBeenCalled();
+      expect(
+        mockLargeDocumentResultCacheRepository.saveMany,
+      ).toHaveBeenCalled();
     });
   });
 
@@ -1458,7 +1468,7 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         const result = await executor.execute(taskDto);
 
@@ -1467,7 +1477,8 @@ describe("レビュー実行 結合テスト", () => {
         expect(result.errorMessage).toContain("ファイル処理");
 
         // レビュー対象ステータスがerrorになることを確認
-        const saveCallArgs = vi.mocked(mockReviewTargetRepository.save).mock.calls;
+        const saveCallArgs = vi.mocked(mockReviewTargetRepository.save).mock
+          .calls;
         const lastSaveCall = saveCallArgs[saveCallArgs.length - 1];
         const savedTarget = lastSaveCall[0] as ReviewTarget;
         expect(savedTarget.status.value).toBe("error");
@@ -1483,14 +1494,14 @@ describe("レビュー実行 結合テスト", () => {
 
         // AIエージェントが例外をスローするようにモック
         mockReviewExecuteAgentGenerateLegacy.mockRejectedValue(
-          new Error("AI APIエラー")
+          new Error("AI APIエラー"),
         );
 
         // Act
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         const result = await executor.execute(taskDto);
 
@@ -1516,7 +1527,7 @@ describe("レビュー実行 結合テスト", () => {
         const taskDto = createTestReviewTaskDto(
           testFiles,
           checkListItemsPayload,
-          "small"
+          "small",
         );
         const result = await executor.execute(taskDto);
 
@@ -1539,14 +1550,14 @@ describe("レビュー実行 結合テスト", () => {
 
         // Act & Assert: ファイル未選択エラーがスローされること
         await expect(service.execute(command)).rejects.toThrow(
-          /ファイルが選択されていません/
+          /ファイルが選択されていません/,
         );
       });
 
       it("チェックリストが空の場合にエラーがスローされること", async () => {
         // Arrange
         vi.mocked(
-          mockCheckListItemRepository.findByReviewSpaceId
+          mockCheckListItemRepository.findByReviewSpaceId,
         ).mockResolvedValue([]); // 空のチェックリスト
 
         const testFiles: RawUploadFileMeta[] = [createTestFileMeta("text", 0)];
@@ -1561,7 +1572,7 @@ describe("レビュー実行 結合テスト", () => {
 
         // Act & Assert: チェックリスト未登録エラーがスローされること
         await expect(service.execute(command)).rejects.toThrow(
-          /チェックリストがありません/
+          /チェックリストがありません/,
         );
       });
 
@@ -1581,7 +1592,7 @@ describe("レビュー実行 結合テスト", () => {
 
         // Act & Assert: レビュースペース未存在エラーがスローされること
         await expect(service.execute(command)).rejects.toThrow(
-          /指定されたレビュースペースが見つかりません/
+          /指定されたレビュースペースが見つかりません/,
         );
       });
 
@@ -1599,7 +1610,7 @@ describe("レビュー実行 結合テスト", () => {
           updatedAt: now,
         });
         vi.mocked(mockProjectRepository.findById).mockResolvedValue(
-          projectWithoutMember
+          projectWithoutMember,
         );
 
         const testFiles: RawUploadFileMeta[] = [createTestFileMeta("text", 0)];
@@ -1614,7 +1625,7 @@ describe("レビュー実行 結合テスト", () => {
 
         // Act & Assert: アクセス権エラーがスローされること
         await expect(service.execute(command)).rejects.toThrow(
-          /このプロジェクトへのアクセス権がありません/
+          /このプロジェクトへのアクセス権がありません/,
         );
       });
     });

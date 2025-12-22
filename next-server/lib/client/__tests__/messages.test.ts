@@ -23,17 +23,23 @@ describe("クライアントサイドメッセージヘルパー", () => {
     });
 
     it("パラメータ付きのメッセージをフォーマットできること", () => {
-      const result = formatClientMessage("SUCCESS_CHECKLIST_IMPORTED", { count: 10 });
+      const result = formatClientMessage("SUCCESS_CHECKLIST_IMPORTED", {
+        count: 10,
+      });
       expect(result).toBe("10件のチェック項目をインポートしました");
     });
 
     it("パラメータ付きのエクスポートメッセージをフォーマットできること", () => {
-      const result = formatClientMessage("SUCCESS_CHECKLIST_EXPORTED", { count: 5 });
+      const result = formatClientMessage("SUCCESS_CHECKLIST_EXPORTED", {
+        count: 5,
+      });
       expect(result).toBe("5件のチェック項目をエクスポートしました");
     });
 
     it("パラメータ付きのレビュー結果エクスポートメッセージをフォーマットできること", () => {
-      const result = formatClientMessage("SUCCESS_REVIEW_RESULT_EXPORTED", { count: 15 });
+      const result = formatClientMessage("SUCCESS_REVIEW_RESULT_EXPORTED", {
+        count: 15,
+      });
       expect(result).toBe("15件のレビュー結果をエクスポートしました");
     });
 
@@ -56,7 +62,10 @@ describe("クライアントサイドメッセージヘルパー", () => {
       ["SUCCESS_REVIEW_SPACE_UPDATED", "レビュースペースを更新しました"],
       ["SUCCESS_REVIEW_SPACE_DELETED", "レビュースペースを削除しました"],
       ["SUCCESS_REVIEW_TARGET_DELETED", "レビュー対象を削除しました"],
-      ["SUCCESS_CHECKLIST_TASK_CANCELLED", "チェックリスト生成タスクをキャンセルしました"],
+      [
+        "SUCCESS_CHECKLIST_TASK_CANCELLED",
+        "チェックリスト生成タスクをキャンセルしました",
+      ],
       ["SUCCESS_ADMIN_REVOKED", "管理者権限を削除しました"],
       ["SUCCESS_NOTIFICATION_CREATED", "通知を作成しました"],
       ["SUCCESS_NOTIFICATION_UPDATED", "通知を更新しました"],
@@ -72,7 +81,10 @@ describe("クライアントサイドメッセージヘルパー", () => {
       ["ERROR_PDF_CONVERSION_FAILED", "PDFの画像変換に失敗しました"],
       ["ERROR_API_REVIEW_FAILED", "外部APIレビューに失敗しました"],
       ["ERROR_FILE_READ_FAILED", "ファイルの読み込みに失敗しました"],
-      ["ERROR_UNSUPPORTED_FILE_FORMAT_CHECKLIST", "サポートされていないファイル形式です。csv, xlsx, xlsファイルを選択してください。"],
+      [
+        "ERROR_UNSUPPORTED_FILE_FORMAT_CHECKLIST",
+        "サポートされていないファイル形式です。csv, xlsx, xlsファイルを選択してください。",
+      ],
       ["ERROR_UNKNOWN", "不明なエラーが発生しました"],
     ] as const)("%s が正しいメッセージを返すこと", (code, expected) => {
       const result = getMessage(code);

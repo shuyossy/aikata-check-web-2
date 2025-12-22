@@ -131,7 +131,9 @@ describe("largeDocumentReviewWorkflow", () => {
       expect(checkResult.status).toBe("success");
 
       // 個別レビューは2ファイル分呼ばれる
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalledTimes(2);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalledTimes(2);
 
       // 統合レビューは1回呼ばれる
       expect(mockConsolidateReviewAgentGenerateLegacy).toHaveBeenCalledTimes(1);
@@ -152,7 +154,7 @@ describe("largeDocumentReviewWorkflow", () => {
           expect.objectContaining({
             checkListItemContent: "セキュリティ要件を満たしているか",
             evaluation: "A",
-          })
+          }),
         );
       }
     });
@@ -188,7 +190,9 @@ describe("largeDocumentReviewWorkflow", () => {
       // Assert
       const checkResult = checkWorkflowResult(result);
       expect(checkResult.status).toBe("success");
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalledTimes(1);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -209,8 +213,16 @@ describe("largeDocumentReviewWorkflow", () => {
         return Promise.resolve({
           finishReason: "stop",
           object: [
-            { checklistId: 1, reviewSections: [], comment: `パート${callCount}のコメント1` },
-            { checklistId: 2, reviewSections: [], comment: `パート${callCount}のコメント2` },
+            {
+              checklistId: 1,
+              reviewSections: [],
+              comment: `パート${callCount}のコメント1`,
+            },
+            {
+              checklistId: 2,
+              reviewSections: [],
+              comment: `パート${callCount}のコメント2`,
+            },
           ],
         });
       });
@@ -247,7 +259,9 @@ describe("largeDocumentReviewWorkflow", () => {
 
       // 1回目: content_lengthエラー → 2分割してリトライ → 2回呼ばれる
       // 合計3回（1回目 + リトライ2回）
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalledTimes(3);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalledTimes(3);
     });
 
     it("画像ファイルでもcontent_lengthエラー時に分割リトライすること", async () => {
@@ -264,16 +278,18 @@ describe("largeDocumentReviewWorkflow", () => {
         return Promise.resolve({
           finishReason: "stop",
           object: [
-            { checklistId: 1, reviewSections: [], comment: `パート${callCount}のコメント` },
+            {
+              checklistId: 1,
+              reviewSections: [],
+              comment: `パート${callCount}のコメント`,
+            },
           ],
         });
       });
 
       mockConsolidateReviewAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
-        object: [
-          { checklistId: 1, comment: "統合コメント", evaluation: "A" },
-        ],
+        object: [{ checklistId: 1, comment: "統合コメント", evaluation: "A" }],
       });
 
       const singleCheckItem: CheckListItem[] = [
@@ -302,7 +318,9 @@ describe("largeDocumentReviewWorkflow", () => {
       const checkResult = checkWorkflowResult(result);
       expect(checkResult.status).toBe("success");
       // 分割リトライが発生するため3回以上呼ばれる
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls.length).toBeGreaterThanOrEqual(2);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls.length,
+      ).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -341,7 +359,7 @@ describe("largeDocumentReviewWorkflow", () => {
 
       // Arrange: 統合レビューでエラー
       mockConsolidateReviewAgentGenerateLegacy.mockRejectedValue(
-        new Error("統合レビューエラー")
+        new Error("統合レビューエラー"),
       );
 
       // Act
@@ -408,7 +426,9 @@ describe("largeDocumentReviewWorkflow", () => {
       expect(checkResult.status).toBe("failed");
       // MAX_SPLIT_RETRY_COUNT = 5なので、1 + 2 + 3 + 4 + 5 + 6 = 21回以内
       // 実際には分割数が増えていくので、回数は実装依存
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls.length).toBeGreaterThan(5);
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls.length,
+      ).toBeGreaterThan(5);
     });
   });
 
@@ -417,16 +437,12 @@ describe("largeDocumentReviewWorkflow", () => {
       // Arrange
       mockIndividualDocumentReviewAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
-        object: [
-          { checklistId: 1, reviewSections: [], comment: "コメント" },
-        ],
+        object: [{ checklistId: 1, reviewSections: [], comment: "コメント" }],
       });
 
       mockConsolidateReviewAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
-        object: [
-          { checklistId: 1, comment: "統合コメント", evaluation: "A" },
-        ],
+        object: [{ checklistId: 1, comment: "統合コメント", evaluation: "A" }],
       });
 
       const singleCheckItem: CheckListItem[] = [
@@ -450,42 +466,58 @@ describe("largeDocumentReviewWorkflow", () => {
       expect(checkResult.status).toBe("success");
 
       // Assert: 個別レビューエージェントが呼ばれていること
-      expect(mockIndividualDocumentReviewAgentGenerateLegacy).toHaveBeenCalled();
+      expect(
+        mockIndividualDocumentReviewAgentGenerateLegacy,
+      ).toHaveBeenCalled();
 
       // Assert: 個別レビューエージェントに渡されたRuntimeContextを検証
-      const individualCall = mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls[0];
-      const individualOptions = individualCall[1] as { runtimeContext: RuntimeContext };
+      const individualCall =
+        mockIndividualDocumentReviewAgentGenerateLegacy.mock.calls[0];
+      const individualOptions = individualCall[1] as {
+        runtimeContext: RuntimeContext;
+      };
       expect(individualOptions.runtimeContext).toBeDefined();
-      expect(individualOptions.runtimeContext.get("additionalInstructions")).toBe("特別な指示");
-      expect(individualOptions.runtimeContext.get("commentFormat")).toBe("カスタムフォーマット");
-      expect(individualOptions.runtimeContext.get("checklistItems")).toEqual(singleCheckItem);
+      expect(
+        individualOptions.runtimeContext.get("additionalInstructions"),
+      ).toBe("特別な指示");
+      expect(individualOptions.runtimeContext.get("commentFormat")).toBe(
+        "カスタムフォーマット",
+      );
+      expect(individualOptions.runtimeContext.get("checklistItems")).toEqual(
+        singleCheckItem,
+      );
 
       // Assert: 統合レビューエージェントが呼ばれていること
       expect(mockConsolidateReviewAgentGenerateLegacy).toHaveBeenCalled();
 
       // Assert: 統合レビューエージェントに渡されたRuntimeContextを検証
-      const consolidateCall = mockConsolidateReviewAgentGenerateLegacy.mock.calls[0];
-      const consolidateOptions = consolidateCall[1] as { runtimeContext: RuntimeContext };
+      const consolidateCall =
+        mockConsolidateReviewAgentGenerateLegacy.mock.calls[0];
+      const consolidateOptions = consolidateCall[1] as {
+        runtimeContext: RuntimeContext;
+      };
       expect(consolidateOptions.runtimeContext).toBeDefined();
-      expect(consolidateOptions.runtimeContext.get("additionalInstructions")).toBe("特別な指示");
-      expect(consolidateOptions.runtimeContext.get("commentFormat")).toBe("カスタムフォーマット");
-      expect(consolidateOptions.runtimeContext.get("checklistItems")).toEqual(singleCheckItem);
+      expect(
+        consolidateOptions.runtimeContext.get("additionalInstructions"),
+      ).toBe("特別な指示");
+      expect(consolidateOptions.runtimeContext.get("commentFormat")).toBe(
+        "カスタムフォーマット",
+      );
+      expect(consolidateOptions.runtimeContext.get("checklistItems")).toEqual(
+        singleCheckItem,
+      );
     });
 
     it("評価基準が統合レビューに渡されること", async () => {
       // Arrange
       mockIndividualDocumentReviewAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
-        object: [
-          { checklistId: 1, reviewSections: [], comment: "コメント" },
-        ],
+        object: [{ checklistId: 1, reviewSections: [], comment: "コメント" }],
       });
 
       mockConsolidateReviewAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
-        object: [
-          { checklistId: 1, comment: "統合コメント", evaluation: "優" },
-        ],
+        object: [{ checklistId: 1, comment: "統合コメント", evaluation: "優" }],
       });
 
       const singleCheckItem: CheckListItem[] = [
@@ -514,10 +546,15 @@ describe("largeDocumentReviewWorkflow", () => {
       expect(checkResult.status).toBe("success");
 
       // Assert: 統合レビューエージェントに渡されたRuntimeContextを検証
-      const consolidateCall = mockConsolidateReviewAgentGenerateLegacy.mock.calls[0];
-      const consolidateOptions = consolidateCall[1] as { runtimeContext: RuntimeContext };
+      const consolidateCall =
+        mockConsolidateReviewAgentGenerateLegacy.mock.calls[0];
+      const consolidateOptions = consolidateCall[1] as {
+        runtimeContext: RuntimeContext;
+      };
       expect(consolidateOptions.runtimeContext).toBeDefined();
-      expect(consolidateOptions.runtimeContext.get("evaluationCriteria")).toEqual(customEvaluationCriteria);
+      expect(
+        consolidateOptions.runtimeContext.get("evaluationCriteria"),
+      ).toEqual(customEvaluationCriteria);
 
       // Assert: カスタム評価基準の評価値が結果に含まれること
       if (result.status === "success") {

@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { DeleteReviewSpaceService } from "../DeleteReviewSpaceService";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
-import { IProjectRepository, IAiTaskRepository } from "@/application/shared/port/repository";
+import {
+  IProjectRepository,
+  IAiTaskRepository,
+} from "@/application/shared/port/repository";
 import type { IWorkflowRunRegistry } from "@/application/aiTask/WorkflowRunRegistry";
 import { Project } from "@/domain/project";
 import { ReviewSpace } from "@/domain/reviewSpace";
@@ -212,7 +215,9 @@ describe("DeleteReviewSpaceService", () => {
         deleteByStatus: vi.fn(),
         findByReviewTargetId: vi.fn().mockResolvedValue(null),
         deleteByReviewTargetId: vi.fn(),
-        findChecklistGenerationTaskByReviewSpaceId: vi.fn().mockResolvedValue(null),
+        findChecklistGenerationTaskByReviewSpaceId: vi
+          .fn()
+          .mockResolvedValue(null),
         deleteChecklistGenerationTaskByReviewSpaceId: vi.fn(),
       };
 
@@ -259,10 +264,14 @@ describe("DeleteReviewSpaceService", () => {
 
       // ワークフローキャンセルが呼ばれたことを確認
       expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenCalledWith(true);
-      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(validAiTaskId);
+      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(
+        validAiTaskId,
+      );
       expect(mockWorkflowRunRegistry.setCancelling).toHaveBeenCalledWith(false);
       // タスクファイルとAIタスクが削除されたことを確認
-      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(validAiTaskId);
+      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(
+        validAiTaskId,
+      );
       expect(mockAiTaskRepository.deleteByReviewTargetId).toHaveBeenCalledWith(
         validReviewTargetId,
       );
@@ -281,7 +290,9 @@ describe("DeleteReviewSpaceService", () => {
       // ワークフローキャンセルは呼ばれない
       expect(mockWorkflowRunRegistry.cancel).not.toHaveBeenCalled();
       // タスクファイルとAIタスクは削除される
-      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(validAiTaskId);
+      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(
+        validAiTaskId,
+      );
       expect(mockAiTaskRepository.deleteByReviewTargetId).toHaveBeenCalledWith(
         validReviewTargetId,
       );
@@ -314,8 +325,12 @@ describe("DeleteReviewSpaceService", () => {
       });
 
       // チェックリスト生成ワークフローキャンセルが呼ばれたことを確認
-      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(checklistTaskId);
-      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(checklistTaskId);
+      expect(mockWorkflowRunRegistry.cancel).toHaveBeenCalledWith(
+        checklistTaskId,
+      );
+      expect(TaskFileHelper.deleteTaskFiles).toHaveBeenCalledWith(
+        checklistTaskId,
+      );
       expect(
         mockAiTaskRepository.deleteChecklistGenerationTaskByReviewSpaceId,
       ).toHaveBeenCalledWith(validReviewSpaceId);

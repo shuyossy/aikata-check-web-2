@@ -1,4 +1,7 @@
-import { SystemNotification, SystemNotificationId } from "@/domain/system-notification";
+import {
+  SystemNotification,
+  SystemNotificationId,
+} from "@/domain/system-notification";
 
 /**
  * システム通知取得オプション
@@ -22,7 +25,9 @@ export interface ISystemNotificationRepository {
    * @param options 取得オプション
    * @returns システム通知エンティティの配列
    */
-  findAll(options?: FindSystemNotificationsOptions): Promise<SystemNotification[]>;
+  findAll(
+    options?: FindSystemNotificationsOptions,
+  ): Promise<SystemNotification[]>;
 
   /**
    * 有効なシステム通知のみ取得（表示順序でソート）

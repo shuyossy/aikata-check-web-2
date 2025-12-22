@@ -14,7 +14,10 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ReviewSettingsEditor, ReviewSettingsValue } from "./ReviewSettingsEditor";
+import {
+  ReviewSettingsEditor,
+  ReviewSettingsValue,
+} from "./ReviewSettingsEditor";
 import {
   DEFAULT_EVALUATION_CRITERIA,
   DEFAULT_CONCURRENT_REVIEW_ITEMS,
@@ -97,8 +100,9 @@ export function ReviewSpaceForm({
       concurrentReviewItems:
         defaultValues?.concurrentReviewItems ?? DEFAULT_CONCURRENT_REVIEW_ITEMS,
       commentFormat: defaultValues?.commentFormat ?? DEFAULT_COMMENT_FORMAT,
-      evaluationCriteria:
-        defaultValues?.evaluationCriteria ?? [...DEFAULT_EVALUATION_CRITERIA],
+      evaluationCriteria: defaultValues?.evaluationCriteria ?? [
+        ...DEFAULT_EVALUATION_CRITERIA,
+      ],
     },
   });
 
@@ -118,7 +122,7 @@ export function ReviewSpaceForm({
       setValue("commentFormat", value.commentFormat);
       setValue("evaluationCriteria", value.evaluationCriteria);
     },
-    [setValue]
+    [setValue],
   );
 
   // バリデーションエラーメッセージの収集

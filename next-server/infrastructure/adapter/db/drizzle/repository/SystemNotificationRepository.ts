@@ -3,7 +3,10 @@ import {
   ISystemNotificationRepository,
   FindSystemNotificationsOptions,
 } from "@/application/shared/port/repository";
-import { SystemNotification, SystemNotificationId } from "@/domain/system-notification";
+import {
+  SystemNotification,
+  SystemNotificationId,
+} from "@/domain/system-notification";
 import { db } from "../index";
 import { systemNotifications } from "@/drizzle/schema";
 
@@ -15,7 +18,9 @@ export class SystemNotificationRepository implements ISystemNotificationReposito
   /**
    * 通知一覧を取得
    */
-  async findAll(options?: FindSystemNotificationsOptions): Promise<SystemNotification[]> {
+  async findAll(
+    options?: FindSystemNotificationsOptions,
+  ): Promise<SystemNotification[]> {
     const { limit = 50, offset = 0, activeOnly = false } = options ?? {};
 
     let queryBuilder = db.select().from(systemNotifications);

@@ -229,7 +229,10 @@ describe("resolveAiApiConfig", () => {
       });
 
       // Act
-      const result: AiApiConfig = resolveAiApiConfig(projectApiKey, systemSetting);
+      const result: AiApiConfig = resolveAiApiConfig(
+        projectApiKey,
+        systemSetting,
+      );
 
       // Assert
       expect(result).toHaveProperty("apiKey");

@@ -1,8 +1,5 @@
 import { ReviewTargetId } from "@/domain/reviewTarget";
-import {
-  ReviewResult,
-  ReviewResultId,
-} from "@/domain/reviewResult";
+import { ReviewResult, ReviewResultId } from "@/domain/reviewResult";
 
 /**
  * レビュー結果リポジトリインターフェース

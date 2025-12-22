@@ -1,5 +1,11 @@
 import { ReviewTargetId } from "@/domain/reviewTarget";
-import { QaHistory, QaHistoryId, Answer, ResearchSummary, QaStatus } from "@/domain/qaHistory";
+import {
+  QaHistory,
+  QaHistoryId,
+  Answer,
+  ResearchSummary,
+  QaStatus,
+} from "@/domain/qaHistory";
 
 /**
  * Q&A履歴検索オプション

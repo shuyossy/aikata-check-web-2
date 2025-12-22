@@ -11,9 +11,20 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { MarkdownRenderer } from "@/components/ui/markdown-renderer";
-import { ChevronDown, ChevronUp, AlertCircle, Bot, User, CheckCircle, Circle } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  AlertCircle,
+  Bot,
+  User,
+  CheckCircle,
+  Circle,
+} from "lucide-react";
 import { useSseSubscription } from "@/lib/client/useSseSubscription";
-import type { QaSseEvent, QaResearchTask } from "@/application/shared/port/push/QaSseEventTypes";
+import type {
+  QaSseEvent,
+  QaResearchTask,
+} from "@/application/shared/port/push/QaSseEventTypes";
 
 /**
  * Q&A履歴データ
@@ -56,7 +67,11 @@ interface QaHistoryListProps {
   /** 処理中のチェックリスト項目内容 */
   currentChecklistItemContents?: string[];
   /** 完了時のコールバック */
-  onComplete?: (qaHistoryId: string, answer: string, researchSummary: string) => void;
+  onComplete?: (
+    qaHistoryId: string,
+    answer: string,
+    researchSummary: string,
+  ) => void;
   /** エラー時のコールバック */
   onError?: (qaHistoryId: string, errorMessage: string) => void;
   /** 末尾にスクロールするコールバック（親コンポーネントで管理） */
@@ -111,7 +126,9 @@ function QaHistoryItem({ history }: { history: QaHistoryData }) {
     : null;
 
   // チェックリスト項目をパース（複数対応）
-  const checklistItemContents = parseChecklistItemContents(history.checklistItemContent);
+  const checklistItemContents = parseChecklistItemContents(
+    history.checklistItemContent,
+  );
 
   const toggleResearch = useCallback(() => {
     setIsResearchOpen((prev) => !prev);
@@ -197,7 +214,10 @@ function QaHistoryItem({ history }: { history: QaHistoryData }) {
 
                   {/* 調査履歴（折りたたみ） */}
                   {researchSummary && researchSummary.length > 0 && (
-                    <Collapsible open={isResearchOpen} onOpenChange={setIsResearchOpen}>
+                    <Collapsible
+                      open={isResearchOpen}
+                      onOpenChange={setIsResearchOpen}
+                    >
                       <CollapsibleTrigger asChild>
                         <Button
                           variant="ghost"
@@ -237,7 +257,9 @@ function QaHistoryItem({ history }: { history: QaHistoryData }) {
             </CardContent>
           </Card>
           <div className="text-xs text-gray-500 mt-1">
-            AI {history.status === "completed" && `• ${formatDateTime(history.updatedAt)}`}
+            AI{" "}
+            {history.status === "completed" &&
+              `• ${formatDateTime(history.updatedAt)}`}
           </div>
         </div>
       </div>
@@ -256,7 +278,11 @@ interface StreamingQaItemProps {
   checklistItemContents?: string[];
   /** 履歴データ（処理中の既存履歴から表示する場合） */
   historyData?: QaHistoryData;
-  onComplete: (qaHistoryId: string, answer: string, researchSummary: string) => void;
+  onComplete: (
+    qaHistoryId: string,
+    answer: string,
+    researchSummary: string,
+  ) => void;
   onError: (qaHistoryId: string, errorMessage: string) => void;
   onScrollToBottom: () => void;
 }
@@ -272,24 +298,37 @@ function StreamingQaItem({
 }: StreamingQaItemProps) {
   // propsまたは履歴データから質問とチェックリスト項目を取得
   const question = questionProp ?? historyData?.question ?? "";
-  const checklistItemContents = checklistItemContentsProp ??
-    (historyData ? parseChecklistItemContents(historyData.checklistItemContent) : []);
+  const checklistItemContents =
+    checklistItemContentsProp ??
+    (historyData
+      ? parseChecklistItemContents(historyData.checklistItemContent)
+      : []);
   // 調査タスクの状態
   const [researchTasks, setResearchTasks] = useState<ResearchTaskState[]>([]);
   // 回答テキスト（ストリーミング中）
   const [answerText, setAnswerText] = useState("");
   // 処理フェーズ（preparing: 質問分析中、researching: ドキュメント調査中）
-  const [phase, setPhase] = useState<"connecting" | "preparing" | "researching" | "answering" | "completed" | "error">("connecting");
+  const [phase, setPhase] = useState<
+    | "connecting"
+    | "preparing"
+    | "researching"
+    | "answering"
+    | "completed"
+    | "error"
+  >("connecting");
   // 準備中メッセージ
   const [preparingMessage, setPreparingMessage] = useState<string>("");
   // エラーメッセージ
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   // 完了した調査タスク数
-  const completedTaskCount = researchTasks.filter((t) => t.status === "completed").length;
+  const completedTaskCount = researchTasks.filter(
+    (t) => t.status === "completed",
+  ).length;
   // 調査進捗率
-  const researchProgress = researchTasks.length > 0
-    ? (completedTaskCount / researchTasks.length) * 100
-    : 0;
+  const researchProgress =
+    researchTasks.length > 0
+      ? (completedTaskCount / researchTasks.length) * 100
+      : 0;
 
   // SSEイベントハンドラー
   const handleSseEvent = useCallback(
@@ -309,7 +348,7 @@ function StreamingQaItem({
             event.data.tasks.map((task) => ({
               ...task,
               status: "pending",
-            }))
+            })),
           );
           setPhase("researching");
           // スクロール
@@ -319,7 +358,9 @@ function StreamingQaItem({
         case "research_progress":
           // 調査進捗：タスクの状態を更新
           setResearchTasks((prev) => {
-            const existingTask = prev.find((task) => task.documentName === event.data.documentName);
+            const existingTask = prev.find(
+              (task) => task.documentName === event.data.documentName,
+            );
             if (existingTask) {
               // 既存タスクを更新
               return prev.map((task) =>
@@ -329,7 +370,7 @@ function StreamingQaItem({
                       status: event.data.status,
                       result: event.data.result,
                     }
-                  : task
+                  : task,
               );
             } else {
               // 新しいタスクを追加
@@ -344,7 +385,11 @@ function StreamingQaItem({
               ];
             }
           });
-          if (phase !== "researching" && phase !== "answering" && phase !== "completed") {
+          if (
+            phase !== "researching" &&
+            phase !== "answering" &&
+            phase !== "completed"
+          ) {
             setPhase("researching");
           }
           break;
@@ -363,7 +408,9 @@ function StreamingQaItem({
           // 完了
           setPhase("completed");
           setAnswerText(event.data.answer);
-          const researchSummaryJson = JSON.stringify(event.data.researchSummary);
+          const researchSummaryJson = JSON.stringify(
+            event.data.researchSummary,
+          );
           onComplete(qaHistoryId, event.data.answer, researchSummaryJson);
           break;
 
@@ -375,7 +422,7 @@ function StreamingQaItem({
           break;
       }
     },
-    [qaHistoryId, phase, onComplete, onError, onScrollToBottom]
+    [qaHistoryId, phase, onComplete, onError, onScrollToBottom],
   );
 
   // SSEエラーハンドラー
@@ -453,12 +500,16 @@ function StreamingQaItem({
               {phase === "preparing" && (
                 <div className="flex items-center gap-2 text-gray-500">
                   <div className="animate-spin h-4 w-4 border-2 border-purple-500 border-t-transparent rounded-full" />
-                  <span className="text-sm">{preparingMessage || "質問を分析しています..."}</span>
+                  <span className="text-sm">
+                    {preparingMessage || "質問を分析しています..."}
+                  </span>
                 </div>
               )}
 
               {/* 調査フェーズ */}
-              {(phase === "researching" || phase === "answering" || phase === "completed") &&
+              {(phase === "researching" ||
+                phase === "answering" ||
+                phase === "completed") &&
                 researchTasks.length > 0 && (
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm">
@@ -487,8 +538,8 @@ function StreamingQaItem({
                                 task.status === "completed"
                                   ? "text-green-700"
                                   : task.status === "in_progress"
-                                  ? "text-purple-700"
-                                  : "text-gray-500"
+                                    ? "text-purple-700"
+                                    : "text-gray-500"
                               }`}
                             >
                               {task.documentName}
@@ -534,7 +585,9 @@ function StreamingQaItem({
                   <div>
                     <p className="text-sm font-medium">エラーが発生しました</p>
                     {errorMessage && (
-                      <p className="text-sm text-red-500 mt-1">{errorMessage}</p>
+                      <p className="text-sm text-red-500 mt-1">
+                        {errorMessage}
+                      </p>
                     )}
                   </div>
                 </div>

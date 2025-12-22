@@ -8,7 +8,10 @@ import {
 import { baseStepOutputSchema } from "../../schema";
 import { extractedFileSchema } from "../../shared";
 import { createCombinedMessage } from "../../lib";
-import { createRuntimeContext, judgeFinishReason } from "../../../lib/agentUtils";
+import {
+  createRuntimeContext,
+  judgeFinishReason,
+} from "../../../lib/agentUtils";
 import { judgeErrorIsContentLengthError } from "../../../lib/util";
 import { normalizeUnknownError, workflowError } from "@/lib/server/error";
 import { formatMessage } from "@/lib/server/messages";
@@ -62,12 +65,14 @@ export const individualDocumentReviewInputSchema = z.object({
 /**
  * 個別ドキュメントレビューステップの出力スキーマ
  */
-export const individualDocumentReviewOutputSchema = baseStepOutputSchema.extend({
-  /** レビュー結果配列 */
-  reviewResults: z.array(individualDocumentReviewResultSchema).optional(),
-  /** 終了理由 */
-  finishReason: z.enum(["success", "error", "content_length"]),
-});
+export const individualDocumentReviewOutputSchema = baseStepOutputSchema.extend(
+  {
+    /** レビュー結果配列 */
+    reviewResults: z.array(individualDocumentReviewResultSchema).optional(),
+    /** 終了理由 */
+    finishReason: z.enum(["success", "error", "content_length"]),
+  },
+);
 
 export type IndividualDocumentReviewInput = z.infer<
   typeof individualDocumentReviewInputSchema
@@ -136,8 +141,7 @@ export const individualDocumentReviewStep = createStep({
 
       // ドキュメント情報テキストを構築
       const originalName = file.originalName ?? file.name;
-      const isChunk =
-        file.totalChunks !== undefined && file.totalChunks > 1;
+      const isChunk = file.totalChunks !== undefined && file.totalChunks > 1;
       const documentInfoText = isChunk
         ? `Document Information:
 - Original File Name: ${originalName}
@@ -202,15 +206,18 @@ Please provide a thorough review based on the document content provided above.`;
           return {
             status: "failed",
             errorMessage: formatMessage("REVIEW_LARGE_DOC_CONTENT_TOO_LONG", {
-              detail: targetChecklistItems.map((c) => `・${c.content}`).join("\n"),
+              detail: targetChecklistItems
+                .map((c) => `・${c.content}`)
+                .join("\n"),
             }),
             finishReason: "content_length",
           };
         }
 
         // finishReasonを確認（その他のエラーを検知）
-        const { success: finishSuccess } =
-          judgeFinishReason(result.finishReason);
+        const { success: finishSuccess } = judgeFinishReason(
+          result.finishReason,
+        );
         if (!finishSuccess) {
           throw workflowError("WORKFLOW_AI_API_ERROR");
         }
@@ -253,7 +260,9 @@ Please provide a thorough review based on the document content provided above.`;
         return {
           status: "failed",
           errorMessage: formatMessage("REVIEW_AI_OUTPUT_MISSING_RESULT", {
-            detail: targetChecklistItems.map((c) => `・${c.content}`).join("\n"),
+            detail: targetChecklistItems
+              .map((c) => `・${c.content}`)
+              .join("\n"),
           }),
           reviewResults,
           finishReason: "error",

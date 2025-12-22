@@ -7,7 +7,10 @@ import {
   ProjectRepository,
   ReviewSpaceRepository,
 } from "@/infrastructure/adapter/db";
-import { ReviewTargetRepository, ReviewResultRepository } from "@/infrastructure/adapter/db";
+import {
+  ReviewTargetRepository,
+  ReviewResultRepository,
+} from "@/infrastructure/adapter/db";
 
 /**
  * 外部APIレビュー結果の入力スキーマ

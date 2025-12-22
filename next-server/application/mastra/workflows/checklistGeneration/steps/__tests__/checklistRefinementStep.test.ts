@@ -126,7 +126,7 @@ describe("checklistRefinementStep", () => {
       const callArgs = mockGenerateLegacy.mock.calls[0];
       const options = callArgs[1];
       expect(options.runtimeContext.get("checklistRequirements")).toBe(
-        testChecklistRequirements
+        testChecklistRequirements,
       );
     });
 
@@ -568,7 +568,7 @@ describe("checklistRefinementStep", () => {
       expect(message.content).toContain("ALREADY REFINED ITEMS");
       expect(message.content).toContain("1. 項目1");
       expect(message.content).toContain(
-        "Please continue refining the remaining items"
+        "Please continue refining the remaining items",
       );
     });
 
@@ -609,7 +609,9 @@ describe("checklistRefinementStep", () => {
       // Assert
       expect(result.status).toBe("success");
       // 項目1は1つだけ
-      expect(result.refinedItems?.filter((item) => item === "項目1")).toHaveLength(1);
+      expect(
+        result.refinedItems?.filter((item) => item === "項目1"),
+      ).toHaveLength(1);
       expect(result.refinedItems).toContain("項目2");
       expect(result.refinedItems).toContain("項目3");
     });

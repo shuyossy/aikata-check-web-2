@@ -132,7 +132,9 @@ export class InMemoryEventBroker implements IEventBroker {
     const channelSubscription = this.channelSubscriptions.get(subscriptionId);
     if (channelSubscription) {
       // チャンネル -> 購読IDマッピングから削除
-      const channelSubs = this.channelToSubscriptionIds.get(channelSubscription.channel);
+      const channelSubs = this.channelToSubscriptionIds.get(
+        channelSubscription.channel,
+      );
       if (channelSubs) {
         channelSubs.delete(subscriptionId);
         if (channelSubs.size === 0) {
@@ -156,7 +158,10 @@ export class InMemoryEventBroker implements IEventBroker {
           subscription.callback(data);
         } catch (error) {
           // コールバック実行時のエラーは無視
-          logger.error({ err: error, eventType }, "イベントコールバック実行時にエラーが発生しました");
+          logger.error(
+            { err: error, eventType },
+            "イベントコールバック実行時にエラーが発生しました",
+          );
         }
       }
     }
@@ -178,7 +183,10 @@ export class InMemoryEventBroker implements IEventBroker {
           subscription.callback(data);
         } catch (error) {
           // コールバック実行時のエラーは無視
-          logger.error({ err: error, channel }, "ブロードキャストコールバック実行時にエラーが発生しました");
+          logger.error(
+            { err: error, channel },
+            "ブロードキャストコールバック実行時にエラーが発生しました",
+          );
         }
       }
     }

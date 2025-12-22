@@ -8,7 +8,11 @@ import {
   checklistCategoryOutputSchema,
 } from "../../../agents";
 import { createRuntimeContext } from "../../../lib/agentUtils";
-import { normalizeUnknownError, extractAIAPISafeError, workflowError } from "@/lib/server/error";
+import {
+  normalizeUnknownError,
+  extractAIAPISafeError,
+  workflowError,
+} from "@/lib/server/error";
 import type { ChecklistCategoryAgentRuntimeContext } from "../../../agents";
 import {
   checkListItemSchema,
@@ -31,8 +35,12 @@ export const classifyChecklistOutputSchema = baseStepOutputSchema.extend({
   chunks: z.array(z.array(checkListItemSchema)).optional(),
 });
 
-export type ClassifyChecklistInput = z.infer<typeof classifyChecklistInputSchema>;
-export type ClassifyChecklistOutput = z.infer<typeof classifyChecklistOutputSchema>;
+export type ClassifyChecklistInput = z.infer<
+  typeof classifyChecklistInputSchema
+>;
+export type ClassifyChecklistOutput = z.infer<
+  typeof classifyChecklistOutputSchema
+>;
 
 /**
  * チェック項目を指定サイズで均等分割する
@@ -124,7 +132,9 @@ export const classifyChecklistStep = createStep({
         const chunks = await classifyWithAI(
           checkListItems,
           chunkSize,
-          workflowRuntimeContext as RuntimeContext<ReviewExecutionWorkflowRuntimeContext> | undefined,
+          workflowRuntimeContext as
+            | RuntimeContext<ReviewExecutionWorkflowRuntimeContext>
+            | undefined,
         );
         return {
           status: "success",
@@ -196,7 +206,9 @@ async function classifyWithAI(
 
     // 全ショートIDのセットを作成（1始まりの連番）
     const allShortIds = new Set(checkListItems.map((_, index) => index + 1));
-    const assignedShortIds = new Set(rawCategories.flatMap((c) => c.checklistIds));
+    const assignedShortIds = new Set(
+      rawCategories.flatMap((c) => c.checklistIds),
+    );
 
     // 未分類アイテムがあれば「その他」カテゴリに追加
     const uncategorizedShortIds = Array.from(allShortIds).filter(
@@ -218,7 +230,9 @@ async function classifyWithAI(
       const uniqueInCategory = Array.from(new Set(checklistIds));
 
       // 他カテゴリで既に割り当て済みのショートIDを除外
-      const filteredShortIds = uniqueInCategory.filter((shortId) => !seen.has(shortId));
+      const filteredShortIds = uniqueInCategory.filter(
+        (shortId) => !seen.has(shortId),
+      );
       filteredShortIds.forEach((shortId) => seen.add(shortId));
 
       // maxChecklistsPerCategory件ずつチャンクに分割
@@ -227,7 +241,10 @@ async function classifyWithAI(
         i < filteredShortIds.length;
         i += maxChecklistsPerCategory
       ) {
-        const chunkShortIds = filteredShortIds.slice(i, i + maxChecklistsPerCategory);
+        const chunkShortIds = filteredShortIds.slice(
+          i,
+          i + maxChecklistsPerCategory,
+        );
 
         // ショートID（1始まり）から元のチェック項目を取得
         const chunk = chunkShortIds
@@ -237,7 +254,10 @@ async function classifyWithAI(
               ? checkListItems[index]
               : undefined;
           })
-          .filter((item): item is { id: string; content: string } => item !== undefined);
+          .filter(
+            (item): item is { id: string; content: string } =>
+              item !== undefined,
+          );
 
         if (chunk.length > 0) {
           chunks.push(chunk);

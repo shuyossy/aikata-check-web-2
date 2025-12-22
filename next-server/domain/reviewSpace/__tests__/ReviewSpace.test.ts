@@ -70,7 +70,9 @@ describe("ReviewSpace", () => {
         expect(reviewSpace.defaultReviewSettings?.additionalInstructions).toBe(
           validReviewSettings.additionalInstructions,
         );
-        expect(reviewSpace.defaultReviewSettings?.concurrentReviewItems).toBe(5);
+        expect(reviewSpace.defaultReviewSettings?.concurrentReviewItems).toBe(
+          5,
+        );
       });
 
       it("デフォルトレビュー設定なしの場合はデフォルト値が設定される", () => {
@@ -138,7 +140,9 @@ describe("ReviewSpace", () => {
         });
 
         expect(reviewSpace.defaultReviewSettings).not.toBeNull();
-        expect(reviewSpace.defaultReviewSettings?.concurrentReviewItems).toBe(5);
+        expect(reviewSpace.defaultReviewSettings?.concurrentReviewItems).toBe(
+          5,
+        );
       });
     });
 
@@ -216,7 +220,8 @@ describe("ReviewSpace", () => {
           name: "テスト",
         });
 
-        const updated = reviewSpace.updateDefaultReviewSettings(validReviewSettings);
+        const updated =
+          reviewSpace.updateDefaultReviewSettings(validReviewSettings);
 
         expect(updated.defaultReviewSettings).not.toBeNull();
         expect(updated.defaultReviewSettings?.additionalInstructions).toBe(
@@ -231,7 +236,8 @@ describe("ReviewSpace", () => {
         });
 
         const originalUpdatedAt = reviewSpace.updatedAt;
-        const updated = reviewSpace.updateDefaultReviewSettings(validReviewSettings);
+        const updated =
+          reviewSpace.updateDefaultReviewSettings(validReviewSettings);
 
         expect(updated.updatedAt.getTime()).toBeGreaterThanOrEqual(
           originalUpdatedAt.getTime(),
@@ -325,7 +331,8 @@ describe("ReviewSpace", () => {
           name: "テスト",
         });
 
-        const updated = reviewSpace.setChecklistGenerationError("エラー発生しました");
+        const updated =
+          reviewSpace.setChecklistGenerationError("エラー発生しました");
 
         expect(updated.checklistGenerationError).toBe("エラー発生しました");
       });
@@ -430,7 +437,8 @@ describe("ReviewSpace", () => {
           checklistGenerationError: "保持されるエラー",
         });
 
-        const updated = reviewSpace.updateDefaultReviewSettings(validReviewSettings);
+        const updated =
+          reviewSpace.updateDefaultReviewSettings(validReviewSettings);
 
         expect(updated.checklistGenerationError).toBe("保持されるエラー");
       });
@@ -495,7 +503,9 @@ describe("ReviewSpace", () => {
           name: "テスト",
         });
 
-        expect(() => reviewSpace.updateDescription("あ".repeat(1001))).toThrow();
+        expect(() =>
+          reviewSpace.updateDescription("あ".repeat(1001)),
+        ).toThrow();
       });
     });
   });

@@ -4,18 +4,14 @@ import { FileUploadArea, FileUploadAreaProps } from "../FileUploadArea";
 import { UploadedFile } from "../types";
 
 // テスト用のモックファイル
-const createMockFile = (
-  name: string,
-  size: number,
-  type: string
-): File => {
+const createMockFile = (name: string, size: number, type: string): File => {
   const blob = new Blob([""], { type });
   return new File([blob], name, { type });
 };
 
 // テスト用のアップロードファイル
 const createUploadedFile = (
-  partial: Partial<UploadedFile> = {}
+  partial: Partial<UploadedFile> = {},
 ): UploadedFile => {
   const name = partial.name || "test.txt";
   const type = partial.type || "text/plain";
@@ -47,9 +43,11 @@ describe("FileUploadArea", () => {
     it("ドロップゾーンが表示される", () => {
       render(<FileUploadArea {...defaultProps} />);
 
-      expect(screen.getByText("ファイルをドラッグ&ドロップ")).toBeInTheDocument();
       expect(
-        screen.getByText("または クリックして選択（複数ファイル対応）")
+        screen.getByText("ファイルをドラッグ&ドロップ"),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText("または クリックして選択（複数ファイル対応）"),
       ).toBeInTheDocument();
     });
 
@@ -70,7 +68,7 @@ describe("FileUploadArea", () => {
           {...defaultProps}
           maxFileSize={10 * 1024 * 1024}
           maxFiles={5}
-        />
+        />,
       );
 
       expect(screen.getByText(/10 MB/)).toBeInTheDocument();
@@ -79,7 +77,7 @@ describe("FileUploadArea", () => {
 
     it("カスタムの許可フォーマットが表示される", () => {
       render(
-        <FileUploadArea {...defaultProps} acceptedFormats={[".pdf", ".txt"]} />
+        <FileUploadArea {...defaultProps} acceptedFormats={[".pdf", ".txt"]} />,
       );
 
       expect(screen.getByText("PDF")).toBeInTheDocument();
@@ -140,7 +138,7 @@ describe("FileUploadArea", () => {
       render(<FileUploadArea {...defaultProps} files={files} />);
 
       expect(
-        screen.getByText("ファイルの処理に失敗しました")
+        screen.getByText("ファイルの処理に失敗しました"),
       ).toBeInTheDocument();
     });
   });
@@ -150,7 +148,7 @@ describe("FileUploadArea", () => {
       render(<FileUploadArea {...defaultProps} />);
 
       const fileInput = document.querySelector(
-        'input[type="file"]'
+        'input[type="file"]',
       ) as HTMLInputElement;
       const file = createMockFile("new-file.txt", 1024, "text/plain");
 
@@ -179,7 +177,7 @@ describe("FileUploadArea", () => {
       // 削除ボタンをクリック（X アイコン）
       const deleteButtons = screen.getAllByRole("button");
       const deleteButton = deleteButtons.find((button) =>
-        button.className.includes("text-red")
+        button.className.includes("text-red"),
       );
       expect(deleteButton).toBeTruthy();
 
@@ -195,11 +193,11 @@ describe("FileUploadArea", () => {
       ];
 
       render(
-        <FileUploadArea {...defaultProps} files={existingFiles} maxFiles={2} />
+        <FileUploadArea {...defaultProps} files={existingFiles} maxFiles={2} />,
       );
 
       const fileInput = document.querySelector(
-        'input[type="file"]'
+        'input[type="file"]',
       ) as HTMLInputElement;
       const file = createMockFile("new-file.txt", 1024, "text/plain");
 
@@ -230,7 +228,7 @@ describe("FileUploadArea", () => {
           {...defaultProps}
           files={files}
           showImageConversion={true}
-        />
+        />,
       );
 
       // 処理モードセレクターのボタンが表示される
@@ -253,7 +251,7 @@ describe("FileUploadArea", () => {
           {...defaultProps}
           files={files}
           showImageConversion={false}
-        />
+        />,
       );
 
       // 処理モードセレクターが表示されない
@@ -276,7 +274,7 @@ describe("FileUploadArea", () => {
           {...defaultProps}
           files={files}
           showImageConversion={true}
-        />
+        />,
       );
 
       // 処理モードセレクターのボタンはあるが無効化されている
@@ -303,7 +301,7 @@ describe("FileUploadArea", () => {
           {...defaultProps}
           files={files}
           showImageConversion={true}
-        />
+        />,
       );
 
       // 画像変換ボタンをクリック
@@ -334,7 +332,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       // チェックボックスが表示される
@@ -358,7 +356,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       // チェックボックスが表示されない（非PDFのため）
@@ -383,7 +381,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       // チェックボックスをクリック
@@ -428,7 +426,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       const checkboxes = screen.getAllByRole("checkbox");
@@ -474,7 +472,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       // チェックボックスはPDFファイルのみに表示される（2つ）
@@ -497,7 +495,7 @@ describe("FileUploadArea", () => {
       render(<FileUploadArea {...defaultProps} disabled={true} />);
 
       const fileInput = document.querySelector(
-        'input[type="file"]'
+        'input[type="file"]',
       ) as HTMLInputElement;
       expect(fileInput.disabled).toBe(true);
     });
@@ -510,11 +508,13 @@ describe("FileUploadArea", () => {
         }),
       ];
 
-      render(<FileUploadArea {...defaultProps} files={files} disabled={true} />);
+      render(
+        <FileUploadArea {...defaultProps} files={files} disabled={true} />,
+      );
 
       const deleteButtons = screen.getAllByRole("button");
       const deleteButton = deleteButtons.find((button) =>
-        button.className.includes("text-red")
+        button.className.includes("text-red"),
       );
       expect(deleteButton).toBeDisabled();
     });
@@ -536,7 +536,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           disabled={true}
-        />
+        />,
       );
 
       const textExtractButton = screen.getByText("テキスト抽出");
@@ -606,7 +606,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       // 両方のPDFを選択
@@ -620,9 +620,10 @@ describe("FileUploadArea", () => {
 
       // onFilesChangeが呼ばれ、選択されたPDFのwillConvertToImageがfalseになる
       expect(mockOnFilesChange).toHaveBeenCalled();
-      const updatedFiles = mockOnFilesChange.mock.calls[
-        mockOnFilesChange.mock.calls.length - 1
-      ][0];
+      const updatedFiles =
+        mockOnFilesChange.mock.calls[
+          mockOnFilesChange.mock.calls.length - 1
+        ][0];
       expect(updatedFiles[0].willConvertToImage).toBe(false);
       expect(updatedFiles[1].willConvertToImage).toBe(false);
     });
@@ -651,7 +652,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       // 両方のPDFを選択
@@ -665,9 +666,10 @@ describe("FileUploadArea", () => {
 
       // onFilesChangeが呼ばれ、選択されたPDFのwillConvertToImageがtrueになる
       expect(mockOnFilesChange).toHaveBeenCalled();
-      const updatedFiles = mockOnFilesChange.mock.calls[
-        mockOnFilesChange.mock.calls.length - 1
-      ][0];
+      const updatedFiles =
+        mockOnFilesChange.mock.calls[
+          mockOnFilesChange.mock.calls.length - 1
+        ][0];
       expect(updatedFiles[0].willConvertToImage).toBe(true);
       expect(updatedFiles[1].willConvertToImage).toBe(true);
     });
@@ -689,7 +691,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       // PDFを選択
@@ -738,7 +740,7 @@ describe("FileUploadArea", () => {
           files={files}
           showImageConversion={true}
           enableMultiSelect={true}
-        />
+        />,
       );
 
       // 最初のPDFのみを選択
@@ -751,9 +753,10 @@ describe("FileUploadArea", () => {
 
       // onFilesChangeが呼ばれる
       expect(mockOnFilesChange).toHaveBeenCalled();
-      const updatedFiles = mockOnFilesChange.mock.calls[
-        mockOnFilesChange.mock.calls.length - 1
-      ][0];
+      const updatedFiles =
+        mockOnFilesChange.mock.calls[
+          mockOnFilesChange.mock.calls.length - 1
+        ][0];
 
       // 選択されたPDF（1番目）のみが変更される
       expect(updatedFiles[0].willConvertToImage).toBe(true);

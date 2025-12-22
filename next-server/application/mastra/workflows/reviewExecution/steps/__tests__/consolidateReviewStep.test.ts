@@ -87,9 +87,12 @@ describe("consolidateReviewStep", () => {
   // RuntimeContextを作成するヘルパー関数
   const createTestRuntimeContext = (
     options: {
-      onReviewResultSaved?: (results: unknown[], targetId: string) => Promise<void>;
+      onReviewResultSaved?: (
+        results: unknown[],
+        targetId: string,
+      ) => Promise<void>;
       reviewTargetId?: string;
-    } = {}
+    } = {},
   ) => {
     const runtimeContext = new RuntimeContext();
     runtimeContext.set("employeeId", "test-user-id");
@@ -106,7 +109,7 @@ describe("consolidateReviewStep", () => {
   // stepを実行するヘルパー関数
   const executeStep = async (
     inputData: ConsolidateReviewInput,
-    runtimeContext = createTestRuntimeContext()
+    runtimeContext = createTestRuntimeContext(),
   ): Promise<ConsolidateReviewOutput> => {
     // @ts-expect-error テスト用の簡略化されたexecuteパラメータ
     return await consolidateReviewStep.execute({
@@ -233,7 +236,7 @@ describe("consolidateReviewStep", () => {
         createTestRuntimeContext({
           reviewTargetId: "target-1",
           onReviewResultSaved: mockOnReviewResultSaved,
-        })
+        }),
       );
 
       // Assert
@@ -243,7 +246,7 @@ describe("consolidateReviewStep", () => {
           expect.objectContaining({ evaluation: "A" }),
           expect.objectContaining({ evaluation: "B" }),
         ]),
-        "target-1"
+        "target-1",
       );
     });
 
@@ -280,9 +283,7 @@ describe("consolidateReviewStep", () => {
       // Arrange
       mockConsolidateReviewAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
-        object: [
-          { checklistId: 1, comment: "コメント", evaluation: "A" },
-        ],
+        object: [{ checklistId: 1, comment: "コメント", evaluation: "A" }],
       });
 
       const singleCheckItem: CheckListItem[] = [
@@ -311,9 +312,7 @@ describe("consolidateReviewStep", () => {
       mockConsolidateReviewAgentGenerateLegacy
         .mockResolvedValueOnce({
           finishReason: "stop",
-          object: [
-            { checklistId: 1, comment: "コメント1", evaluation: "A" },
-          ],
+          object: [{ checklistId: 1, comment: "コメント1", evaluation: "A" }],
         })
         .mockResolvedValueOnce({
           finishReason: "stop",
@@ -340,15 +339,11 @@ describe("consolidateReviewStep", () => {
       mockConsolidateReviewAgentGenerateLegacy
         .mockResolvedValueOnce({
           finishReason: "stop",
-          object: [
-            { checklistId: 1, comment: "コメント1", evaluation: "A" },
-          ],
+          object: [{ checklistId: 1, comment: "コメント1", evaluation: "A" }],
         })
         .mockResolvedValueOnce({
           finishReason: "stop",
-          object: [
-            { checklistId: 1, comment: "コメント2", evaluation: "B" },
-          ],
+          object: [{ checklistId: 1, comment: "コメント2", evaluation: "B" }],
         });
 
       // Act
@@ -360,7 +355,7 @@ describe("consolidateReviewStep", () => {
         createTestRuntimeContext({
           reviewTargetId: "target-1",
           onReviewResultSaved: mockOnReviewResultSaved,
-        })
+        }),
       );
 
       // Assert: リトライ毎に呼ばれる（2回）
@@ -385,8 +380,12 @@ describe("consolidateReviewStep", () => {
       // Assert: 全項目がエラー結果でも、処理自体は正常終了するためstatusはsuccess
       expect(result.status).toBe("success");
       expect(result.reviewResults).toHaveLength(2);
-      expect(result.reviewResults?.[0].errorMessage).toContain("最大試行回数到達");
-      expect(result.reviewResults?.[1].errorMessage).toContain("最大試行回数到達");
+      expect(result.reviewResults?.[0].errorMessage).toContain(
+        "最大試行回数到達",
+      );
+      expect(result.reviewResults?.[1].errorMessage).toContain(
+        "最大試行回数到達",
+      );
       expect(mockConsolidateReviewAgentGenerateLegacy).toHaveBeenCalledTimes(3);
     });
 
@@ -394,9 +393,7 @@ describe("consolidateReviewStep", () => {
       // Arrange: 項目1のみを返し続ける
       mockConsolidateReviewAgentGenerateLegacy.mockResolvedValue({
         finishReason: "stop",
-        object: [
-          { checklistId: 1, comment: "コメント1", evaluation: "A" },
-        ],
+        object: [{ checklistId: 1, comment: "コメント1", evaluation: "A" }],
       });
 
       // Act
@@ -410,12 +407,12 @@ describe("consolidateReviewStep", () => {
       expect(result.reviewResults).toHaveLength(2);
 
       const successResult = result.reviewResults?.find(
-        (r) => r.checkListItemContent === "セキュリティ要件を満たしているか"
+        (r) => r.checkListItemContent === "セキュリティ要件を満たしているか",
       );
       expect(successResult?.evaluation).toBe("A");
 
       const errorResult = result.reviewResults?.find(
-        (r) => r.checkListItemContent === "エラーハンドリングが適切か"
+        (r) => r.checkListItemContent === "エラーハンドリングが適切か",
       );
       expect(errorResult?.errorMessage).toBeDefined();
     });
@@ -444,7 +441,7 @@ describe("consolidateReviewStep", () => {
     it("エージェント実行時の例外がエラー結果として返されること", async () => {
       // Arrange
       mockConsolidateReviewAgentGenerateLegacy.mockRejectedValue(
-        new Error("API呼び出しエラー")
+        new Error("API呼び出しエラー"),
       );
 
       // Act
@@ -465,7 +462,7 @@ describe("consolidateReviewStep", () => {
       // Arrange
       const mockOnReviewResultSaved = vi.fn().mockResolvedValue(undefined);
       mockConsolidateReviewAgentGenerateLegacy.mockRejectedValue(
-        new Error("API呼び出しエラー")
+        new Error("API呼び出しエラー"),
       );
 
       // Act
@@ -477,7 +474,7 @@ describe("consolidateReviewStep", () => {
         createTestRuntimeContext({
           reviewTargetId: "target-1",
           onReviewResultSaved: mockOnReviewResultSaved,
-        })
+        }),
       );
 
       // Assert: エラー結果も保存される
@@ -510,13 +507,13 @@ describe("consolidateReviewStep", () => {
         expect.objectContaining({
           checkListItemContent: "セキュリティ要件を満たしているか",
           evaluation: "A",
-        })
+        }),
       );
       expect(result.reviewResults).toContainEqual(
         expect.objectContaining({
           checkListItemContent: "エラーハンドリングが適切か",
           evaluation: "B",
-        })
+        }),
       );
     });
   });

@@ -2,7 +2,6 @@ import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
 import { getReviewExecutionPrompt } from "./prompts";
 import { getModel } from "./model";
-import type { ReviewExecuteAgentRuntimeContext } from "./types";
 
 /**
  * レビュー実行エージェントの単一結果スキーマ
@@ -40,15 +39,6 @@ export type ReviewExecuteOutput = z.infer<typeof reviewExecuteOutputSchema>;
  */
 export const reviewExecuteAgent = new Agent({
   name: "review-execute-agent",
-  instructions: ({
-    runtimeContext,
-  }: {
-    runtimeContext?: { get: (key: string) => unknown };
-  }) =>
-    getReviewExecutionPrompt({
-      runtimeContext: runtimeContext as
-        | import("@mastra/core/di").RuntimeContext<ReviewExecuteAgentRuntimeContext>
-        | undefined,
-    }),
-  model: ({ runtimeContext }) => getModel(runtimeContext),
+  instructions: getReviewExecutionPrompt,
+  model: getModel,
 });

@@ -203,7 +203,9 @@ Provide the reasoning and evidence here (cite specific sections or examples in t
 Provide actionable suggestions here (how to better satisfy the criterion).`;
 
   const actualFormat =
-    commentFormat && commentFormat.trim() !== "" ? commentFormat : defaultFormat;
+    commentFormat && commentFormat.trim() !== ""
+      ? commentFormat
+      : defaultFormat;
 
   // 評定基準の設定を構築
   let evaluationInstructions = "";
@@ -253,7 +255,6 @@ ${additionalInstructions}
 Please ensure clarity, conciseness, and a professional tone.`;
 }
 
-
 /**
  * チェックリストカテゴリ分類用のシステムプロンプトを取得する関数
  * チェックリストを意味的にカテゴリ分類する
@@ -280,7 +281,6 @@ Constraints:
 4. Distribute items as evenly as possible across categories to achieve a balanced allocation, while preserving thematic coherence.
 `;
 }
-
 
 /**
  * 個別ドキュメントレビュー用のシステムプロンプトを取得する関数
@@ -359,7 +359,6 @@ ${additionalInstructions}
 
 Remember: Your thorough analysis of this document part is crucial for achieving an excellent final consolidated review. Include all relevant details that will contribute to the overall document assessment.`;
 }
-
 
 /**
  * レビュー結果統合用のシステムプロンプトを取得する関数
@@ -528,7 +527,9 @@ ${documentList}
 CHECKLIST REVIEW INFORMATION:
 ${checklistInfo}
 
-${reviewMode === "large" ? `IMPORTANT: Individual Review Results Available
+${
+  reviewMode === "large"
+    ? `IMPORTANT: Individual Review Results Available
 The checklist information above includes detailed individual review results from analyzing specific document sections. These individual results provide:
 - Granular findings from each document part
 - Specific issues or strengths identified in different sections
@@ -540,7 +541,9 @@ When planning your research:
 - Focus your research on areas where the user's question relates to findings in these individual results
 - The individual results can help you avoid unnecessary investigation of irrelevant documents
 
-` : ""}DOCUMENT PROCESSING NOTE:
+`
+    : ""
+}DOCUMENT PROCESSING NOTE:
 Documents will be analyzed automatically and split into sections if needed for processing. Focus on WHAT information to extract, not HOW to process the documents. Your research instructions should be clear about the specific information needed to answer the user's question.
 
 YOUR TASK:
@@ -645,10 +648,14 @@ ${userQuestion}
 The review was conducted using the following checklist(s):
 ${checklistInfo}
 
-${reviewMode === "large" ? `NOTE: This was a comprehensive review of large documents. The checklist information above includes both:
+${
+  reviewMode === "large"
+    ? `NOTE: This was a comprehensive review of large documents. The checklist information above includes both:
 - Overall consolidated review results (final evaluation and comments)
 - Individual review results from analyzing specific document sections
-When investigating, you may reference both levels of review detail to provide thorough answers.` : `NOTE: This was a standard review where all documents fit within a single analysis. The checklist information above shows the direct review results.`}
+When investigating, you may reference both levels of review detail to provide thorough answers.`
+    : `NOTE: This was a standard review where all documents fit within a single analysis. The checklist information above shows the direct review results.`
+}
 
 Understanding this context will help you focus your investigation on information that is truly relevant to answering the user's question about the review results.
 ${contextSection}
@@ -672,8 +679,12 @@ OUTPUT REQUIREMENTS:
 - Provide detailed research findings in Japanese
 - Include specific, natural citations using document-native references (chapters, sections, pages, headings)
 - Note any limitations or gaps in the available information${isChunked ? " within this chunk" : ""} using natural language
-- Structure your findings clearly for easy integration into a comprehensive answer${isChunked ? `
-- If requested information is not present, state naturally like "この点については確認できませんでした"` : ""}
+- Structure your findings clearly for easy integration into a comprehensive answer${
+    isChunked
+      ? `
+- If requested information is not present, state naturally like "この点については確認できませんでした"`
+      : ""
+  }
 - Focus on WHAT you found and WHERE in the document (using natural references), not on HOW the analysis was conducted`;
 }
 
@@ -695,10 +706,14 @@ export function getQaAnswerPrompt({
 CONTEXT:
 You are answering questions about document review results. You have access to:
 1. The user's original question
-2. Review results with evaluations and comments for specific checklist items${reviewMode === "large" ? `
+2. Review results with evaluations and comments for specific checklist items${
+    reviewMode === "large"
+      ? `
 3. Individual review results from analyzing specific document sections
-4. ` : `
-3. `}Research findings from document investigations
+4. `
+      : `
+3. `
+  }Research findings from document investigations
 
 USER QUESTION:
 ${userQuestion}

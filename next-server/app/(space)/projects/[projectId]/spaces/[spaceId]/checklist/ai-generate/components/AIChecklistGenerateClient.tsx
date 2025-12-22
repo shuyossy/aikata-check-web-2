@@ -8,7 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { FileUploadArea, UploadedFile, isPdfFile } from "@/components/upload";
-import { convertPdfFileToFiles, showError, showSuccess, getMessage } from "@/lib/client";
+import {
+  convertPdfFileToFiles,
+  showError,
+  showSuccess,
+  getMessage,
+} from "@/lib/client";
 import { generateCheckListByAIAction } from "../actions";
 import { extractServerErrorMessage } from "@/hooks";
 
@@ -75,7 +80,7 @@ export function AIChecklistGenerateClient({
         );
         showError(message);
       },
-    }
+    },
   );
 
   // UI用の統合ローディングフラグ
@@ -106,7 +111,9 @@ export function AIChecklistGenerateClient({
 
     // 状態が変わったファイルがあれば更新
     const hasChanges = updatedFiles.some(
-      (f, i) => f.status !== newFiles[i].status || f.processMode !== newFiles[i].processMode
+      (f, i) =>
+        f.status !== newFiles[i].status ||
+        f.processMode !== newFiles[i].processMode,
     );
     if (hasChanges) {
       setFiles(updatedFiles);
@@ -138,7 +145,7 @@ export function AIChecklistGenerateClient({
    * PDF画像変換を実行し、ファイルリストを更新
    */
   const processPdfFiles = async (
-    currentFiles: UploadedFile[]
+    currentFiles: UploadedFile[],
   ): Promise<UploadedFile[]> => {
     const result: UploadedFile[] = [];
 
@@ -174,7 +181,7 @@ export function AIChecklistGenerateClient({
   const buildFormData = (
     processedFiles: UploadedFile[],
     reviewSpaceId: string,
-    requirements: string
+    requirements: string,
   ): FormData => {
     const formData = new FormData();
 
@@ -234,14 +241,16 @@ export function AIChecklistGenerateClient({
       const formData = buildFormData(
         processedFiles,
         spaceId,
-        checklistRequirements.trim()
+        checklistRequirements.trim(),
       );
 
       // アクションを実行（ここでisExecuting=trueになる）
       executeGenerate(formData);
     } catch (error) {
       const errorMessage =
-        error instanceof Error ? error.message : getMessage("ERROR_PDF_CONVERSION_FAILED");
+        error instanceof Error
+          ? error.message
+          : getMessage("ERROR_PDF_CONVERSION_FAILED");
       showError(errorMessage);
       setIsConverting(false);
     }
@@ -255,8 +264,14 @@ export function AIChecklistGenerateClient({
         <Breadcrumb
           items={[
             { label: projectName, href: `/projects/${projectId}/spaces` },
-            { label: spaceName, href: `/projects/${projectId}/spaces/${spaceId}` },
-            { label: "チェックリスト", href: `/projects/${projectId}/spaces/${spaceId}/checklist` },
+            {
+              label: spaceName,
+              href: `/projects/${projectId}/spaces/${spaceId}`,
+            },
+            {
+              label: "チェックリスト",
+              href: `/projects/${projectId}/spaces/${spaceId}/checklist`,
+            },
             { label: "AI生成" },
           ]}
         />
@@ -363,7 +378,11 @@ export function AIChecklistGenerateClient({
             <div className="flex flex-col sm:flex-row gap-3 justify-end pt-6 border-t border-gray-200">
               <Button
                 variant="outline"
-                onClick={() => router.push(`/projects/${projectId}/spaces/${spaceId}/checklist`)}
+                onClick={() =>
+                  router.push(
+                    `/projects/${projectId}/spaces/${spaceId}/checklist`,
+                  )
+                }
                 disabled={isProcessing}
               >
                 キャンセル
@@ -393,7 +412,9 @@ export function AIChecklistGenerateClient({
             <div className="flex items-start gap-3">
               <HelpCircle className="w-5 h-5 text-gray-600 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-gray-900">AI生成のヒント</p>
+                <p className="text-sm font-medium text-gray-900">
+                  AI生成のヒント
+                </p>
                 <ul className="mt-2 text-sm text-gray-600 space-y-1 list-disc list-inside">
                   <li>
                     複数のドキュメントをアップロードすると、より包括的なチェック項目が生成されます

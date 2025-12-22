@@ -26,10 +26,7 @@ export { DeleteReviewTargetService } from "./DeleteReviewTargetService";
 export type { DeleteReviewTargetCommand } from "./DeleteReviewTargetService";
 
 export { GetRetryInfoService } from "./GetRetryInfoService";
-export type {
-  GetRetryInfoCommand,
-  RetryInfoDto,
-} from "./GetRetryInfoService";
+export type { GetRetryInfoCommand, RetryInfoDto } from "./GetRetryInfoService";
 
 export { RetryReviewService } from "./RetryReviewService";
 export type {

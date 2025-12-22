@@ -79,7 +79,6 @@ describe("makeChunksByCount", () => {
   });
 });
 
-
 describe("DEFAULT_CHUNK_OVERLAP", () => {
   it("テキスト用のデフォルトオーバーラップが300文字", () => {
     expect(DEFAULT_CHUNK_OVERLAP.TEXT_CHARS).toBe(300);

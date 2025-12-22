@@ -17,10 +17,14 @@ const apiReviewSettingsSchema = z.object({
   additionalInstructions: z.string().nullable().optional(),
   concurrentReviewItems: z.number().optional(),
   commentFormat: z.string().nullable().optional(),
-  evaluationCriteria: z.array(z.object({
-    label: z.string(),
-    description: z.string(),
-  })).optional(),
+  evaluationCriteria: z
+    .array(
+      z.object({
+        label: z.string(),
+        description: z.string(),
+      }),
+    )
+    .optional(),
 });
 
 /**

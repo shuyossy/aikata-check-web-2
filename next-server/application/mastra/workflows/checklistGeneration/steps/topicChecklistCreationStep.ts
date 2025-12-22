@@ -1,17 +1,20 @@
-import { createStep } from '@mastra/core/workflows';
-import { z } from 'zod';
-import type { RuntimeContext } from '@mastra/core/di';
+import { createStep } from "@mastra/core/workflows";
+import { z } from "zod";
+import type { RuntimeContext } from "@mastra/core/di";
 import {
   topicChecklistAgent,
   topicChecklistOutputSchema,
-} from '../../../agents';
-import { baseStepOutputSchema } from '../../schema';
-import { topicSchema, type ChecklistGenerationWorkflowRuntimeContext } from '../types';
-import { extractedFileSchema } from '../../shared';
-import { createCombinedMessage } from '../../lib';
-import { createRuntimeContext } from '../../../lib/agentUtils';
-import { normalizeUnknownError } from '@/lib/server/error';
-import type { TopicChecklistAgentRuntimeContext } from '../../../agents';
+} from "../../../agents";
+import { baseStepOutputSchema } from "../../schema";
+import {
+  topicSchema,
+  type ChecklistGenerationWorkflowRuntimeContext,
+} from "../types";
+import { extractedFileSchema } from "../../shared";
+import { createCombinedMessage } from "../../lib";
+import { createRuntimeContext } from "../../../lib/agentUtils";
+import { normalizeUnknownError } from "@/lib/server/error";
+import type { TopicChecklistAgentRuntimeContext } from "../../../agents";
 
 /**
  * トピック別チェックリスト生成ステップの入力スキーマ
@@ -41,8 +44,8 @@ export type TopicChecklistStepOutput = z.infer<
  * 特定のトピックに対してチェックリスト項目を生成する
  */
 export const topicChecklistCreationStep = createStep({
-  id: 'topic-checklist-creation',
-  description: 'トピックからチェックリスト項目を生成する',
+  id: "topic-checklist-creation",
+  description: "トピックからチェックリスト項目を生成する",
   inputSchema: topicChecklistInputSchema,
   outputSchema: topicChecklistOutputStepSchema,
   execute: async ({
@@ -56,10 +59,10 @@ export const topicChecklistCreationStep = createStep({
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>
         | undefined;
-      const employeeId = typedWorkflowRuntimeContext?.get('employeeId');
-      const aiApiKey = typedWorkflowRuntimeContext?.get('aiApiKey');
-      const aiApiUrl = typedWorkflowRuntimeContext?.get('aiApiUrl');
-      const aiApiModel = typedWorkflowRuntimeContext?.get('aiApiModel');
+      const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
+      const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+      const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+      const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
 
       // エージェント用のRuntimeContextを作成
       const runtimeContext =
@@ -75,19 +78,19 @@ export const topicChecklistCreationStep = createStep({
       // メッセージコンテンツを作成（ドキュメント + トピック情報）
       const messageContent = createCombinedMessage(
         files,
-        `Please create checklist items from this document for topic: ${topic.title}`
+        `Please create checklist items from this document for topic: ${topic.title}`,
       );
 
       // エージェントを実行（generateLegacyを使用）
       const result = await topicChecklistAgent.generateLegacy(
         {
-          role: 'user',
+          role: "user",
           content: messageContent,
         },
         {
           output: topicChecklistOutputSchema,
           runtimeContext,
-        }
+        },
       );
 
       // 構造化出力を取得
@@ -99,13 +102,13 @@ export const topicChecklistCreationStep = createStep({
         output.checklistItems.length === 0
       ) {
         return {
-          status: 'failed',
+          status: "failed",
           errorMessage: `トピック「${topic.title}」のチェックリスト項目を生成できませんでした`,
         };
       }
 
       return {
-        status: 'success',
+        status: "success",
         checklistItems: output.checklistItems,
         topicTitle: topic.title,
       };
@@ -113,7 +116,7 @@ export const topicChecklistCreationStep = createStep({
       // エラーを正規化して統一的に処理
       const normalizedError = normalizeUnknownError(error);
       return {
-        status: 'failed',
+        status: "failed",
         errorMessage: normalizedError.message,
       };
     }

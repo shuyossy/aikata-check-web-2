@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { randomUUID } from "crypto";
-import { GetRetryInfoService, GetRetryInfoCommand, RetryInfoDto } from "../GetRetryInfoService";
+import {
+  GetRetryInfoService,
+  GetRetryInfoCommand,
+  RetryInfoDto,
+} from "../GetRetryInfoService";
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import { ICheckListItemRepository } from "@/application/shared/port/repository/ICheckListItemRepository";
@@ -51,13 +55,14 @@ const createMockCheckListItemRepository = (): ICheckListItemRepository => ({
   deleteByReviewSpaceId: vi.fn(),
 });
 
-const createMockReviewDocumentCacheRepository = (): IReviewDocumentCacheRepository => ({
-  findById: vi.fn(),
-  findByReviewTargetId: vi.fn(),
-  save: vi.fn(),
-  saveMany: vi.fn(),
-  deleteByReviewTargetId: vi.fn(),
-});
+const createMockReviewDocumentCacheRepository =
+  (): IReviewDocumentCacheRepository => ({
+    findById: vi.fn(),
+    findByReviewTargetId: vi.fn(),
+    save: vi.fn(),
+    saveMany: vi.fn(),
+    deleteByReviewTargetId: vi.fn(),
+  });
 
 const createMockReviewSpaceRepository = (): IReviewSpaceRepository => ({
   findById: vi.fn(),
@@ -108,7 +113,8 @@ describe("GetRetryInfoService", () => {
     mockReviewTargetRepository = createMockReviewTargetRepository();
     mockReviewResultRepository = createMockReviewResultRepository();
     mockCheckListItemRepository = createMockCheckListItemRepository();
-    mockReviewDocumentCacheRepository = createMockReviewDocumentCacheRepository();
+    mockReviewDocumentCacheRepository =
+      createMockReviewDocumentCacheRepository();
     mockReviewSpaceRepository = createMockReviewSpaceRepository();
     mockProjectRepository = createMockProjectRepository();
 
@@ -122,7 +128,9 @@ describe("GetRetryInfoService", () => {
     );
 
     // デフォルトのモック設定（アクセス権を持つ）
-    vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(testReviewSpace);
+    vi.mocked(mockReviewSpaceRepository.findById).mockResolvedValue(
+      testReviewSpace,
+    );
     vi.mocked(mockProjectRepository.findById).mockResolvedValue(testProject);
   });
 
@@ -136,14 +144,15 @@ describe("GetRetryInfoService", () => {
       name: "テストレビュー対象",
       status: "completed",
       reviewType: options?.reviewType ?? "small",
-      reviewSettings: options?.reviewSettings !== undefined
-        ? options.reviewSettings
-        : {
-            additionalInstructions: "追加指示",
-            concurrentReviewItems: 5,
-            commentFormat: null,
-            evaluationCriteria: [{ label: "A", description: "良好" }],
-          },
+      reviewSettings:
+        options?.reviewSettings !== undefined
+          ? options.reviewSettings
+          : {
+              additionalInstructions: "追加指示",
+              concurrentReviewItems: 5,
+              commentFormat: null,
+              evaluationCriteria: [{ label: "A", description: "良好" }],
+            },
       createdAt: new Date(),
       updatedAt: new Date(),
     });
@@ -190,7 +199,8 @@ describe("GetRetryInfoService", () => {
       fileName: options.fileName,
       processMode: options.processMode,
       // undefinedの場合はデフォルト値、nullの場合はnullを設定
-      cachePath: options.cachePath === undefined ? "/cache/path" : options.cachePath,
+      cachePath:
+        options.cachePath === undefined ? "/cache/path" : options.cachePath,
       createdAt: new Date(),
     });
   };
@@ -221,10 +231,18 @@ describe("GetRetryInfoService", () => {
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -251,8 +269,14 @@ describe("GetRetryInfoService", () => {
       const reviewTarget = createCompletedReviewTarget();
       const reviewResults = [
         createReviewResult({ checkListItemContent: "項目1" }),
-        createReviewResult({ checkListItemContent: "項目2", errorMessage: "エラー1" }),
-        createReviewResult({ checkListItemContent: "項目3", errorMessage: "エラー2" }),
+        createReviewResult({
+          checkListItemContent: "項目2",
+          errorMessage: "エラー1",
+        }),
+        createReviewResult({
+          checkListItemContent: "項目3",
+          errorMessage: "エラー2",
+        }),
       ];
       const checkListItems = [
         createCheckListItem("項目1"),
@@ -263,10 +287,18 @@ describe("GetRetryInfoService", () => {
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -298,10 +330,18 @@ describe("GetRetryInfoService", () => {
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -325,10 +365,18 @@ describe("GetRetryInfoService", () => {
       ];
       const checkListItems = [createCheckListItem("項目1")];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue([]);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue([]);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -351,13 +399,25 @@ describe("GetRetryInfoService", () => {
       ];
       const checkListItems = [createCheckListItem("項目1")];
       const documentCaches = [
-        createDocumentCache({ fileName: "test.txt", processMode: "text", cachePath: null }),
+        createDocumentCache({
+          fileName: "test.txt",
+          processMode: "text",
+          cachePath: null,
+        }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -390,10 +450,18 @@ describe("GetRetryInfoService", () => {
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -422,7 +490,9 @@ describe("GetRetryInfoService", () => {
 
     it("レビュー設定がnullの場合、previousSettingsがnullになる", async () => {
       // Arrange
-      const reviewTarget = createCompletedReviewTarget({ reviewSettings: null });
+      const reviewTarget = createCompletedReviewTarget({
+        reviewSettings: null,
+      });
       const reviewResults = [
         createReviewResult({ checkListItemContent: "項目1" }),
       ];
@@ -431,10 +501,18 @@ describe("GetRetryInfoService", () => {
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -459,10 +537,18 @@ describe("GetRetryInfoService", () => {
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -494,17 +580,28 @@ describe("GetRetryInfoService", () => {
         updatedAt: new Date(),
       });
       const reviewResults = [
-        createReviewResult({ checkListItemContent: "項目1", errorMessage: "エラー発生" }),
+        createReviewResult({
+          checkListItemContent: "項目1",
+          errorMessage: "エラー発生",
+        }),
       ];
       const checkListItems = [createCheckListItem("項目1")];
       const documentCaches = [
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -537,10 +634,18 @@ describe("GetRetryInfoService", () => {
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -564,13 +669,25 @@ describe("GetRetryInfoService", () => {
       // 1つ目は有効、2つ目は無効（パスがnull）
       const documentCaches = [
         createDocumentCache({ fileName: "test1.txt", processMode: "text" }),
-        createDocumentCache({ fileName: "test2.txt", processMode: "text", cachePath: null }),
+        createDocumentCache({
+          fileName: "test2.txt",
+          processMode: "text",
+          cachePath: null,
+        }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,
@@ -602,10 +719,18 @@ describe("GetRetryInfoService", () => {
         createDocumentCache({ fileName: "test.txt", processMode: "text" }),
       ];
 
-      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(reviewTarget);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(reviewResults);
-      vi.mocked(mockCheckListItemRepository.findByReviewSpaceId).mockResolvedValue(checkListItems);
-      vi.mocked(mockReviewDocumentCacheRepository.findByReviewTargetId).mockResolvedValue(documentCaches);
+      vi.mocked(mockReviewTargetRepository.findById).mockResolvedValue(
+        reviewTarget,
+      );
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(reviewResults);
+      vi.mocked(
+        mockCheckListItemRepository.findByReviewSpaceId,
+      ).mockResolvedValue(checkListItems);
+      vi.mocked(
+        mockReviewDocumentCacheRepository.findByReviewTargetId,
+      ).mockResolvedValue(documentCaches);
 
       const command: GetRetryInfoCommand = {
         reviewTargetId: TEST_TARGET_ID,

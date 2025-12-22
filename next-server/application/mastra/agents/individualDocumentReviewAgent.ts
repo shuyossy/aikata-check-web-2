@@ -2,7 +2,6 @@ import { Agent } from "@mastra/core/agent";
 import { z } from "zod";
 import { getIndividualDocumentReviewPrompt } from "./prompts";
 import { getModel } from "./model";
-import type { IndividualDocumentReviewAgentRuntimeContext } from "./types";
 
 /**
  * 個別ドキュメントレビュー結果の単一項目スキーマ
@@ -48,15 +47,6 @@ export type IndividualDocumentReviewOutput = z.infer<
  */
 export const individualDocumentReviewAgent = new Agent({
   name: "individual-document-review-agent",
-  instructions: ({
-    runtimeContext,
-  }: {
-    runtimeContext?: { get: (key: string) => unknown };
-  }) =>
-    getIndividualDocumentReviewPrompt({
-      runtimeContext: runtimeContext as
-        | import("@mastra/core/di").RuntimeContext<IndividualDocumentReviewAgentRuntimeContext>
-        | undefined,
-    }),
-  model: ({ runtimeContext }) => getModel(runtimeContext),
+  instructions: getIndividualDocumentReviewPrompt,
+  model: getModel,
 });

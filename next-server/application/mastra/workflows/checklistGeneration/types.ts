@@ -1,9 +1,6 @@
 import { z } from "zod";
 import type { BaseRuntimeContext } from "../../types";
-import {
-  rawUploadFileMetaSchema,
-  type FileBuffersMap,
-} from "../shared/types";
+import { rawUploadFileMetaSchema, type FileBuffersMap } from "../shared/types";
 
 /**
  * ワークフローのトリガー入力スキーマ

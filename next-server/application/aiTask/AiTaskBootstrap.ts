@@ -66,7 +66,8 @@ export class AiTaskBootstrap {
       const checkListItemRepository = new CheckListItemRepository();
       const reviewDocumentCacheRepository = new ReviewDocumentCacheRepository();
       const reviewSpaceRepository = new ReviewSpaceRepository();
-      const largeDocumentResultCacheRepository = new LargeDocumentResultCacheRepository();
+      const largeDocumentResultCacheRepository =
+        new LargeDocumentResultCacheRepository();
 
       // サービスの作成
       this.queueService = new AiTaskQueueService(

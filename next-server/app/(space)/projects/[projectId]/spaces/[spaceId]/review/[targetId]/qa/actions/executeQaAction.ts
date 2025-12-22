@@ -19,7 +19,9 @@ const executeQaSchema = z.object({
   /** 質問内容 */
   question: z.string().min(1, "質問を入力してください"),
   /** 選択されたチェックリスト項目の内容（複数） */
-  checklistItemContents: z.array(z.string().min(1)).min(1, "チェック項目を選択してください"),
+  checklistItemContents: z
+    .array(z.string().min(1))
+    .min(1, "チェック項目を選択してください"),
 });
 
 /**

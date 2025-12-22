@@ -33,7 +33,7 @@ export default async function ApiSpecPage({ params }: ApiSpecPageProps) {
   // プロジェクト情報を取得
   const getProjectService = new GetProjectService(
     projectRepository,
-    userRepository
+    userRepository,
   );
   const project = await getProjectService.execute({
     projectId,
@@ -47,7 +47,7 @@ export default async function ApiSpecPage({ params }: ApiSpecPageProps) {
   // レビュースペース情報を取得
   const getReviewSpaceService = new GetReviewSpaceService(
     reviewSpaceRepository,
-    projectRepository
+    projectRepository,
   );
 
   try {

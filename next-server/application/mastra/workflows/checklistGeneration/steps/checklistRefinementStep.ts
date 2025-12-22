@@ -139,21 +139,19 @@ Please continue refining the remaining items, avoiding duplicates with already r
               } catch (error) {
                 logger.error(
                   { err: error },
-                  "チェックリストブラッシュアップの修正に失敗しました"
+                  "チェックリストブラッシュアップの修正に失敗しました",
                 );
-                  throw workflowError(
-                    "WORKFLOW_CHECKLIST_REFINEMENT_FAILED"
-                  );
+                throw workflowError("WORKFLOW_CHECKLIST_REFINEMENT_FAILED");
               }
               return repairedText;
             },
-          }
+          },
         );
 
         // ブラッシュアップされたチェックリストから新規のものを蓄積
         const newRefinedItems =
           refinementResult.object.refinedChecklists?.filter(
-            (item: string) => !accumulated.includes(item)
+            (item: string) => !accumulated.includes(item),
           ) || [];
         accumulated.push(...newRefinedItems);
 
@@ -164,14 +162,12 @@ Please continue refining the remaining items, avoiding duplicates with already r
 
         attempts++;
         if (attempts >= MAX_ATTEMPTS) {
-          throw workflowError(
-            "WORKFLOW_CHECKLIST_REFINEMENT_FAILED"
-          );
+          throw workflowError("WORKFLOW_CHECKLIST_REFINEMENT_FAILED");
         }
       }
 
       logger.debug(
-        `チェックリストブラッシュアップ完了: ${systemChecklists.length}件 → ${accumulated.length}件`
+        `チェックリストブラッシュアップ完了: ${systemChecklists.length}件 → ${accumulated.length}件`,
       );
 
       return {

@@ -60,7 +60,10 @@ describe("ListSystemNotificationsService", () => {
         offset: 0,
       };
       const notifications = [
-        SystemNotification.create({ message: "アクティブ通知", isActive: true }),
+        SystemNotification.create({
+          message: "アクティブ通知",
+          isActive: true,
+        }),
       ];
       vi.mocked(mockSystemNotificationRepository.findAll).mockResolvedValue(
         notifications,

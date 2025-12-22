@@ -42,7 +42,7 @@ export const getRetryInfoAction = authenticatedAction
       checkListItemRepository,
       reviewDocumentCacheRepository,
       reviewSpaceRepository,
-      projectRepository
+      projectRepository,
     );
 
     const result = await service.execute({

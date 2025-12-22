@@ -114,9 +114,7 @@ export function SystemSettingsForm({
           value={apiUrl}
           onChange={(e) => setApiUrl(e.target.value)}
         />
-        <p className="text-xs text-gray-500">
-          AI APIのベースURL
-        </p>
+        <p className="text-xs text-gray-500">AI APIのベースURL</p>
       </div>
 
       {/* モデル名 */}
@@ -129,9 +127,7 @@ export function SystemSettingsForm({
           value={apiModel}
           onChange={(e) => setApiModel(e.target.value)}
         />
-        <p className="text-xs text-gray-500">
-          使用するAIモデルの名前
-        </p>
+        <p className="text-xs text-gray-500">使用するAIモデルの名前</p>
       </div>
 
       {/* 送信ボタン */}

@@ -1,10 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { IReviewResultRepository } from "@/application/shared/port/repository/IReviewResultRepository";
 import { ReviewTargetId } from "@/domain/reviewTarget";
-import {
-  ReviewResult,
-  ReviewResultId,
-} from "@/domain/reviewResult";
+import { ReviewResult, ReviewResultId } from "@/domain/reviewResult";
 import { db } from "../index";
 import { reviewResults } from "@/drizzle/schema";
 

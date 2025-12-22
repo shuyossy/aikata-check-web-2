@@ -5,10 +5,7 @@ import { IProjectRepository } from "@/application/shared/port/repository";
 import { ReviewTarget } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
-import {
-  domainValidationError,
-  internalError,
-} from "@/lib/server/error";
+import { domainValidationError, internalError } from "@/lib/server/error";
 import type { EvaluationCriterion } from "@/application/mastra";
 
 /**
@@ -138,10 +135,12 @@ export class StartApiReviewService {
     await this.reviewTargetRepository.save(reviewTarget);
 
     // チェックリスト項目をDTO形式で返す
-    const checkListItemDtos: CheckListItemDto[] = checkListItems.map((item) => ({
-      id: item.id.value,
-      content: item.content.value,
-    }));
+    const checkListItemDtos: CheckListItemDto[] = checkListItems.map(
+      (item) => ({
+        id: item.id.value,
+        content: item.content.value,
+      }),
+    );
 
     return {
       reviewTargetId: reviewTarget.id.value,

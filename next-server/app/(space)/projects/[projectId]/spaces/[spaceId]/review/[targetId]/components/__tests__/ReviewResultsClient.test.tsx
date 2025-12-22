@@ -59,7 +59,7 @@ describe("ReviewResultsClient", () => {
   }
 
   const createReviewTarget = (
-    overrides: Partial<ReviewTargetForTest> = {}
+    overrides: Partial<ReviewTargetForTest> = {},
   ): ReviewTargetForTest => {
     const now = new Date();
     return {
@@ -83,25 +83,35 @@ describe("ReviewResultsClient", () => {
     describe("ステータスバナー表示", () => {
       it('status === "pending"の場合、準備中バナーが表示される', () => {
         const reviewTarget = createReviewTarget({ status: "pending" });
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
         expect(screen.getByText("準備中")).toBeInTheDocument();
-        expect(screen.getByText("レビュー実行を待機しています。")).toBeInTheDocument();
+        expect(
+          screen.getByText("レビュー実行を待機しています。"),
+        ).toBeInTheDocument();
       });
 
       it('status === "reviewing"の場合、レビュー実行中バナーが表示される', () => {
         const reviewTarget = createReviewTarget({ status: "reviewing" });
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
         expect(screen.getByText("レビュー実行中")).toBeInTheDocument();
         expect(
-          screen.getByText("AIがドキュメントをレビューしています。しばらくお待ちください。")
+          screen.getByText(
+            "AIがドキュメントをレビューしています。しばらくお待ちください。",
+          ),
         ).toBeInTheDocument();
       });
 
       it('status === "completed"の場合、レビュー完了バナーが表示される', () => {
         const reviewTarget = createReviewTarget({ status: "completed" });
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
         expect(screen.getByText("レビュー完了")).toBeInTheDocument();
         expect(screen.getByText(/レビュー完了日時:/)).toBeInTheDocument();
@@ -109,11 +119,13 @@ describe("ReviewResultsClient", () => {
 
       it('status === "error"の場合、エラー発生バナーが表示される', () => {
         const reviewTarget = createReviewTarget({ status: "error" });
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
         expect(screen.getByText("エラー発生")).toBeInTheDocument();
         expect(
-          screen.getByText("レビュー実行中にエラーが発生しました。")
+          screen.getByText("レビュー実行中にエラーが発生しました。"),
         ).toBeInTheDocument();
       });
     });
@@ -142,10 +154,16 @@ describe("ReviewResultsClient", () => {
           ],
         });
 
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
-        expect(screen.getByText("セキュリティ要件を確認する")).toBeInTheDocument();
-        expect(screen.getByText("パフォーマンス要件を確認する")).toBeInTheDocument();
+        expect(
+          screen.getByText("セキュリティ要件を確認する"),
+        ).toBeInTheDocument();
+        expect(
+          screen.getByText("パフォーマンス要件を確認する"),
+        ).toBeInTheDocument();
         expect(screen.getByText("問題ありません")).toBeInTheDocument();
         expect(screen.getByText("一部改善が必要です")).toBeInTheDocument();
       });
@@ -156,9 +174,13 @@ describe("ReviewResultsClient", () => {
           reviewResults: [],
         });
 
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
-        expect(screen.getByText("レビュー結果がありません")).toBeInTheDocument();
+        expect(
+          screen.getByText("レビュー結果がありません"),
+        ).toBeInTheDocument();
       });
 
       it('レビュー実行中で結果がない場合、"レビュー実行中..."が表示される', () => {
@@ -167,7 +189,9 @@ describe("ReviewResultsClient", () => {
           reviewResults: [],
         });
 
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
         expect(screen.getByText("レビュー実行中...")).toBeInTheDocument();
       });
@@ -203,7 +227,9 @@ describe("ReviewResultsClient", () => {
           ],
         });
 
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
         // 評定バッジが表示されていることを確認
         const aBadge = screen.getByText("A");
@@ -232,13 +258,19 @@ describe("ReviewResultsClient", () => {
           ],
         });
 
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
         expect(screen.getByText("エラーが発生した項目")).toBeInTheDocument();
-        expect(screen.getByText("AI処理中にエラーが発生しました")).toBeInTheDocument();
+        expect(
+          screen.getByText("AI処理中にエラーが発生しました"),
+        ).toBeInTheDocument();
         // エラーバッジが存在することを確認（bg-red-100クラスを持つ要素）
         const errorBadges = screen.getAllByText("エラー");
-        const errorBadge = errorBadges.find((el) => el.classList.contains("bg-red-100"));
+        const errorBadge = errorBadges.find((el) =>
+          el.classList.contains("bg-red-100"),
+        );
         expect(errorBadge).toBeInTheDocument();
       });
 
@@ -257,11 +289,15 @@ describe("ReviewResultsClient", () => {
           ],
         });
 
-        render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+        render(
+          <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+        );
 
         // エラーバッジが表示されていることを確認（bg-red-100クラスを持つ要素）
         const errorBadges = screen.getAllByText("エラー");
-        const errorBadge = errorBadges.find((el) => el.classList.contains("bg-red-100"));
+        const errorBadge = errorBadges.find((el) =>
+          el.classList.contains("bg-red-100"),
+        );
         expect(errorBadge).toBeInTheDocument();
         expect(errorBadge).toHaveClass("text-red-800");
       });
@@ -271,7 +307,9 @@ describe("ReviewResultsClient", () => {
   describe("ボタン状態", () => {
     it('status === "reviewing"の場合、Q&A/リトライ/CSV出力ボタンが無効になる', () => {
       const reviewTarget = createReviewTarget({ status: "reviewing" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       const qaButton = screen.getByRole("button", { name: /Q&A/i });
       const retryButton = screen.getByRole("button", { name: /リトライ/i });
@@ -284,7 +322,13 @@ describe("ReviewResultsClient", () => {
 
     it('status === "completed"の場合、Q&A/CSV出力ボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "completed" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={false} />);
+      render(
+        <ReviewResultsClient
+          {...baseProps}
+          reviewTarget={reviewTarget}
+          canRetry={false}
+        />,
+      );
 
       const qaButton = screen.getByRole("button", { name: /Q&A/i });
       const csvButton = screen.getByRole("button", { name: /CSV出力/i });
@@ -295,7 +339,13 @@ describe("ReviewResultsClient", () => {
 
     it('status === "completed"かつcanRetry === trueの場合、リトライボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "completed" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={true} />);
+      render(
+        <ReviewResultsClient
+          {...baseProps}
+          reviewTarget={reviewTarget}
+          canRetry={true}
+        />,
+      );
 
       const retryButton = screen.getByRole("button", { name: /リトライ/i });
 
@@ -304,7 +354,13 @@ describe("ReviewResultsClient", () => {
 
     it('status === "completed"かつcanRetry === falseの場合、リトライボタンが無効になる', () => {
       const reviewTarget = createReviewTarget({ status: "completed" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={false} />);
+      render(
+        <ReviewResultsClient
+          {...baseProps}
+          reviewTarget={reviewTarget}
+          canRetry={false}
+        />,
+      );
 
       const retryButton = screen.getByRole("button", { name: /リトライ/i });
 
@@ -313,7 +369,13 @@ describe("ReviewResultsClient", () => {
 
     it('status === "error"の場合、Q&A/CSV出力ボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "error" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={false} />);
+      render(
+        <ReviewResultsClient
+          {...baseProps}
+          reviewTarget={reviewTarget}
+          canRetry={false}
+        />,
+      );
 
       const qaButton = screen.getByRole("button", { name: /Q&A/i });
       const csvButton = screen.getByRole("button", { name: /CSV出力/i });
@@ -324,7 +386,13 @@ describe("ReviewResultsClient", () => {
 
     it('status === "error"かつcanRetry === trueの場合、リトライボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "error" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={true} />);
+      render(
+        <ReviewResultsClient
+          {...baseProps}
+          reviewTarget={reviewTarget}
+          canRetry={true}
+        />,
+      );
 
       const retryButton = screen.getByRole("button", { name: /リトライ/i });
 
@@ -333,7 +401,13 @@ describe("ReviewResultsClient", () => {
 
     it('status === "pending"の場合、Q&A/CSV出力ボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "pending" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={false} />);
+      render(
+        <ReviewResultsClient
+          {...baseProps}
+          reviewTarget={reviewTarget}
+          canRetry={false}
+        />,
+      );
 
       const qaButton = screen.getByRole("button", { name: /Q&A/i });
       const csvButton = screen.getByRole("button", { name: /CSV出力/i });
@@ -344,7 +418,13 @@ describe("ReviewResultsClient", () => {
 
     it('status === "pending"かつcanRetry === trueの場合、リトライボタンが有効になる', () => {
       const reviewTarget = createReviewTarget({ status: "pending" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} canRetry={true} />);
+      render(
+        <ReviewResultsClient
+          {...baseProps}
+          reviewTarget={reviewTarget}
+          canRetry={true}
+        />,
+      );
 
       const retryButton = screen.getByRole("button", { name: /リトライ/i });
 
@@ -355,28 +435,36 @@ describe("ReviewResultsClient", () => {
   describe("ポーリング表示", () => {
     it('status === "reviewing"の場合、"(自動更新中)"が表示される', () => {
       const reviewTarget = createReviewTarget({ status: "reviewing" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       expect(screen.getByText("(自動更新中)")).toBeInTheDocument();
     });
 
     it('status === "completed"の場合、"(自動更新中)"が表示されない', () => {
       const reviewTarget = createReviewTarget({ status: "completed" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       expect(screen.queryByText("(自動更新中)")).not.toBeInTheDocument();
     });
 
     it('status === "error"の場合、"(自動更新中)"が表示されない', () => {
       const reviewTarget = createReviewTarget({ status: "error" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       expect(screen.queryByText("(自動更新中)")).not.toBeInTheDocument();
     });
 
     it('status === "pending"の場合、"(自動更新中)"が表示されない', () => {
       const reviewTarget = createReviewTarget({ status: "pending" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       expect(screen.queryByText("(自動更新中)")).not.toBeInTheDocument();
     });
@@ -385,7 +473,9 @@ describe("ReviewResultsClient", () => {
   describe("パンくずリスト", () => {
     it("正しいパンくずリストが表示される", () => {
       const reviewTarget = createReviewTarget({ name: "レビュー対象A" });
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       expect(screen.getByText("テストプロジェクト")).toBeInTheDocument();
       expect(screen.getByText("テストスペース")).toBeInTheDocument();
@@ -398,17 +488,19 @@ describe("ReviewResultsClient", () => {
   describe("ヘルプセクション", () => {
     it("レビュー結果の活用方法が表示される", () => {
       const reviewTarget = createReviewTarget({});
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       expect(screen.getByText("レビュー結果の活用方法")).toBeInTheDocument();
       expect(
-        screen.getByText(/「リトライ」で改善後に再度レビューを実行できます/)
+        screen.getByText(/「リトライ」で改善後に再度レビューを実行できます/),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/「CSV出力」で結果をExcelなどで加工・共有できます/)
+        screen.getByText(/「CSV出力」で結果をExcelなどで加工・共有できます/),
       ).toBeInTheDocument();
       expect(
-        screen.getByText(/「Q&A」でレビュー結果について質問できます/)
+        screen.getByText(/「Q&A」でレビュー結果について質問できます/),
       ).toBeInTheDocument();
     });
   });
@@ -446,16 +538,24 @@ describe("ReviewResultsClient", () => {
         ],
       });
 
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       const rows = screen.getAllByRole("row");
       // ヘッダー行を除く
       const dataRows = rows.slice(1);
 
       // 作成日時の昇順でソートされていることを確認
-      expect(within(dataRows[0]).getByText("項目1（最古）")).toBeInTheDocument();
-      expect(within(dataRows[1]).getByText("項目2（中間）")).toBeInTheDocument();
-      expect(within(dataRows[2]).getByText("項目3（最新）")).toBeInTheDocument();
+      expect(
+        within(dataRows[0]).getByText("項目1（最古）"),
+      ).toBeInTheDocument();
+      expect(
+        within(dataRows[1]).getByText("項目2（中間）"),
+      ).toBeInTheDocument();
+      expect(
+        within(dataRows[2]).getByText("項目3（最新）"),
+      ).toBeInTheDocument();
     });
   });
 
@@ -475,7 +575,9 @@ describe("ReviewResultsClient", () => {
         ],
       });
 
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       // 評定欄にハイフンが表示される（評定もコメントもnullではなく、エラーでもない場合）
       const cells = screen.getAllByRole("cell");
@@ -484,7 +586,7 @@ describe("ReviewResultsClient", () => {
         (cell) =>
           cell.textContent === "-" &&
           !cell.textContent?.includes("評定なし項目") &&
-          !cell.textContent?.includes("コメントのみ")
+          !cell.textContent?.includes("コメントのみ"),
       );
       expect(evaluationCell).toBeInTheDocument();
     });
@@ -506,7 +608,9 @@ describe("ReviewResultsClient", () => {
         ],
       });
 
-      render(<ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />);
+      render(
+        <ReviewResultsClient {...baseProps} reviewTarget={reviewTarget} />,
+      );
 
       expect(screen.getByText("コメントなし項目")).toBeInTheDocument();
       // コメント欄にハイフンが表示される

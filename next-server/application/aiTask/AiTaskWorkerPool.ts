@@ -58,10 +58,7 @@ export class AiTaskWorkerPool {
     const concurrency = getConcurrency();
     const newWorkers: AiTaskWorker[] = [];
 
-    logger.info(
-      { apiKeyHash, concurrency },
-      "ワーカープールを開始します",
-    );
+    logger.info({ apiKeyHash, concurrency }, "ワーカープールを開始します");
 
     for (let i = 0; i < concurrency; i++) {
       const workerId = `${apiKeyHash.substring(0, 8)}-${i + 1}-${uuidv4().substring(0, 8)}`;

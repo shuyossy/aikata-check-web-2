@@ -75,8 +75,12 @@ describe("ReviewSpaceName", () => {
       });
 
       it("nullish値の場合はエラーをスローする", () => {
-        expect(() => ReviewSpaceName.create(null as unknown as string)).toThrow();
-        expect(() => ReviewSpaceName.create(undefined as unknown as string)).toThrow();
+        expect(() =>
+          ReviewSpaceName.create(null as unknown as string),
+        ).toThrow();
+        expect(() =>
+          ReviewSpaceName.create(undefined as unknown as string),
+        ).toThrow();
       });
     });
   });

@@ -4,7 +4,10 @@ import {
   type GenerateCheckListByAICommand,
 } from "../GenerateCheckListByAIService";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository, ISystemSettingRepository } from "@/application/shared/port/repository";
+import type {
+  IProjectRepository,
+  ISystemSettingRepository,
+} from "@/application/shared/port/repository";
 import { AiTaskQueueService } from "@/application/aiTask/AiTaskQueueService";
 import { ReviewSpace } from "@/domain/reviewSpace";
 import { Project } from "@/domain/project";

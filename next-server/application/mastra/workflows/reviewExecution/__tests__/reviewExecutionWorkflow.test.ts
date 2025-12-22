@@ -175,8 +175,9 @@ describe("reviewExecutionWorkflow", () => {
         expect(workflowResult.reviewResults).toHaveLength(3);
         expect(
           workflowResult.reviewResults?.find(
-            (r) => r.checkListItemContent === "セキュリティ要件を満たしているか"
-          )
+            (r) =>
+              r.checkListItemContent === "セキュリティ要件を満たしているか",
+          ),
         ).toEqual({
           checkListItemContent: "セキュリティ要件を満たしているか",
           evaluation: "A",
@@ -226,7 +227,7 @@ describe("reviewExecutionWorkflow", () => {
 
       // RuntimeContextに設定が含まれていることを確認
       expect(runtimeContext.get("additionalInstructions")).toBe(
-        additionalInstructions
+        additionalInstructions,
       );
       expect(runtimeContext.get("commentFormat")).toBe(commentFormat);
     });
@@ -383,7 +384,7 @@ describe("reviewExecutionWorkflow", () => {
     it("AIエラー時でもworkflowが成功し、各チェック項目にエラーが記録されること", async () => {
       // Arrange: AI APIが例外をスローする
       mockReviewExecuteAgentGenerateLegacy.mockRejectedValue(
-        new Error("AI APIエラー")
+        new Error("AI APIエラー"),
       );
 
       // Act
@@ -485,20 +486,21 @@ describe("reviewExecutionWorkflow", () => {
 
         // check-1は成功
         const check1Result = workflowResult.reviewResults?.find(
-          (r) => r.checkListItemContent === "セキュリティ要件を満たしているか"
+          (r) => r.checkListItemContent === "セキュリティ要件を満たしているか",
         );
         expect(check1Result?.evaluation).toBe("A");
         expect(check1Result?.errorMessage).toBeNull();
 
         // check-2, check-3はエラー（エラーメッセージが存在することを確認）
         const check2Result = workflowResult.reviewResults?.find(
-          (r) => r.checkListItemContent === "エラーハンドリングが適切か"
+          (r) => r.checkListItemContent === "エラーハンドリングが適切か",
         );
         expect(check2Result?.errorMessage).toBeTruthy();
         expect(check2Result?.evaluation).toBeNull();
 
         const check3Result = workflowResult.reviewResults?.find(
-          (r) => r.checkListItemContent === "パフォーマンス要件を満たしているか"
+          (r) =>
+            r.checkListItemContent === "パフォーマンス要件を満たしているか",
         );
         expect(check3Result?.errorMessage).toBeTruthy();
         expect(check3Result?.evaluation).toBeNull();
@@ -568,7 +570,8 @@ describe("reviewExecutionWorkflow", () => {
 
         // check-3はエラーとして記録
         const check3Result = workflowResult.reviewResults?.find(
-          (r) => r.checkListItemContent === "パフォーマンス要件を満たしているか"
+          (r) =>
+            r.checkListItemContent === "パフォーマンス要件を満たしているか",
         );
         expect(check3Result?.errorMessage).toBeTruthy();
         expect(check3Result?.evaluation).toBeNull();
@@ -596,7 +599,7 @@ describe("reviewExecutionWorkflow", () => {
       const checkResult = checkWorkflowResult(result);
       expect(checkResult.status).toBe("failed");
       expect(checkResult.errorMessage).toContain(
-        "全てのチェック項目のレビューに失敗"
+        "全てのチェック項目のレビューに失敗",
       );
     });
   });
@@ -663,7 +666,7 @@ describe("reviewExecutionWorkflow", () => {
           expect.objectContaining({
             type: "image",
           }),
-        ])
+        ]),
       );
     });
   });
@@ -969,7 +972,7 @@ describe("reviewExecutionWorkflow", () => {
           expect.objectContaining({
             type: "text",
           }),
-        ])
+        ]),
       );
 
       // 画像コンテンツが含まれる
@@ -978,7 +981,7 @@ describe("reviewExecutionWorkflow", () => {
           expect.objectContaining({
             type: "image",
           }),
-        ])
+        ]),
       );
     });
   });
@@ -1087,7 +1090,7 @@ describe("reviewExecutionWorkflow", () => {
             evaluation: "B",
           }),
         ]),
-        "target-123"
+        "target-123",
       );
     });
 
@@ -1166,7 +1169,7 @@ describe("reviewExecutionWorkflow", () => {
             textContent: "テストドキュメントの内容",
           }),
         ]),
-        "target-123"
+        "target-123",
       );
     });
 
@@ -1457,7 +1460,7 @@ describe("reviewExecutionWorkflow", () => {
           expect.objectContaining({
             type: "image",
           }),
-        ])
+        ]),
       );
     });
   });

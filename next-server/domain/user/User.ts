@@ -88,7 +88,8 @@ export class User {
    * @throws ドメインバリデーションエラー - バリデーション失敗時
    */
   static reconstruct(params: ReconstructUserParams): User {
-    const { id, employeeId, displayName, isAdmin, createdAt, updatedAt } = params;
+    const { id, employeeId, displayName, isAdmin, createdAt, updatedAt } =
+      params;
 
     // 表示名のバリデーション
     User.validateDisplayName(displayName);

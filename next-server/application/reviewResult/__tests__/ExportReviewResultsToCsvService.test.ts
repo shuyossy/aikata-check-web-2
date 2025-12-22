@@ -137,8 +137,12 @@ describe("ExportReviewResultsToCsvService", () => {
         createMockReviewResultSuccess("チェック項目2", "B", "コメント2"),
         createMockReviewResultSuccess("チェック項目3", "C", "コメント3"),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(3);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(3);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -156,8 +160,12 @@ describe("ExportReviewResultsToCsvService", () => {
       const mockResults = [
         createMockReviewResultSuccess("項目1", "A", "コメント"),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -172,10 +180,17 @@ describe("ExportReviewResultsToCsvService", () => {
     it("エラーレビュー結果が正しく出力される（評定=エラー、コメント=エラーメッセージ）", async () => {
       const mockResults = [
         createMockReviewResultSuccess("正常項目", "A", "正常コメント"),
-        createMockReviewResultError("エラー項目", "レビュー処理中にエラーが発生しました"),
+        createMockReviewResultError(
+          "エラー項目",
+          "レビュー処理中にエラーが発生しました",
+        ),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(2);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(2);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -183,15 +198,21 @@ describe("ExportReviewResultsToCsvService", () => {
       });
 
       expect(result.csvContent).toContain("正常項目,A,正常コメント");
-      expect(result.csvContent).toContain("エラー項目,エラー,レビュー処理中にエラーが発生しました");
+      expect(result.csvContent).toContain(
+        "エラー項目,エラー,レビュー処理中にエラーが発生しました",
+      );
     });
 
     it("改行を含むコメントが正しくエスケープされる", async () => {
       const mockResults = [
         createMockReviewResultSuccess("項目1", "A", "コメント1\n改行あり"),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -206,8 +227,12 @@ describe("ExportReviewResultsToCsvService", () => {
       const mockResults = [
         createMockReviewResultSuccess("項目1", "A", "コメント1,カンマあり"),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -222,8 +247,12 @@ describe("ExportReviewResultsToCsvService", () => {
       const mockResults = [
         createMockReviewResultSuccess("項目1", "A", 'コメント1"クォートあり'),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -238,8 +267,12 @@ describe("ExportReviewResultsToCsvService", () => {
       const mockResults = [
         createMockReviewResultSuccess("項目1", "A", "コメント1"),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -251,10 +284,18 @@ describe("ExportReviewResultsToCsvService", () => {
 
     it("複合的な特殊文字を含むコメントが正しくエスケープされる", async () => {
       const mockResults = [
-        createMockReviewResultSuccess("項目1", "A", 'コメント,カンマと"クォート"と\n改行'),
+        createMockReviewResultSuccess(
+          "項目1",
+          "A",
+          'コメント,カンマと"クォート"と\n改行',
+        ),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -262,15 +303,21 @@ describe("ExportReviewResultsToCsvService", () => {
       });
 
       // 複合的な特殊文字が正しくエスケープされる
-      expect(result.csvContent).toContain('"コメント,カンマと""クォート""と\n改行"');
+      expect(result.csvContent).toContain(
+        '"コメント,カンマと""クォート""と\n改行"',
+      );
     });
 
     it("単一のレビュー結果をエクスポートできる", async () => {
       const mockResults = [
         createMockReviewResultSuccess("単一項目", "A", "単一コメント"),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -296,8 +343,12 @@ describe("ExportReviewResultsToCsvService", () => {
           updatedAt: new Date(),
         }),
       ];
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -314,8 +365,12 @@ describe("ExportReviewResultsToCsvService", () => {
       const mockResults = Array.from({ length: 10000 }, (_, i) =>
         createMockReviewResultSuccess(`項目${i + 1}`, "A", `コメント${i + 1}`),
       );
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(10000);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockResolvedValue(mockResults);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(10000);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockResolvedValue(mockResults);
 
       const result = await service.execute({
         reviewTargetId: validReviewTargetId,
@@ -376,7 +431,9 @@ describe("ExportReviewResultsToCsvService", () => {
     });
 
     it("レビュー結果が0件の場合はエラー", async () => {
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(0);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(0);
 
       await expect(
         service.execute({
@@ -387,21 +444,27 @@ describe("ExportReviewResultsToCsvService", () => {
     });
 
     it("レビュー結果が上限（10000件）を超える場合はエラー", async () => {
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(10001);
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(10001);
 
       await expect(
         service.execute({
           reviewTargetId: validReviewTargetId,
           userId: validUserId,
         }),
-      ).rejects.toMatchObject({ messageCode: "REVIEW_RESULT_EXPORT_TOO_MANY_ITEMS" });
+      ).rejects.toMatchObject({
+        messageCode: "REVIEW_RESULT_EXPORT_TOO_MANY_ITEMS",
+      });
     });
 
     it("リポジトリでエラーが発生した場合はスロー", async () => {
-      vi.mocked(mockReviewResultRepository.countByReviewTargetId).mockResolvedValue(1);
-      vi.mocked(mockReviewResultRepository.findByReviewTargetId).mockRejectedValue(
-        new Error("DB Error"),
-      );
+      vi.mocked(
+        mockReviewResultRepository.countByReviewTargetId,
+      ).mockResolvedValue(1);
+      vi.mocked(
+        mockReviewResultRepository.findByReviewTargetId,
+      ).mockRejectedValue(new Error("DB Error"));
 
       await expect(
         service.execute({

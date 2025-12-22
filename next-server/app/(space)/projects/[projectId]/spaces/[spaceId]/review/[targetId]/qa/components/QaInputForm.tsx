@@ -33,7 +33,11 @@ interface ChecklistItem {
 interface QaInputFormProps {
   targetId: string;
   checklistItems: ChecklistItem[];
-  onQaStart: (qaHistoryId: string, question: string, checklistItemContents: string[]) => void;
+  onQaStart: (
+    qaHistoryId: string,
+    question: string,
+    checklistItemContents: string[],
+  ) => void;
   disabled?: boolean;
 }
 
@@ -64,7 +68,11 @@ export function QaInputForm({
   const { execute: executeQa, isExecuting } = useAction(executeQaAction, {
     onSuccess: ({ data }) => {
       if (data?.qaHistoryId && selectedItems.length > 0) {
-        onQaStart(data.qaHistoryId, message, selectedItems.map((item) => item.content));
+        onQaStart(
+          data.qaHistoryId,
+          message,
+          selectedItems.map((item) => item.content),
+        );
         setMessage("");
         setSelectedItems([]);
       }
@@ -75,7 +83,10 @@ export function QaInputForm({
       if (error.serverError) {
         if (typeof error.serverError === "string") {
           errorMessage = error.serverError;
-        } else if (typeof error.serverError === "object" && "message" in error.serverError) {
+        } else if (
+          typeof error.serverError === "object" &&
+          "message" in error.serverError
+        ) {
           errorMessage = error.serverError.message;
         }
       }
@@ -86,7 +97,7 @@ export function QaInputForm({
   // 選択済みのチェックリストIDセット（高速検索用）
   const selectedItemIds = useMemo(
     () => new Set(selectedItems.map((item) => item.id)),
-    [selectedItems]
+    [selectedItems],
   );
 
   // フィルタリングされたチェックリストオプション
@@ -94,29 +105,32 @@ export function QaInputForm({
     if (!mentionSearchText) return checklistItems;
     const lowerSearch = mentionSearchText.toLowerCase();
     return checklistItems.filter((item) =>
-      item.content.toLowerCase().includes(lowerSearch)
+      item.content.toLowerCase().includes(lowerSearch),
     );
   }, [checklistItems, mentionSearchText]);
 
   // @メンション検出
-  const detectMention = useCallback((text: string): { atIndex: number; searchText: string } | null => {
-    const atIndex = text.lastIndexOf("@");
-    if (atIndex === -1) return null;
+  const detectMention = useCallback(
+    (text: string): { atIndex: number; searchText: string } | null => {
+      const atIndex = text.lastIndexOf("@");
+      if (atIndex === -1) return null;
 
-    // @が行の先頭にあるかチェック
-    if (atIndex > 0) {
-      const beforeAt = text[atIndex - 1];
-      // @の直前が改行でない場合はnullを返す
-      if (beforeAt !== "\n") return null;
-    }
+      // @が行の先頭にあるかチェック
+      if (atIndex > 0) {
+        const beforeAt = text[atIndex - 1];
+        // @の直前が改行でない場合はnullを返す
+        if (beforeAt !== "\n") return null;
+      }
 
-    // @以降の文字列を取得
-    const afterAt = text.slice(atIndex + 1);
-    // 空白や改行があれば@メンション終了とみなす
-    if (/\s/.test(afterAt)) return null;
+      // @以降の文字列を取得
+      const afterAt = text.slice(atIndex + 1);
+      // 空白や改行があれば@メンション終了とみなす
+      if (/\s/.test(afterAt)) return null;
 
-    return { atIndex, searchText: afterAt };
-  }, []);
+      return { atIndex, searchText: afterAt };
+    },
+    [],
+  );
 
   // 入力変更ハンドラ
   const handleInputChange = useCallback(
@@ -134,7 +148,7 @@ export function QaInputForm({
         setMentionSearchText("");
       }
     },
-    [detectMention]
+    [detectMention],
   );
 
   // チェックリスト選択ハンドラ（トグル動作）
@@ -147,7 +161,7 @@ export function QaInputForm({
       if (mention) {
         const beforeAt = message.slice(0, mention.atIndex);
         const afterMention = message.slice(
-          mention.atIndex + 1 + mention.searchText.length
+          mention.atIndex + 1 + mention.searchText.length,
         );
         newMessage = beforeAt + afterMention;
         setMessage(newMessage);
@@ -172,7 +186,7 @@ export function QaInputForm({
       // テキストエリアにフォーカスを戻す
       textareaRef.current?.focus();
     },
-    [message, detectMention]
+    [message, detectMention],
   );
 
   // 選択解除ハンドラ
@@ -204,7 +218,7 @@ export function QaInputForm({
         checklistItemContents: selectedItems.map((item) => item.content),
       });
     },
-    [selectedItems, message, executeQa, targetId]
+    [selectedItems, message, executeQa, targetId],
   );
 
   // Enter キー送信（Shift+Enter で改行）
@@ -226,7 +240,13 @@ export function QaInputForm({
         }
       }
     },
-    [isComposing, showMentionMenu, filteredOptions, handleChecklistSelect, handleSubmit]
+    [
+      isComposing,
+      showMentionMenu,
+      filteredOptions,
+      handleChecklistSelect,
+      handleSubmit,
+    ],
   );
 
   // IME制御
@@ -250,7 +270,8 @@ export function QaInputForm({
     }
   }, [message]);
 
-  const isSubmitDisabled = disabled || isExecuting || !message.trim() || selectedItems.length === 0;
+  const isSubmitDisabled =
+    disabled || isExecuting || !message.trim() || selectedItems.length === 0;
 
   return (
     <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
@@ -282,7 +303,10 @@ export function QaInputForm({
       {/* 入力フォーム */}
       <form onSubmit={handleSubmit} className="flex gap-3">
         <div className="flex-1 relative">
-          <Popover open={showMentionMenu} onOpenChange={handleMentionMenuOpenChange}>
+          <Popover
+            open={showMentionMenu}
+            onOpenChange={handleMentionMenuOpenChange}
+          >
             <PopoverAnchor asChild>
               <Textarea
                 ref={textareaRef}
@@ -327,7 +351,9 @@ export function QaInputForm({
                             >
                               {isSelected && <Check className="h-3 w-3" />}
                             </div>
-                            <span className="truncate flex-1">@{item.content}</span>
+                            <span className="truncate flex-1">
+                              @{item.content}
+                            </span>
                           </div>
                         </CommandItem>
                       );

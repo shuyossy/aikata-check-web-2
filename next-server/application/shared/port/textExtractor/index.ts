@@ -7,10 +7,7 @@ export type {
   TextExtractorOptions,
   ITextExtractorStrategy,
 } from "./ITextExtractorStrategy";
-export type {
-  TextNormalizerOptions,
-  ITextNormalizer,
-} from "./ITextNormalizer";
+export type { TextNormalizerOptions, ITextNormalizer } from "./ITextNormalizer";
 export type {
   FileTextExtractorOptions,
   IFileTextExtractor,
