@@ -1,0 +1,99 @@
+version: "3.9"
+
+services:
+  # ============================================
+  # AIKATAアプリケーション
+  # ============================================
+  aikata-app:
+    image: registry.example.com/aikata-check-web:latest
+    # ローカルビルド時は以下をコメント解除し、上記imageをコメントアウト
+    # build:
+    #   context: ../..
+    #   dockerfile: docker/prod/Dockerfile
+    container_name: aikata-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # DATABASE_URLはコンテナ間通信用にホスト名を上書き
+      DATABASE_URL: postgresql://${POSTGRES_USER:-aikata}:${POSTGRES_PASSWORD}@postgres-server:5432/${POSTGRES_DB:-aikata}
+      # キャッシュ/キューディレクトリはボリュームマウント先を指定
+      REVIEW_CACHE_DIR: /app/app_cache/review_cache
+      QUEUE_FILE_DIR: /app/queue_files
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      # 永続化が必要なデータ
+      - aikata-review-cache:/app/app_cache/review_cache
+      - aikata-queue-files:/app/queue_files
+    depends_on:
+      postgres-server:
+        condition: service_healthy
+    networks:
+      - aikata-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ============================================
+  # PostgreSQLデータベース
+  # ============================================
+  postgres-server:
+    image: postgres:16
+    container_name: aikata-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-aikata}
+      POSTGRES_USER: ${POSTGRES_USER:-aikata}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - aikata-db-data:/var/lib/postgresql/data
+    networks:
+      - aikata-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aikata} -d ${POSTGRES_DB:-aikata}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # pgAdmin (DB管理UI)
+  # ============================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: aikata-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
+      # Desktopモード（ログイン画面スキップ）
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "${PGADMIN_PORT:-8080}:80"
+    volumes:
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+      - ./pgadmin/pgpass:/pgpass
+    depends_on:
+      - postgres-server
+    networks:
+      - aikata-network
+    user: root
+    entrypoint: /bin/sh -c "chmod 600 /pgpass; /entrypoint.sh;"
+
+networks:
+  aikata-network:
+    driver: bridge
+
+volumes:
+  aikata-db-data:
+    name: aikata-db-data
+  aikata-review-cache:
+    name: aikata-review-cache
+  aikata-queue-files:
+    name: aikata-queue-files

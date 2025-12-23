@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# ドキュメント
+docs/
+*.md
+!next-server/README.md
+
+# 開発用設定
+docker/dev/
+.vscode/
+.serena/
+.claude/
+
+# Next.js
+next-server/.next/
+next-server/node_modules/
+next-server/coverage/
+next-server/.env
+next-server/.env.local
+
+# キャッシュ
+next-server/app_cache/
+next-server/queue_files/
+
+# テスト
+next-server/vitest.config.ts
+next-server/vitest.setup.ts
+next-server/**/*.test.ts
+next-server/**/*.test.tsx
+next-server/**/__tests__/
+
+# その他
+*.log
+*.pem
+.DS_Store
+Thumbs.db
+PBI.md

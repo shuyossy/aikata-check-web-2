@@ -4,6 +4,9 @@ import { ProjectRepository, UserRepository } from "@/infrastructure/adapter/db";
 import { getAuthenticatedUser } from "@/lib/server/auth";
 import { NewReviewSpaceClient } from "./components/NewReviewSpaceClient";
 
+// ビルド時のpre-renderingをスキップ（DBアクセスが必要なため）
+export const dynamic = "force-dynamic";
+
 interface NewSpacePageProps {
   params: Promise<{ projectId: string }>;
 }
