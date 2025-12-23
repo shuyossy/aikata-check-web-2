@@ -1,0 +1,481 @@
+diff --git a/.dockerignore b/.dockerignore
+new file mode 100644
+index 0000000..38bbc17
+--- /dev/null
++++ b/.dockerignore
+@@ -0,0 +1,39 @@
++# Git
++.git
++.gitignore
++
++# ドキュメント
++docs/
++*.md
++!next-server/README.md
++
++# 開発用設定
++docker/dev/
++.vscode/
++.serena/
++.claude/
++
++# Next.js
++next-server/.next/
++next-server/node_modules/
++next-server/coverage/
++next-server/.env
++next-server/.env.local
++
++# キャッシュ
++next-server/app_cache/
++next-server/queue_files/
++
++# テスト
++next-server/vitest.config.ts
++next-server/vitest.setup.ts
++next-server/**/*.test.ts
++next-server/**/*.test.tsx
++next-server/**/__tests__/
++
++# その他
++*.log
++*.pem
++.DS_Store
++Thumbs.db
++PBI.md
+diff --git a/PBI.md b/PBI.md
+index c5bdea8..39f450f 100644
+--- a/PBI.md
++++ b/PBI.md
+@@ -8,3 +8,17 @@
+ - 注意事項
+ - 指摘事項（in progressの場合のみ）
+ ```
++
++# ID: 1
++- PBI名: 本アプリ専用のdockerイメージを作成する
++- ステータス: done
++- 背景
++  - 現在は、開発環境構築用のdocker composeファイルのみ用意している
++  - 本番環境にデプロイする際はdockerレジストリから専用イメージをpullしてきて立ち上げる予定
++- 受け入れ基準
++  - 本アプリ専用のコンテナを立ち上げるためのDockerfileが作成されている
++  - 上記でビルドしたイメージを`image:`でpullしてくるスタイルのdocker composeファイルが作成されている
++    - docker composeでアプリコンテナ、DBコンテナ、pgadminコンテナを立ち上げる
++    - アプリを立ち上げる際は、立ち上げ先のサーバに.envファイルを用意するスタイルにしたい
++- 注意事項
++  - `docker`フォルダを対象に整備すること
+diff --git a/docker/prod/.dockerignore b/docker/prod/.dockerignore
+new file mode 100644
+index 0000000..38bbc17
+--- /dev/null
++++ b/docker/prod/.dockerignore
+@@ -0,0 +1,39 @@
++# Git
++.git
++.gitignore
++
++# ドキュメント
++docs/
++*.md
++!next-server/README.md
++
++# 開発用設定
++docker/dev/
++.vscode/
++.serena/
++.claude/
++
++# Next.js
++next-server/.next/
++next-server/node_modules/
++next-server/coverage/
++next-server/.env
++next-server/.env.local
++
++# キャッシュ
++next-server/app_cache/
++next-server/queue_files/
++
++# テスト
++next-server/vitest.config.ts
++next-server/vitest.setup.ts
++next-server/**/*.test.ts
++next-server/**/*.test.tsx
++next-server/**/__tests__/
++
++# その他
++*.log
++*.pem
++.DS_Store
++Thumbs.db
++PBI.md
+diff --git a/docker/prod/.env.example b/docker/prod/.env.example
+new file mode 100644
+index 0000000..19b0163
+--- /dev/null
++++ b/docker/prod/.env.example
+@@ -0,0 +1,59 @@
++# ============================================
++# PostgreSQL設定
++# ============================================
++POSTGRES_DB=aikata
++POSTGRES_USER=aikata
++POSTGRES_PASSWORD=your_secure_password_here
++
++# ============================================
++# AI API設定
++# ============================================
++AI_API_KEY=your_ai_api_key_here
++AI_API_URL=https://your-ai-api-endpoint.com
++AI_API_MODEL=gpt-4
++
++# ============================================
++# NextAuth認証設定
++# ============================================
++# 32文字以上のランダム文字列を生成: openssl rand -base64 32
++NEXTAUTH_SECRET=your_nextauth_secret_here
++NEXTAUTH_URL=http://your-domain.com:3000
++
++# ============================================
++# Keycloak OIDC設定
++# ============================================
++KEYCLOAK_ID=aikata-client
++KEYCLOAK_SECRET=your_keycloak_secret_here
++KEYCLOAK_ISSUER=https://keycloak.your-domain.com/realms/your-realm
++
++# ============================================
++# セキュリティ設定
++# ============================================
++# 64桁の16進数文字列を生成: openssl rand -hex 32
++ENCRYPTION_KEY=your_64_hex_chars_encryption_key_here
++
++# ============================================
++# オプション設定
++# ============================================
++# ファイルアップロードサイズ上限 (MB)
++# FILE_UPLOAD_MAX_FILE_SIZE_MB=50
++
++# AIタスクキュー設定
++# AI_QUEUE_CONCURRENCY=1
++# AI_QUEUE_POLLING_INTERVAL_MS=10000
++
++# デバッグログ有効化 (設定すると有効)
++# AIKATA_LOG_DEBUG=true
++
++# ============================================
++# ポート設定 (docker-compose用)
++# ============================================
++APP_PORT=3000
++DB_PORT=5432
++PGADMIN_PORT=8080
++
++# ============================================
++# pgAdmin設定
++# ============================================
++PGADMIN_EMAIL=admin@example.com
++PGADMIN_PASSWORD=admin
+diff --git a/docker/prod/Dockerfile b/docker/prod/Dockerfile
+new file mode 100644
+index 0000000..e920373
+--- /dev/null
++++ b/docker/prod/Dockerfile
+@@ -0,0 +1,92 @@
++# ============================================
++# Stage 1: Dependencies (本番用依存関係のインストール)
++# ============================================
++FROM node:20-alpine AS deps
++
++WORKDIR /app
++
++# package.jsonとpackage-lock.jsonのみをコピー
++COPY next-server/package.json next-server/package-lock.json ./
++
++# 本番用依存関係のみインストール
++RUN npm ci --omit=dev
++
++# ============================================
++# Stage 2: Dependencies for Build (ビルド用依存関係)
++# ============================================
++FROM node:20-alpine AS deps-dev
++
++WORKDIR /app
++
++COPY next-server/package.json next-server/package-lock.json ./
++
++# devDependencies含む全依存関係をインストール
++RUN npm ci
++
++# ============================================
++# Stage 3: Builder (アプリケーションのビルド)
++# ============================================
++FROM node:20-alpine AS builder
++
++WORKDIR /app
++
++# devDependencies含む依存関係をコピー
++COPY --from=deps-dev /app/node_modules ./node_modules
++
++# ソースコードをコピー
++COPY next-server/ ./
++
++# テレメトリ無効化
++ENV NEXT_TELEMETRY_DISABLED=1
++
++# アプリケーションをビルド
++RUN npm run build
++
++# ============================================
++# Stage 4: Runner (本番実行環境)
++# ============================================
++FROM node:20-alpine AS runner
++
++WORKDIR /app
++
++# セキュリティ: 非rootユーザーで実行
++RUN addgroup --system --gid 1001 nodejs && \
++    adduser --system --uid 1001 nextjs
++
++# 環境変数の設定
++ENV NODE_ENV=production
++ENV NEXT_TELEMETRY_DISABLED=1
++ENV PORT=3000
++ENV HOSTNAME="0.0.0.0"
++
++# ランタイムに必要なディレクトリを作成
++RUN mkdir -p /app/app_cache/review_cache /app/queue_files && \
++    chown -R nextjs:nodejs /app
++
++# 本番用依存関係をコピー
++COPY --from=deps /app/node_modules ./node_modules
++
++# ビルド成果物をコピー
++COPY --from=builder /app/public ./public
++COPY --from=builder /app/.next ./.next
++COPY --from=builder /app/package.json ./package.json
++
++# Drizzleマイグレーション用ファイルをコピー
++COPY --from=builder /app/drizzle ./drizzle
++COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
++
++# 所有者を変更
++RUN chown -R nextjs:nodejs /app
++
++# 非rootユーザーに切り替え
++USER nextjs
++
++# ポートを公開
++EXPOSE 3000
++
++# ヘルスチェック
++HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
++    CMD wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1
++
++# アプリケーションを起動
++CMD ["npm", "run", "start"]
+diff --git a/docker/prod/docker-compose.yml b/docker/prod/docker-compose.yml
+new file mode 100644
+index 0000000..06bda41
+--- /dev/null
++++ b/docker/prod/docker-compose.yml
+@@ -0,0 +1,99 @@
++version: "3.9"
++
++services:
++  # ============================================
++  # AIKATAアプリケーション
++  # ============================================
++  aikata-app:
++    image: registry.example.com/aikata-check-web:latest
++    # ローカルビルド時は以下をコメント解除し、上記imageをコメントアウト
++    # build:
++    #   context: ../..
++    #   dockerfile: docker/prod/Dockerfile
++    container_name: aikata-app
++    restart: unless-stopped
++    env_file:
++      - .env
++    environment:
++      # DATABASE_URLはコンテナ間通信用にホスト名を上書き
++      DATABASE_URL: postgresql://${POSTGRES_USER:-aikata}:${POSTGRES_PASSWORD}@postgres-server:5432/${POSTGRES_DB:-aikata}
++      # キャッシュ/キューディレクトリはボリュームマウント先を指定
++      REVIEW_CACHE_DIR: /app/app_cache/review_cache
++      QUEUE_FILE_DIR: /app/queue_files
++    ports:
++      - "${APP_PORT:-3000}:3000"
++    volumes:
++      # 永続化が必要なデータ
++      - aikata-review-cache:/app/app_cache/review_cache
++      - aikata-queue-files:/app/queue_files
++    depends_on:
++      postgres-server:
++        condition: service_healthy
++    networks:
++      - aikata-network
++    healthcheck:
++      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
++      interval: 30s
++      timeout: 10s
++      retries: 3
++      start_period: 60s
++
++  # ============================================
++  # PostgreSQLデータベース
++  # ============================================
++  postgres-server:
++    image: postgres:16
++    container_name: aikata-postgres
++    restart: unless-stopped
++    environment:
++      POSTGRES_DB: ${POSTGRES_DB:-aikata}
++      POSTGRES_USER: ${POSTGRES_USER:-aikata}
++      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
++    ports:
++      - "${DB_PORT:-5432}:5432"
++    volumes:
++      - aikata-db-data:/var/lib/postgresql/data
++    networks:
++      - aikata-network
++    healthcheck:
++      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aikata} -d ${POSTGRES_DB:-aikata}"]
++      interval: 10s
++      timeout: 5s
++      retries: 5
++
++  # ============================================
++  # pgAdmin (DB管理UI)
++  # ============================================
++  pgadmin:
++    image: dpage/pgadmin4:latest
++    container_name: aikata-pgadmin
++    restart: unless-stopped
++    environment:
++      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
++      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
++      # Desktopモード（ログイン画面スキップ）
++      PGADMIN_CONFIG_SERVER_MODE: "False"
++      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
++    ports:
++      - "${PGADMIN_PORT:-8080}:80"
++    volumes:
++      - ./pgadmin/servers.json:/pgadmin4/servers.json
++      - ./pgadmin/pgpass:/pgpass
++    depends_on:
++      - postgres-server
++    networks:
++      - aikata-network
++    user: root
++    entrypoint: /bin/sh -c "chmod 600 /pgpass; /entrypoint.sh;"
++
++networks:
++  aikata-network:
++    driver: bridge
++
++volumes:
++  aikata-db-data:
++    name: aikata-db-data
++  aikata-review-cache:
++    name: aikata-review-cache
++  aikata-queue-files:
++    name: aikata-queue-files
+diff --git a/docker/prod/pgadmin/pgpass b/docker/prod/pgadmin/pgpass
+new file mode 100644
+index 0000000..a43d590
+--- /dev/null
++++ b/docker/prod/pgadmin/pgpass
+@@ -0,0 +1 @@
++postgres-server:5432:*:aikata:your_secure_password_here
+diff --git a/docker/prod/pgadmin/servers.json b/docker/prod/pgadmin/servers.json
+new file mode 100644
+index 0000000..ba2e94d
+--- /dev/null
++++ b/docker/prod/pgadmin/servers.json
+@@ -0,0 +1,14 @@
++{
++  "Servers": {
++    "1": {
++      "Name": "AIKATA PostgreSQL",
++      "Group": "Servers",
++      "Host": "postgres-server",
++      "Port": 5432,
++      "MaintenanceDB": "aikata",
++      "Username": "aikata",
++      "PassFile": "/pgpass",
++      "SSLMode": "prefer"
++    }
++  }
++}
+diff --git a/next-server/app/(admin)/admin/notifications/page.tsx b/next-server/app/(admin)/admin/notifications/page.tsx
+index def4deb..324a7e1 100644
+--- a/next-server/app/(admin)/admin/notifications/page.tsx
++++ b/next-server/app/(admin)/admin/notifications/page.tsx
+@@ -2,6 +2,9 @@ import { SystemNotificationRepository } from "@/infrastructure/adapter/db";
+ import { ListSystemNotificationsService } from "@/application/system-notification";
+ import { NotificationsClient } from "./components/NotificationsClient";
+ 
++// ビルド時のpre-renderingをスキップ（DBアクセスが必要なため）
++export const dynamic = "force-dynamic";
++
+ /**
+  * 通知設定管理ページ（サーバーコンポーネント）
+  * RSCで初期データを取得してクライアントコンポーネントに渡す
+diff --git a/next-server/app/(admin)/admin/settings/page.tsx b/next-server/app/(admin)/admin/settings/page.tsx
+index eb523ac..6220e39 100644
+--- a/next-server/app/(admin)/admin/settings/page.tsx
++++ b/next-server/app/(admin)/admin/settings/page.tsx
+@@ -2,6 +2,9 @@ import { SystemSettingRepository } from "@/infrastructure/adapter/db";
+ import { GetSystemSettingService } from "@/application/system-setting";
+ import { SettingsClient } from "./components/SettingsClient";
+ 
++// ビルド時のpre-renderingをスキップ（DBアクセスが必要なため）
++export const dynamic = "force-dynamic";
++
+ /**
+  * API設定管理ページ（サーバーコンポーネント）
+  * RSCで初期データを取得してクライアントコンポーネントに渡す
+diff --git a/next-server/app/(admin)/admin/users/page.tsx b/next-server/app/(admin)/admin/users/page.tsx
+index d67b790..0f6c295 100644
+--- a/next-server/app/(admin)/admin/users/page.tsx
++++ b/next-server/app/(admin)/admin/users/page.tsx
+@@ -2,6 +2,9 @@ import { UserRepository } from "@/infrastructure/adapter/db";
+ import { ListAdminsService } from "@/application/admin";
+ import { UsersClient } from "./components/UsersClient";
+ 
++// ビルド時のpre-renderingをスキップ（DBアクセスが必要なため）
++export const dynamic = "force-dynamic";
++
+ /**
+  * 管理者権限管理ページ（サーバーコンポーネント）
+  * RSCで初期データを取得してクライアントコンポーネントに渡す
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/new/page.tsx b/next-server/app/(space)/projects/[projectId]/spaces/new/page.tsx
+index 278eb11..053a604 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/new/page.tsx
++++ b/next-server/app/(space)/projects/[projectId]/spaces/new/page.tsx
+@@ -4,6 +4,9 @@ import { ProjectRepository, UserRepository } from "@/infrastructure/adapter/db";
+ import { getAuthenticatedUser } from "@/lib/server/auth";
+ import { NewReviewSpaceClient } from "./components/NewReviewSpaceClient";
+ 
++// ビルド時のpre-renderingをスキップ（DBアクセスが必要なため）
++export const dynamic = "force-dynamic";
++
+ interface NewSpacePageProps {
+   params: Promise<{ projectId: string }>;
+ }
+diff --git a/next-server/app/api/health/route.ts b/next-server/app/api/health/route.ts
+new file mode 100644
+index 0000000..6215615
+--- /dev/null
++++ b/next-server/app/api/health/route.ts
+@@ -0,0 +1,12 @@
++import { NextResponse } from "next/server";
++
++/**
++ * ヘルスチェックエンドポイント
++ * Dockerコンテナのヘルスチェックで使用
++ */
++export async function GET() {
++  return NextResponse.json({
++    status: "ok",
++    timestamp: new Date().toISOString(),
++  });
++}
