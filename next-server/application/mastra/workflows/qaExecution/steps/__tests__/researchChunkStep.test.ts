@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { RuntimeContext } from "@mastra/core/di";
 import { researchChunkStep } from "../researchChunkStep";
-import type { ChecklistResultWithIndividual } from "../../types";
+import type {
+  ChecklistResultWithIndividual,
+  QaExecutionWorkflowRuntimeContext,
+} from "../../types";
 
 // エージェントをモック
 const mockGenerateLegacy = vi.fn();
@@ -233,6 +237,46 @@ describe("researchChunkStep", () => {
       expect(options.runtimeContext.get("fileName")).toBe(testFileName);
       expect(options.runtimeContext.get("userQuestion")).toBe(testQuestion);
       expect(options.runtimeContext.get("reviewMode")).toBe("small");
+    });
+
+    it("workflowRuntimeContextからemployeeIdが伝播される", async () => {
+      // Arrange
+      mockGenerateLegacy.mockResolvedValue({
+        text: "調査結果テキスト",
+      });
+
+      const workflowRuntimeContext =
+        new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
+      workflowRuntimeContext.set("employeeId", "test-employee-001");
+
+      // Act
+      await researchChunkStep.execute({
+        inputData: {
+          documentCacheId: "cache-doc-1",
+          fileName: testFileName,
+          researchContent: testResearchContent,
+          reasoning: testReasoning,
+          chunkContent: {
+            text: "テストコンテンツ",
+          },
+          chunkIndex: 0,
+          totalChunks: 1,
+          question: testQuestion,
+          checklistResults: testChecklistResultsSmall,
+        },
+        mastra: createMastraMock() as any,
+        runtimeContext: workflowRuntimeContext,
+        getStepResult: vi.fn(),
+        getInitData: vi.fn(),
+        suspend: vi.fn(),
+        runId: "test-run-id",
+        bail: createBailMock(),
+      } as any);
+
+      // Assert
+      const callArgs = mockGenerateLegacy.mock.calls[0];
+      const options = callArgs[1];
+      expect(options.runtimeContext.get("employeeId")).toBe("test-employee-001");
     });
 
     it("大量レビューモードの場合reviewModeがlargeになる", async () => {

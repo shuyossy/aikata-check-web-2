@@ -89,6 +89,7 @@ export default async function QaPage({ params }: QaPageProps) {
     reviewTargetRepository,
     reviewSpaceRepository,
     projectRepository,
+    userRepository,
   );
 
   let qaHistories;
@@ -118,6 +119,8 @@ export default async function QaPage({ params }: QaPageProps) {
       targetName={reviewTargetData.name}
       checklistItems={checklistItems}
       initialHistories={qaHistories.items}
+      currentUserId={authUser.userId}
+      currentUserDisplayName={authUser.displayName}
     />
   );
 }

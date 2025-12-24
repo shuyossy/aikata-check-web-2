@@ -98,6 +98,7 @@ describe("StartQaWorkflowService", () => {
 
   // テストデータ
   const testUserId = "550e8400-e29b-41d4-a716-446655440001";
+  const testEmployeeId = "test-employee-001";
   const testReviewTargetId = "550e8400-e29b-41d4-a716-446655440002";
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440003";
   const testProjectId = "550e8400-e29b-41d4-a716-446655440004";
@@ -290,7 +291,7 @@ describe("StartQaWorkflowService", () => {
       });
 
       // Act
-      await service.startWorkflow(testQaHistoryId, testUserId);
+      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
       // 非同期処理の完了を待つ
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -338,7 +339,7 @@ describe("StartQaWorkflowService", () => {
       );
 
       // Act
-      await service.startWorkflow(testQaHistoryId, testUserId);
+      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
       // Assert
       // ステータスが更新されないことを確認
@@ -355,7 +356,7 @@ describe("StartQaWorkflowService", () => {
       );
 
       // Act
-      await service.startWorkflow(testQaHistoryId, testUserId);
+      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
       // Assert
       expect(mockQaHistoryRepository.updateStatus).not.toHaveBeenCalled();
@@ -369,7 +370,7 @@ describe("StartQaWorkflowService", () => {
       );
 
       // Act
-      await service.startWorkflow(testQaHistoryId, testUserId);
+      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
       // Assert
       expect(mockQaHistoryRepository.updateStatus).not.toHaveBeenCalled();
@@ -382,7 +383,7 @@ describe("StartQaWorkflowService", () => {
 
       // Act & Assert
       await expect(
-        service.startWorkflow(testQaHistoryId, testUserId),
+        service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId),
       ).rejects.toThrow("Q&A履歴が見つかりません");
     });
 
@@ -395,7 +396,7 @@ describe("StartQaWorkflowService", () => {
 
       // Act & Assert
       await expect(
-        service.startWorkflow(testQaHistoryId, testUserId),
+        service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId),
       ).rejects.toThrow("レビュー対象が見つかりません");
 
       // ステータス更新前にエラーが発生するため、更新されない
@@ -444,7 +445,7 @@ describe("StartQaWorkflowService", () => {
       });
 
       // Act
-      await service.startWorkflow(testQaHistoryId, testUserId);
+      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       // Assert - エラーがDBに記録されたことを確認
@@ -516,7 +517,7 @@ describe("StartQaWorkflowService", () => {
       });
 
       // Act
-      await service.startWorkflow(testQaHistoryId, testUserId);
+      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
       // 非同期処理の完了を待つ
       await new Promise((resolve) => setTimeout(resolve, 500));

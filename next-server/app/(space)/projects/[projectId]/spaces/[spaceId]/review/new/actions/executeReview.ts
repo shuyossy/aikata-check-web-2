@@ -271,6 +271,7 @@ export const executeReviewAction = authenticatedAction
       reviewSpaceId,
       name,
       userId: ctx.auth.userId,
+      employeeId: ctx.auth.employeeId,
       files,
       fileBuffers,
       reviewSettings,

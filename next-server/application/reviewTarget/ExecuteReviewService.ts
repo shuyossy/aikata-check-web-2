@@ -49,8 +49,10 @@ export interface ExecuteReviewCommand {
   reviewSpaceId: string;
   /** レビュー対象名 */
   name: string;
-  /** 実行ユーザーID（権限確認用） */
+  /** 実行ユーザーID（DBのUUID、権限確認用） */
   userId: string;
+  /** 社員ID（Keycloakのpreferred_username） */
+  employeeId: string;
   /** ファイルメタデータの配列（バイナリデータはfileBuffersで渡す） */
   files: RawUploadFileMeta[];
   /** ファイルバッファのマップ（キー: ファイルID、値: バッファデータ） */
@@ -99,6 +101,7 @@ export class ExecuteReviewService {
       reviewSpaceId,
       name,
       userId,
+      employeeId,
       files,
       fileBuffers,
       reviewSettings,
@@ -213,6 +216,7 @@ export class ExecuteReviewService {
       reviewTargetId: queuedTarget.id.value,
       reviewSpaceId,
       userId,
+      employeeId,
       files,
       checkListItems: checkListItemsForPayload,
       reviewSettings: reviewSettings

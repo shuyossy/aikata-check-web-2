@@ -191,6 +191,7 @@ export const generateCheckListByAIAction = authenticatedAction
     const result = await service.execute({
       reviewSpaceId,
       userId: ctx.auth.userId,
+      employeeId: ctx.auth.employeeId,
       files,
       fileBuffers,
       checklistRequirements,

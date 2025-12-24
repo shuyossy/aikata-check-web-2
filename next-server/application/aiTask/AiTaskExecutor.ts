@@ -45,8 +45,10 @@ export interface ReviewTaskPayload {
   reviewTargetId: string;
   /** レビュースペースID */
   reviewSpaceId: string;
-  /** 実行ユーザーID */
+  /** 実行ユーザーID（DBのUUID） */
   userId: string;
+  /** 社員ID（Keycloakのpreferred_username） */
+  employeeId: string;
   /** ファイルメタデータ */
   files: RawUploadFileMeta[];
   /** チェックリスト項目 */
@@ -76,8 +78,10 @@ export interface ReviewTaskPayload {
 export interface ChecklistGenerationTaskPayload {
   /** レビュースペースID */
   reviewSpaceId: string;
-  /** 実行ユーザーID */
+  /** 実行ユーザーID（DBのUUID） */
   userId: string;
+  /** 社員ID（Keycloakのpreferred_username） */
+  employeeId: string;
   /** ファイルメタデータ */
   files: RawUploadFileMeta[];
   /** チェックリスト生成要件 */
@@ -237,7 +241,7 @@ export class AiTaskExecutor {
       // RuntimeContextを作成（確定済みのAI API設定を設定）
       const runtimeContext =
         new RuntimeContext<ReviewExecutionWorkflowRuntimeContext>();
-      runtimeContext.set("employeeId", payload.userId);
+      runtimeContext.set("employeeId", payload.employeeId);
       runtimeContext.set("aiApiKey", payload.aiApiConfig.apiKey);
       runtimeContext.set("aiApiUrl", payload.aiApiConfig.apiUrl);
       runtimeContext.set("aiApiModel", payload.aiApiConfig.apiModel);
@@ -531,7 +535,7 @@ export class AiTaskExecutor {
     // RuntimeContextを作成（確定済みのAI API設定を設定）
     const runtimeContext =
       new RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>();
-    runtimeContext.set("employeeId", payload.userId);
+    runtimeContext.set("employeeId", payload.employeeId);
     runtimeContext.set("aiApiKey", payload.aiApiConfig.apiKey);
     runtimeContext.set("aiApiUrl", payload.aiApiConfig.apiUrl);
     runtimeContext.set("aiApiModel", payload.aiApiConfig.apiModel);

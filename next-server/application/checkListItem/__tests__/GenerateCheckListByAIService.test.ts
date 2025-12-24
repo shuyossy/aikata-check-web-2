@@ -84,6 +84,7 @@ describe("GenerateCheckListByAIService", () => {
   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
   const testUserId = "550e8400-e29b-41d4-a716-446655440003";
+  const testEmployeeId = "test-employee-001";
   const testTaskId = "550e8400-e29b-41d4-a716-446655440004";
   const testApiKeyHash = "test-api-key-hash";
 
@@ -168,6 +169,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         checklistRequirements: "システム設計のチェックポイント",
@@ -215,6 +217,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: filesWithImage,
         fileBuffers: imageFileBuffers,
         checklistRequirements: "ドキュメントからチェックリストを生成",
@@ -232,6 +235,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: [],
         fileBuffers: new Map(),
         checklistRequirements: "テスト要件",
@@ -246,6 +250,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         checklistRequirements: "",
@@ -260,6 +265,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         checklistRequirements: "   ",
@@ -278,6 +284,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         checklistRequirements: "テスト要件",
@@ -297,6 +304,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         checklistRequirements: "テスト要件",
@@ -318,6 +326,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: nonMemberUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         checklistRequirements: "テスト要件",
@@ -339,6 +348,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         checklistRequirements: "セキュリティに関するチェックポイント",
@@ -364,6 +374,7 @@ describe("GenerateCheckListByAIService", () => {
       const command: GenerateCheckListByAICommand = {
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         checklistRequirements: "テスト要件",

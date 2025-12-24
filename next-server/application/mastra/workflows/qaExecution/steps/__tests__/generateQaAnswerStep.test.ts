@@ -86,6 +86,7 @@ describe("generateQaAnswerStep", () => {
       eventBroker?: IEventBroker;
       userId?: string;
       qaHistoryId?: string;
+      employeeId?: string;
     } = {},
   ) => {
     const runtimeContext =
@@ -98,6 +99,9 @@ describe("generateQaAnswerStep", () => {
     }
     if (options.qaHistoryId) {
       runtimeContext.set("qaHistoryId", options.qaHistoryId);
+    }
+    if (options.employeeId) {
+      runtimeContext.set("employeeId", options.employeeId);
     }
     return runtimeContext;
   };
@@ -223,6 +227,38 @@ describe("generateQaAnswerStep", () => {
       expect(promptText).toContain(testQuestion);
       expect(promptText).toContain("セキュリティガイドライン.docx");
       expect(promptText).toContain("AES-256");
+    });
+
+    it("workflowRuntimeContextからemployeeIdが伝播される", async () => {
+      // Arrange
+      mockGenerateLegacy.mockResolvedValue({
+        text: "回答テキスト",
+      });
+
+      const runtimeContext = createTestRuntimeContext({
+        employeeId: "test-employee-001",
+      });
+
+      // Act
+      await generateQaAnswerStep.execute({
+        inputData: {
+          question: testQuestion,
+          checklistResults: testChecklistResults,
+          researchResults: testResearchResults,
+        },
+        mastra: createMastraMock() as any,
+        runtimeContext,
+        getStepResult: vi.fn(),
+        getInitData: vi.fn(),
+        suspend: vi.fn(),
+        runId: "test-run-id",
+        bail: createBailMock(),
+      } as any);
+
+      // Assert
+      const callArgs = mockGenerateLegacy.mock.calls[0];
+      const options = callArgs[1];
+      expect(options.runtimeContext.get("employeeId")).toBe("test-employee-001");
     });
   });
 

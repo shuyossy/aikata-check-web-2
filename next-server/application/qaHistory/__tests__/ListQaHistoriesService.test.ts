@@ -3,7 +3,10 @@ import { ListQaHistoriesService } from "../ListQaHistoriesService";
 import type { IQaHistoryRepository } from "@/application/shared/port/repository/IQaHistoryRepository";
 import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import type { IProjectRepository } from "@/application/shared/port/repository";
+import type {
+  IProjectRepository,
+  IUserRepository,
+} from "@/application/shared/port/repository";
 import {
   QaHistory,
   QaHistoryId,
@@ -24,6 +27,7 @@ describe("ListQaHistoriesService", () => {
   let mockReviewTargetRepository: IReviewTargetRepository;
   let mockReviewSpaceRepository: IReviewSpaceRepository;
   let mockProjectRepository: IProjectRepository;
+  let mockUserRepository: IUserRepository;
   let service: ListQaHistoriesService;
 
   // テストデータ
@@ -32,6 +36,7 @@ describe("ListQaHistoriesService", () => {
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440003";
   const testProjectId = "550e8400-e29b-41d4-a716-446655440004";
   const testQaHistoryId = "550e8400-e29b-41d4-a716-446655440005";
+  const testUserDisplayName = "テストユーザー";
 
   // モックエンティティ作成ヘルパー
   const createMockReviewTarget = () => ({
@@ -108,11 +113,26 @@ describe("ListQaHistoriesService", () => {
       delete: vi.fn(),
     } as unknown as IProjectRepository;
 
+    mockUserRepository = {
+      findById: vi.fn(),
+      findByIds: vi.fn().mockResolvedValue([
+        {
+          id: { value: testUserId },
+          displayName: testUserDisplayName,
+          employeeId: { value: "EMP001" },
+        },
+      ]),
+      findByEmployeeId: vi.fn(),
+      save: vi.fn(),
+      upsert: vi.fn(),
+    } as unknown as IUserRepository;
+
     service = new ListQaHistoriesService(
       mockQaHistoryRepository,
       mockReviewTargetRepository,
       mockReviewSpaceRepository,
       mockProjectRepository,
+      mockUserRepository,
     );
   });
 
@@ -160,6 +180,8 @@ describe("ListQaHistoriesService", () => {
       // DTO変換結果の詳細検証
       const item = result.items[0];
       expect(item.id).toBe(testQaHistoryId);
+      expect(item.userId).toBe(testUserId);
+      expect(item.userDisplayName).toBe(testUserDisplayName);
       expect(item.question).toBe("テスト質問");
       expect(item.checklistItemContent).toBe("チェック項目内容");
       expect(item.answer).toBe("テスト回答");

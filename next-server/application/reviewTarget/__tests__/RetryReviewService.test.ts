@@ -129,6 +129,7 @@ describe("RetryReviewService", () => {
   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
   const testUserId = "550e8400-e29b-41d4-a716-446655440003";
+  const testEmployeeId = "test-employee-001";
   const testReviewTargetId = "550e8400-e29b-41d4-a716-446655440004";
   const testCheckListItemId1 = "550e8400-e29b-41d4-a716-446655440005";
   const testCheckListItemId2 = "550e8400-e29b-41d4-a716-446655440006";
@@ -283,6 +284,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -332,6 +334,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "all",
         useLatestChecklist: false,
       };
@@ -373,6 +376,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "all",
         useLatestChecklist: true,
       };
@@ -413,6 +417,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
         reviewType: "large", // 種別を変更
       };
@@ -452,6 +457,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
         reviewSettings: {
           additionalInstructions: "セキュリティに注意",
@@ -479,6 +485,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -506,6 +513,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -524,6 +532,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -545,6 +554,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -567,6 +577,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: nonMemberUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -591,6 +602,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -623,6 +635,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -674,6 +687,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed", // 失敗項目のみ指定
       };
 
@@ -706,6 +720,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -735,6 +750,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
       };
 
@@ -746,6 +762,7 @@ describe("RetryReviewService", () => {
         reviewTargetId: testReviewTargetId,
         reviewSpaceId: testReviewSpaceId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: [], // リトライ時は空
         isRetry: true,
         retryScope: "failed",
@@ -776,6 +793,7 @@ describe("RetryReviewService", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "all",
       };
 

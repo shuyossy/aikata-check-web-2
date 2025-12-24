@@ -379,6 +379,7 @@ const assertUpdateChecklistGenerationError = (
 describe("AIチェックリスト生成 結合テスト", () => {
   // テスト用ID（UUID形式）
   const testUserId = "550e8400-e29b-41d4-a716-446655440000";
+  const testEmployeeId = "test-employee-001";
   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
   const testTaskId = "550e8400-e29b-41d4-a716-446655440003";
@@ -699,6 +700,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         const command: GenerateCheckListByAICommand = {
           reviewSpaceId: testReviewSpaceId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: testFiles,
           fileBuffers: testFileBuffers,
           checklistRequirements,
@@ -1149,6 +1151,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         const command: GenerateCheckListByAICommand = {
           reviewSpaceId: testReviewSpaceId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: [], // 空のファイル配列
           fileBuffers: new Map(),
           checklistRequirements: "テスト",
@@ -1164,6 +1167,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         const command: GenerateCheckListByAICommand = {
           reviewSpaceId: testReviewSpaceId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: testFiles,
           fileBuffers: createTestFileBuffers(testFiles),
           checklistRequirements: "   ", // 空白のみ
@@ -1181,6 +1185,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         const command: GenerateCheckListByAICommand = {
           reviewSpaceId: testReviewSpaceId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: testFiles,
           fileBuffers: createTestFileBuffers(testFiles),
           checklistRequirements: "テスト",
@@ -1211,6 +1216,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
         const command: GenerateCheckListByAICommand = {
           reviewSpaceId: testReviewSpaceId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: testFiles,
           fileBuffers: createTestFileBuffers(testFiles),
           checklistRequirements: "テスト",

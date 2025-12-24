@@ -19,8 +19,10 @@ import { resolveAiApiConfig } from "@/application/shared/lib/resolveAiApiConfig"
 export interface GenerateCheckListByAICommand {
   /** レビュースペースID */
   reviewSpaceId: string;
-  /** 実行ユーザーID（権限確認用） */
+  /** 実行ユーザーID（DBのUUID、権限確認用） */
   userId: string;
+  /** 社員ID（Keycloakのpreferred_username） */
+  employeeId: string;
   /** ファイルメタデータの配列（バイナリデータはfileBuffersで渡す） */
   files: RawUploadFileMeta[];
   /** ファイルバッファのマップ（キー: ファイルID、値: バッファデータ） */
@@ -61,8 +63,14 @@ export class GenerateCheckListByAIService {
   async execute(
     command: GenerateCheckListByAICommand,
   ): Promise<GenerateCheckListByAIResult> {
-    const { reviewSpaceId, userId, files, fileBuffers, checklistRequirements } =
-      command;
+    const {
+      reviewSpaceId,
+      userId,
+      employeeId,
+      files,
+      fileBuffers,
+      checklistRequirements,
+    } = command;
 
     // 入力バリデーション
     if (files.length === 0) {
@@ -110,6 +118,7 @@ export class GenerateCheckListByAIService {
     const payload: ChecklistGenerationTaskPayload = {
       reviewSpaceId,
       userId,
+      employeeId,
       files,
       checklistRequirements,
       aiApiConfig,

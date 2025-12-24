@@ -399,6 +399,7 @@ const assertSavedRetryTaskPayload = (
 describe("レビューリトライ 結合テスト", () => {
   // テスト用ID（UUID形式）
   const testUserId = "550e8400-e29b-41d4-a716-446655440000";
+  const testEmployeeId = "test-employee-001";
   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
   const testTaskId = "550e8400-e29b-41d4-a716-446655440003";
@@ -814,6 +815,7 @@ describe("レビューリトライ 結合テスト", () => {
         const command: RetryReviewCommand = {
           reviewTargetId: testReviewTargetId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           retryScope: "failed",
         };
 
@@ -888,6 +890,7 @@ describe("レビューリトライ 結合テスト", () => {
         const command: RetryReviewCommand = {
           reviewTargetId: testReviewTargetId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           retryScope: "all",
           useLatestChecklist: false, // スナップショット使用
         };
@@ -945,6 +948,7 @@ describe("レビューリトライ 結合テスト", () => {
         const command: RetryReviewCommand = {
           reviewTargetId: testReviewTargetId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           retryScope: "all",
           useLatestChecklist: true, // 最新チェックリスト使用
         };
@@ -1008,6 +1012,7 @@ describe("レビューリトライ 結合テスト", () => {
         const command: RetryReviewCommand = {
           reviewTargetId: testReviewTargetId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           retryScope: "failed",
           reviewType: "large", // 大量レビュー
         };
@@ -1062,6 +1067,7 @@ describe("レビューリトライ 結合テスト", () => {
         const command: RetryReviewCommand = {
           reviewTargetId: testReviewTargetId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           retryScope: "all",
           reviewType: "large",
         };
@@ -1142,6 +1148,7 @@ describe("レビューリトライ 結合テスト", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
         reviewSettings: {
           additionalInstructions: "セキュリティに注意してレビュー",
@@ -1203,6 +1210,7 @@ describe("レビューリトライ 結合テスト", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "all",
         reviewType: "large", // small→largeに変更
       };
@@ -1232,6 +1240,7 @@ describe("レビューリトライ 結合テスト", () => {
       const command: RetryReviewCommand = {
         reviewTargetId: testReviewTargetId,
         userId: testUserId,
+        employeeId: testEmployeeId,
         retryScope: "failed",
         reviewType: "small", // large→smallに変更
       };
@@ -1466,6 +1475,7 @@ describe("レビューリトライ 結合テスト", () => {
         const command: RetryReviewCommand = {
           reviewTargetId: testReviewTargetId,
           userId: testUserId,
+          employeeId: testEmployeeId,
           retryScope: "failed",
         };
 

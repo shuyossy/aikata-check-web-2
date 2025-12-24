@@ -31,6 +31,8 @@ import type {
  */
 interface QaHistoryData {
   id: string;
+  userId: string;
+  userDisplayName: string;
   question: string;
   checklistItemContent: string;
   answer: string | null;
@@ -66,6 +68,8 @@ interface QaHistoryListProps {
   currentQuestion?: string | null;
   /** 処理中のチェックリスト項目内容 */
   currentChecklistItemContents?: string[];
+  /** 現在のユーザー表示名（ストリーミング中のQ&Aに表示） */
+  currentUserDisplayName?: string;
   /** 完了時のコールバック */
   onComplete?: (
     qaHistoryId: string,
@@ -157,6 +161,8 @@ function QaHistoryItem({ history }: { history: QaHistoryData }) {
             </p>
           </div>
           <div className="text-xs text-gray-500 mt-1 text-right">
+            <span className="font-medium">{history.userDisplayName}</span>
+            {" • "}
             {formatDateTime(history.createdAt)}
           </div>
         </div>
@@ -276,6 +282,8 @@ interface StreamingQaItemProps {
   question?: string;
   /** チェックリスト項目内容（propsから渡す場合） */
   checklistItemContents?: string[];
+  /** ユーザー表示名 */
+  userDisplayName?: string;
   /** 履歴データ（処理中の既存履歴から表示する場合） */
   historyData?: QaHistoryData;
   onComplete: (
@@ -291,6 +299,7 @@ function StreamingQaItem({
   qaHistoryId,
   question: questionProp,
   checklistItemContents: checklistItemContentsProp,
+  userDisplayName: userDisplayNameProp,
   historyData,
   onComplete,
   onError,
@@ -303,6 +312,8 @@ function StreamingQaItem({
     (historyData
       ? parseChecklistItemContents(historyData.checklistItemContent)
       : []);
+  const userDisplayName =
+    userDisplayNameProp ?? historyData?.userDisplayName ?? "";
   // 調査タスクの状態
   const [researchTasks, setResearchTasks] = useState<ResearchTaskState[]>([]);
   // 回答テキスト（ストリーミング中）
@@ -474,6 +485,11 @@ function StreamingQaItem({
           <div className="bg-blue-500 rounded-lg p-4 shadow-sm">
             <p className="text-sm text-white whitespace-pre-wrap">{question}</p>
           </div>
+          {userDisplayName && (
+            <div className="text-xs text-gray-500 mt-1 text-right">
+              <span className="font-medium">{userDisplayName}</span>
+            </div>
+          )}
         </div>
         <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
           <User className="h-4 w-4" />
@@ -611,6 +627,7 @@ export function QaHistoryList({
   activeQaHistoryId,
   currentQuestion,
   currentChecklistItemContents,
+  currentUserDisplayName,
   onComplete,
   onError,
   onScrollToBottom,
@@ -671,6 +688,7 @@ export function QaHistoryList({
           qaHistoryId={activeQaHistoryId!}
           question={currentQuestion!}
           checklistItemContents={currentChecklistItemContents!}
+          userDisplayName={currentUserDisplayName}
           onComplete={onComplete!}
           onError={onError!}
           onScrollToBottom={scrollToBottom}
