@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { useAction } from "next-safe-action/hooks";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -234,7 +235,7 @@ export function CheckListEditClient({
   // アイテム追加
   const handleAddItem = useCallback(() => {
     const newItem: EditableItem = {
-      id: `new-${crypto.randomUUID()}`,
+      id: `new-${uuidv4()}`,
       content: "",
       isNew: true,
     };
