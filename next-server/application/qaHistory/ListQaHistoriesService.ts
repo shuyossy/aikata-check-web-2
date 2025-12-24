@@ -1,10 +1,15 @@
 import { IQaHistoryRepository } from "@/application/shared/port/repository/IQaHistoryRepository";
 import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
 import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
-import { IProjectRepository } from "@/application/shared/port/repository";
+import {
+  IProjectRepository,
+  IUserRepository,
+} from "@/application/shared/port/repository";
+import { buildUserNameMap } from "@/application/shared/util";
 import { ReviewTargetId } from "@/domain/reviewTarget";
 import { ReviewSpaceId } from "@/domain/reviewSpace";
 import { ProjectId } from "@/domain/project";
+import { UserId } from "@/domain/user";
 import { domainValidationError } from "@/lib/server/error";
 
 /**
@@ -27,6 +32,10 @@ export interface ListQaHistoriesCommand {
 export interface QaHistoryDto {
   /** Q&A履歴ID */
   id: string;
+  /** 質問者のユーザーID */
+  userId: string;
+  /** 質問者の表示名 */
+  userDisplayName: string;
   /** 質問内容 */
   question: string;
   /** チェックリスト項目の内容 */
@@ -65,6 +74,7 @@ export class ListQaHistoriesService {
     private readonly reviewTargetRepository: IReviewTargetRepository,
     private readonly reviewSpaceRepository: IReviewSpaceRepository,
     private readonly projectRepository: IProjectRepository,
+    private readonly userRepository: IUserRepository,
   ) {}
 
   /**
@@ -113,9 +123,17 @@ export class ListQaHistoriesService {
         offset,
       });
 
+    // ユニークなユーザーIDを収集してユーザー情報を一括取得
+    const uniqueUserIds = [...new Set(items.map((h) => h.userId.value))];
+    const userIdVos = uniqueUserIds.map((id) => UserId.reconstruct(id));
+    const users = await this.userRepository.findByIds(userIdVos);
+    const userNameMap = buildUserNameMap(users);
+
     return {
       items: items.map((qaHistory) => ({
         id: qaHistory.id.value,
+        userId: qaHistory.userId.value,
+        userDisplayName: userNameMap.get(qaHistory.userId.value) ?? "",
         question: qaHistory.question.value,
         checklistItemContent: qaHistory.checkListItemContent.value,
         answer: qaHistory.answer?.value ?? null,

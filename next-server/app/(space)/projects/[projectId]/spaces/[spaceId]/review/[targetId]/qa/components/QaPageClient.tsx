@@ -18,6 +18,8 @@ interface ChecklistItem {
  */
 interface QaHistoryData {
   id: string;
+  userId: string;
+  userDisplayName: string;
   question: string;
   checklistItemContent: string;
   answer: string | null;
@@ -37,6 +39,10 @@ interface QaPageClientProps {
   targetName: string;
   checklistItems: ChecklistItem[];
   initialHistories: QaHistoryData[];
+  /** 現在のユーザーID */
+  currentUserId: string;
+  /** 現在のユーザー表示名 */
+  currentUserDisplayName: string;
 }
 
 /**
@@ -51,6 +57,8 @@ export function QaPageClient({
   targetName,
   checklistItems,
   initialHistories,
+  currentUserId,
+  currentUserDisplayName,
 }: QaPageClientProps) {
   // 現在処理中のQ&A履歴ID
   const [activeQaHistoryId, setActiveQaHistoryId] = useState<string | null>(
@@ -93,6 +101,8 @@ export function QaPageClient({
         ...prev,
         {
           id: qaHistoryId,
+          userId: currentUserId,
+          userDisplayName: currentUserDisplayName,
           question,
           checklistItemContent: JSON.stringify(checklistItemContents),
           answer: null,
@@ -104,7 +114,7 @@ export function QaPageClient({
         },
       ]);
     },
-    [],
+    [currentUserId, currentUserDisplayName],
   );
 
   // Q&A完了時のハンドラー
@@ -227,6 +237,7 @@ export function QaPageClient({
                 activeQaHistoryId={activeQaHistoryId}
                 currentQuestion={currentQuestion}
                 currentChecklistItemContents={currentChecklistItemContents}
+                currentUserDisplayName={currentUserDisplayName}
                 onComplete={handleQaComplete}
                 onError={handleQaError}
                 onScrollToBottom={scrollToBottom}

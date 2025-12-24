@@ -8,6 +8,7 @@ import {
   ReviewTargetRepository,
   ReviewSpaceRepository,
   ProjectRepository,
+  UserRepository,
 } from "@/infrastructure/adapter/db";
 
 /**
@@ -36,6 +37,7 @@ export const listQaHistoriesAction = authenticatedAction
       new ReviewTargetRepository(),
       new ReviewSpaceRepository(),
       new ProjectRepository(),
+      new UserRepository(),
     );
 
     // Q&A履歴一覧を取得
