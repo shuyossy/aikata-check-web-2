@@ -1,0 +1,21 @@
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/components/CheckListEditClient.tsx b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/components/CheckListEditClient.tsx
+index 465f3b8..0d8c04b 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/components/CheckListEditClient.tsx
++++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/components/CheckListEditClient.tsx
+@@ -1,6 +1,7 @@
+ "use client";
+ 
+ import { useState, useCallback, useRef, useMemo, useEffect } from "react";
++import { v4 as uuidv4 } from "uuid";
+ import { useAction } from "next-safe-action/hooks";
+ import { useRouter } from "next/navigation";
+ import Link from "next/link";
+@@ -234,7 +235,7 @@ export function CheckListEditClient({
+   // アイテム追加
+   const handleAddItem = useCallback(() => {
+     const newItem: EditableItem = {
+-      id: `new-${crypto.randomUUID()}`,
++      id: `new-${uuidv4()}`,
+       content: "",
+       isNew: true,
+     };
