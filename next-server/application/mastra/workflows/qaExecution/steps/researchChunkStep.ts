@@ -99,6 +99,7 @@ export const researchChunkStep = createStep({
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<QaExecutionWorkflowRuntimeContext>
         | undefined;
+      const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
       const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
       const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
       const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
@@ -113,6 +114,7 @@ export const researchChunkStep = createStep({
           checklistInfo,
           userQuestion: question,
           reviewMode,
+          employeeId,
           aiApiKey,
           aiApiUrl,
           aiApiModel,

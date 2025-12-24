@@ -422,6 +422,7 @@ const createTestQaHistory = (params: {
 describe("QA機能 結合テスト", () => {
   // テスト用ID（UUID形式）
   const testUserId = "550e8400-e29b-41d4-a716-446655440000";
+  const testEmployeeId = "test-employee-001";
   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
   const testReviewTargetId = "550e8400-e29b-41d4-a716-446655440003";
@@ -1160,7 +1161,7 @@ describe("QA機能 結合テスト", () => {
         );
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // ワークフローが非同期実行されるため、少し待つ
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1249,7 +1250,7 @@ describe("QA機能 結合テスト", () => {
         });
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // ワークフローが非同期実行されるため、十分に待つ
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1319,7 +1320,7 @@ describe("QA機能 結合テスト", () => {
         });
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // ワークフローが非同期実行されるため、少し待つ
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1349,7 +1350,7 @@ describe("QA機能 結合テスト", () => {
         );
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // ワークフローが非同期実行されるため、少し待つ
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1384,7 +1385,7 @@ describe("QA機能 結合テスト", () => {
         });
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // ワークフローが非同期実行されるため、少し待つ
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1423,7 +1424,7 @@ describe("QA機能 結合テスト", () => {
         );
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // ワークフローが非同期実行されるため、少し待つ
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1453,7 +1454,7 @@ describe("QA機能 結合テスト", () => {
         );
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // Assert: updateStatusが呼ばれないこと（ワークフローが開始されない）
         expect(mockQaHistoryRepository.updateStatus).not.toHaveBeenCalled();
@@ -1465,7 +1466,7 @@ describe("QA機能 結合テスト", () => {
 
         // Act & Assert
         await expect(
-          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId),
+          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId),
         ).rejects.toThrow("Q&A履歴が見つかりません");
       });
 
@@ -1486,7 +1487,7 @@ describe("QA機能 結合テスト", () => {
 
         // Act & Assert
         await expect(
-          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId),
+          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId),
         ).rejects.toThrow("レビュー対象が見つかりません");
       });
 
@@ -1515,7 +1516,7 @@ describe("QA機能 結合テスト", () => {
         });
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // ワークフローが非同期実行されるため、少し待つ
         await new Promise((resolve) => setTimeout(resolve, 500));
@@ -1567,7 +1568,7 @@ describe("QA機能 結合テスト", () => {
         );
 
         // Act
-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
+        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
 
         // ワークフローが非同期実行されるため、少し待つ
         await new Promise((resolve) => setTimeout(resolve, 500));

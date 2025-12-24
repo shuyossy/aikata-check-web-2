@@ -73,6 +73,7 @@ export const generateQaAnswerStep = createStep({
       const qaHistoryId = typedWorkflowRuntimeContext?.get?.("qaHistoryId") as
         | string
         | undefined;
+      const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
       const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
       const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
       const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
@@ -96,6 +97,7 @@ export const generateQaAnswerStep = createStep({
         userQuestion: question,
         checklistInfo,
         reviewMode,
+        employeeId,
         aiApiKey,
         aiApiUrl,
         aiApiModel,

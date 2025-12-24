@@ -58,9 +58,14 @@ export class StartQaWorkflowService {
    * Q&Aワークフローを開始
    * SSE接続確立後に呼び出される
    * @param qaHistoryId Q&A履歴ID
-   * @param userId ユーザーID
+   * @param userId ユーザーID（DBのUUID）
+   * @param employeeId 社員ID（Keycloakのpreferred_username）
    */
-  async startWorkflow(qaHistoryId: string, userId: string): Promise<void> {
+  async startWorkflow(
+    qaHistoryId: string,
+    userId: string,
+    employeeId: string,
+  ): Promise<void> {
     const qaHistoryIdVo = QaHistoryId.reconstruct(qaHistoryId);
     const qaHistory = await this.qaHistoryRepository.findById(qaHistoryIdVo);
 
@@ -92,6 +97,7 @@ export class StartQaWorkflowService {
     this.executeQaWorkflow(
       qaHistoryIdVo,
       userId,
+      employeeId,
       qaHistory.reviewTargetId,
     ).catch((error) => {
       logger.error({ err: error, qaHistoryId }, "Q&A処理が失敗しました");
@@ -101,12 +107,14 @@ export class StartQaWorkflowService {
   /**
    * Q&Aワークフローを実行
    * @param qaHistoryId Q&A履歴ID
-   * @param userId ユーザーID
+   * @param userId ユーザーID（DBのUUID）
+   * @param employeeId 社員ID（Keycloakのpreferred_username）
    * @param reviewTargetId レビュー対象ID
    */
   private async executeQaWorkflow(
     qaHistoryId: QaHistoryId,
     userId: string,
+    employeeId: string,
     reviewTargetId: ReviewTargetId,
   ): Promise<void> {
     try {
@@ -210,6 +218,7 @@ export class StartQaWorkflowService {
         new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
       runtimeContext.set("eventBroker", this.eventBroker);
       runtimeContext.set("userId", userId);
+      runtimeContext.set("employeeId", employeeId);
       runtimeContext.set("qaHistoryId", qaHistoryId.value);
       runtimeContext.set("aiApiKey", aiApiConfig.apiKey);
       runtimeContext.set("aiApiUrl", aiApiConfig.apiUrl);

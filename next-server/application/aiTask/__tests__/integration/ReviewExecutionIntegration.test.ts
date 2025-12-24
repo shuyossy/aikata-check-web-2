@@ -418,6 +418,7 @@ const assertSavedReviewTaskPayload = (
 describe("レビュー実行 結合テスト", () => {
   // テスト用ID（UUID形式）
   const testUserId = "550e8400-e29b-41d4-a716-446655440000";
+  const testEmployeeId = "test-employee-001";
   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
   const testTaskId = "550e8400-e29b-41d4-a716-446655440003";
@@ -768,6 +769,7 @@ describe("レビュー実行 結合テスト", () => {
           reviewSpaceId: testReviewSpaceId,
           name: "テストレビュー対象",
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: testFiles,
           fileBuffers: testFileBuffers,
           reviewType: "small",
@@ -1391,6 +1393,7 @@ describe("レビュー実行 結合テスト", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー対象",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: testFileBuffers,
         reviewType: "small",
@@ -1424,6 +1427,7 @@ describe("レビュー実行 結合テスト", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー対象",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: testFileBuffers,
         reviewType: "large",
@@ -1543,6 +1547,7 @@ describe("レビュー実行 結合テスト", () => {
           reviewSpaceId: testReviewSpaceId,
           name: "テストレビュー対象",
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: [], // 空のファイル配列
           fileBuffers: new Map(),
           reviewType: "small",
@@ -1565,6 +1570,7 @@ describe("レビュー実行 結合テスト", () => {
           reviewSpaceId: testReviewSpaceId,
           name: "テストレビュー対象",
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: testFiles,
           fileBuffers: createTestFileBuffers(testFiles),
           reviewType: "small",
@@ -1585,6 +1591,7 @@ describe("レビュー実行 結合テスト", () => {
           reviewSpaceId: testReviewSpaceId,
           name: "テストレビュー対象",
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: testFiles,
           fileBuffers: createTestFileBuffers(testFiles),
           reviewType: "small",
@@ -1618,6 +1625,7 @@ describe("レビュー実行 結合テスト", () => {
           reviewSpaceId: testReviewSpaceId,
           name: "テストレビュー対象",
           userId: testUserId,
+          employeeId: testEmployeeId,
           files: testFiles,
           fileBuffers: createTestFileBuffers(testFiles),
           reviewType: "small",

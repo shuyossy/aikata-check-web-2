@@ -38,6 +38,7 @@ export async function GET(
   }
 
   const userId = session.user.id;
+  const employeeId = session.user.employeeId;
 
   try {
     // Q&A履歴の存在確認
@@ -137,7 +138,11 @@ export async function GET(
             eventBroker,
             mastra,
           );
-          await startWorkflowService.startWorkflow(qaHistoryId, userId);
+          await startWorkflowService.startWorkflow(
+            qaHistoryId,
+            userId,
+            employeeId,
+          );
         } catch (error) {
           logger.error(
             { err: error, qaHistoryId },

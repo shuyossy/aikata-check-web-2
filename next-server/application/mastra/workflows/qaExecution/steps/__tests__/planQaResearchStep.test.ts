@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { RuntimeContext } from "@mastra/core/di";
 import { planQaResearchStep } from "../planQaResearchStep";
 import type {
   AvailableDocument,
   ChecklistResultWithIndividual,
+  QaExecutionWorkflowRuntimeContext,
 } from "../../types";
 
 // エージェントをモック
@@ -246,6 +248,46 @@ describe("planQaResearchStep", () => {
         testQuestion,
         expect.any(Object),
       );
+    });
+
+    it("workflowRuntimeContextからemployeeIdが伝播される", async () => {
+      // Arrange
+      mockGenerateLegacy.mockResolvedValue({
+        object: {
+          tasks: [
+            {
+              reasoning: "理由",
+              documentId: "doc-1",
+              researchContent: "調査内容",
+            },
+          ],
+        },
+      });
+
+      const workflowRuntimeContext =
+        new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
+      workflowRuntimeContext.set("employeeId", "test-employee-001");
+
+      // Act
+      await planQaResearchStep.execute({
+        inputData: {
+          question: testQuestion,
+          availableDocuments: testAvailableDocuments,
+          checklistResults: testChecklistResultsSmall,
+        },
+        mastra: createMastraMock() as any,
+        runtimeContext: workflowRuntimeContext,
+        getStepResult: vi.fn(),
+        getInitData: vi.fn(),
+        suspend: vi.fn(),
+        runId: "test-run-id",
+        bail: createBailMock(),
+      } as any);
+
+      // Assert
+      const callArgs = mockGenerateLegacy.mock.calls[0];
+      const options = callArgs[1];
+      expect(options.runtimeContext.get("employeeId")).toBe("test-employee-001");
     });
   });
 

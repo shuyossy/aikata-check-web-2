@@ -108,6 +108,7 @@ describe("ExecuteReviewService", () => {
   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
   const testUserId = "550e8400-e29b-41d4-a716-446655440003";
+  const testEmployeeId = "test-employee-001";
   const testCheckListItemId1 = "550e8400-e29b-41d4-a716-446655440004";
   const testCheckListItemId2 = "550e8400-e29b-41d4-a716-446655440005";
   const testTaskId = "550e8400-e29b-41d4-a716-446655440006";
@@ -217,6 +218,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
       };
@@ -253,6 +255,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         reviewType: "large",
@@ -281,6 +284,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
         reviewSettings: {
@@ -318,6 +322,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: [],
         fileBuffers: new Map(),
       };
@@ -340,6 +345,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
       };
@@ -358,6 +364,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
       };
@@ -377,6 +384,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
       };
@@ -398,6 +406,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: nonMemberUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
       };
@@ -422,6 +431,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
       };
@@ -453,6 +463,7 @@ describe("ExecuteReviewService", () => {
         reviewSpaceId: testReviewSpaceId,
         name: "テストレビュー",
         userId: testUserId,
+        employeeId: testEmployeeId,
         files: testFiles,
         fileBuffers: createTestFileBuffers(),
       };

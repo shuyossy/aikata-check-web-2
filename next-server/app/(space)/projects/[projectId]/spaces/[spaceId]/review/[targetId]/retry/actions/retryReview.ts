@@ -88,6 +88,7 @@ export const retryReviewAction = authenticatedAction
     const result = await service.execute({
       reviewTargetId,
       userId: ctx.auth.userId,
+      employeeId: ctx.auth.employeeId,
       retryScope,
       useLatestChecklist,
       reviewType,

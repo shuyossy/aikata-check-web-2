@@ -86,6 +86,7 @@ export const planQaResearchStep = createStep({
       const typedWorkflowRuntimeContext = workflowRuntimeContext as
         | RuntimeContext<QaExecutionWorkflowRuntimeContext>
         | undefined;
+      const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
       const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
       const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
       const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
@@ -96,6 +97,7 @@ export const planQaResearchStep = createStep({
           availableDocuments,
           checklistInfo,
           reviewMode,
+          employeeId,
           aiApiKey,
           aiApiUrl,
           aiApiModel,

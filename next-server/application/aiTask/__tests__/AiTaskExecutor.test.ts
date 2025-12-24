@@ -246,6 +246,7 @@ describe("AiTaskExecutor", () => {
         reviewTargetId: testReviewTargetId,
         reviewSpaceId: testReviewSpaceId,
         userId: "test-user-id",
+        employeeId: "test-employee-id",
         files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
         checkListItems: [{ id: "item-1", content: "チェック項目1" }],
         reviewSettings: {
@@ -386,6 +387,7 @@ describe("AiTaskExecutor", () => {
       payload: {
         reviewSpaceId: testReviewSpaceId,
         userId: "test-user-id",
+        employeeId: "test-employee-id",
         files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
         checklistRequirements: "テスト用のチェックリストを生成してください",
         aiApiConfig: {
@@ -547,6 +549,7 @@ describe("AiTaskExecutor", () => {
           reviewTargetId: testReviewTargetId,
           reviewSpaceId: testReviewSpaceId,
           userId: "test-user-id",
+          employeeId: "test-employee-id",
           files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
           checkListItems: [{ id: "item-1", content: "チェック項目1" }],
           reviewSettings: {
@@ -615,6 +618,7 @@ describe("AiTaskExecutor", () => {
         reviewTargetId: testReviewTargetId,
         reviewSpaceId: testReviewSpaceId,
         userId: "test-user-id",
+        employeeId: "test-employee-id",
         files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
         checkListItems: [{ id: "item-1", content: "チェック項目1" }],
         reviewSettings: {
@@ -659,6 +663,7 @@ describe("AiTaskExecutor", () => {
       payload: {
         reviewSpaceId: testReviewSpaceId,
         userId: "test-user-id",
+        employeeId: "test-employee-id",
         files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
         checklistRequirements: "テスト用のチェックリストを生成してください",
         aiApiConfig: {
@@ -850,6 +855,7 @@ describe("AiTaskExecutor", () => {
         reviewTargetId: testReviewTargetId,
         reviewSpaceId: testReviewSpaceId,
         userId: "test-user-id",
+        employeeId: "test-employee-id",
         files: [], // リトライ時はファイルは空
         checkListItems: [{ id: "item-1", content: "チェック項目1" }],
         reviewSettings: {
@@ -1104,6 +1110,7 @@ describe("AiTaskExecutor", () => {
         reviewTargetId: testReviewTargetId,
         reviewSpaceId: testReviewSpaceId,
         userId: "test-user-id",
+        employeeId: "test-employee-id",
         files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
         checkListItems: [
           { id: "item-1", content: "チェック項目1" },
@@ -1325,6 +1332,7 @@ describe("AiTaskExecutor", () => {
         reviewTargetId: testReviewTargetId,
         reviewSpaceId: testReviewSpaceId,
         userId: "test-user-id",
+        employeeId: "test-employee-id",
         files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
         checkListItems: [{ id: "item-1", content: "チェック項目1" }],
         reviewSettings: {
@@ -1719,6 +1727,7 @@ describe("AiTaskExecutor", () => {
       payload: {
         reviewSpaceId: testReviewSpaceId,
         userId: "test-user-id",
+        employeeId: "test-employee-id",
         files: [
           { id: "file-1", name: "document.txt", type: "text/plain" },
           { id: "file-2", name: "document2.pdf", type: "application/pdf" },

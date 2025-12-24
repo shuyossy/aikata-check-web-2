@@ -29,8 +29,10 @@ export type RetryScope = "failed" | "all";
 export interface RetryReviewCommand {
   /** レビュー対象ID */
   reviewTargetId: string;
-  /** 実行ユーザーID（権限確認用） */
+  /** 実行ユーザーID（DBのUUID、権限確認用） */
   userId: string;
+  /** 社員ID（Keycloakのpreferred_username） */
+  employeeId: string;
   /** リトライ範囲 */
   retryScope: RetryScope;
   /** 最新チェックリストを使用するか（retryScope === 'all'の場合のみ有効） */
@@ -80,6 +82,7 @@ export class RetryReviewService {
     const {
       reviewTargetId,
       userId,
+      employeeId,
       retryScope,
       useLatestChecklist = false,
       reviewType,
@@ -244,6 +247,7 @@ export class RetryReviewService {
       reviewTargetId,
       reviewSpaceId: reviewTarget.reviewSpaceId.value,
       userId,
+      employeeId,
       files: [], // リトライ時はファイルは不要（キャッシュを使用）
       checkListItems: targetCheckListItems,
       reviewSettings: effectiveSettings
