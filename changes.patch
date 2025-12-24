@@ -1,21 +1,1645 @@
-diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/components/CheckListEditClient.tsx b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/components/CheckListEditClient.tsx
-index 465f3b8..0d8c04b 100644
---- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/components/CheckListEditClient.tsx
-+++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/components/CheckListEditClient.tsx
-@@ -1,6 +1,7 @@
- "use client";
+diff --git a/PBI.md b/PBI.md
+index c5bdea8..8c446e8 100644
+--- a/PBI.md
++++ b/PBI.md
+@@ -8,3 +8,11 @@
+ - 注意事項
+ - 指摘事項（in progressの場合のみ）
+ ```
++
++# ID: 1
++- PBI名: 各workflow実行時に正しく社員IDをruntimecontextに連携できているか確認
++- ステータス: to do
++- 受け入れ基準
++  - 各mastra workflowの処理について、workflowやagentに関するruntimecontextに社員IDが正しく連携されていること
++- 注意事項
++  - 社員IDとは、Userテーブルの`employee_id`カラムに格納された値のことである
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/ai-generate/actions/generateCheckListByAI.ts b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/ai-generate/actions/generateCheckListByAI.ts
+index 9649ed0..6eed115 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/ai-generate/actions/generateCheckListByAI.ts
++++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/checklist/ai-generate/actions/generateCheckListByAI.ts
+@@ -191,6 +191,7 @@ export const generateCheckListByAIAction = authenticatedAction
+     const result = await service.execute({
+       reviewSpaceId,
+       userId: ctx.auth.userId,
++      employeeId: ctx.auth.employeeId,
+       files,
+       fileBuffers,
+       checklistRequirements,
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/actions/listQaHistoriesAction.ts b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/actions/listQaHistoriesAction.ts
+index 661ac2d..8ed13ea 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/actions/listQaHistoriesAction.ts
++++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/actions/listQaHistoriesAction.ts
+@@ -8,6 +8,7 @@ import {
+   ReviewTargetRepository,
+   ReviewSpaceRepository,
+   ProjectRepository,
++  UserRepository,
+ } from "@/infrastructure/adapter/db";
  
- import { useState, useCallback, useRef, useMemo, useEffect } from "react";
-+import { v4 as uuidv4 } from "uuid";
- import { useAction } from "next-safe-action/hooks";
- import { useRouter } from "next/navigation";
- import Link from "next/link";
-@@ -234,7 +235,7 @@ export function CheckListEditClient({
-   // アイテム追加
-   const handleAddItem = useCallback(() => {
-     const newItem: EditableItem = {
--      id: `new-${crypto.randomUUID()}`,
-+      id: `new-${uuidv4()}`,
-       content: "",
-       isNew: true,
-     };
+ /**
+@@ -36,6 +37,7 @@ export const listQaHistoriesAction = authenticatedAction
+       new ReviewTargetRepository(),
+       new ReviewSpaceRepository(),
+       new ProjectRepository(),
++      new UserRepository(),
+     );
+ 
+     // Q&A履歴一覧を取得
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/components/QaHistoryList.tsx b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/components/QaHistoryList.tsx
+index 2f9097b..ad374ab 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/components/QaHistoryList.tsx
++++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/components/QaHistoryList.tsx
+@@ -31,6 +31,8 @@ import type {
+  */
+ interface QaHistoryData {
+   id: string;
++  userId: string;
++  userDisplayName: string;
+   question: string;
+   checklistItemContent: string;
+   answer: string | null;
+@@ -66,6 +68,8 @@ interface QaHistoryListProps {
+   currentQuestion?: string | null;
+   /** 処理中のチェックリスト項目内容 */
+   currentChecklistItemContents?: string[];
++  /** 現在のユーザー表示名（ストリーミング中のQ&Aに表示） */
++  currentUserDisplayName?: string;
+   /** 完了時のコールバック */
+   onComplete?: (
+     qaHistoryId: string,
+@@ -157,6 +161,8 @@ function QaHistoryItem({ history }: { history: QaHistoryData }) {
+             </p>
+           </div>
+           <div className="text-xs text-gray-500 mt-1 text-right">
++            <span className="font-medium">{history.userDisplayName}</span>
++            {" • "}
+             {formatDateTime(history.createdAt)}
+           </div>
+         </div>
+@@ -276,6 +282,8 @@ interface StreamingQaItemProps {
+   question?: string;
+   /** チェックリスト項目内容（propsから渡す場合） */
+   checklistItemContents?: string[];
++  /** ユーザー表示名 */
++  userDisplayName?: string;
+   /** 履歴データ（処理中の既存履歴から表示する場合） */
+   historyData?: QaHistoryData;
+   onComplete: (
+@@ -291,6 +299,7 @@ function StreamingQaItem({
+   qaHistoryId,
+   question: questionProp,
+   checklistItemContents: checklistItemContentsProp,
++  userDisplayName: userDisplayNameProp,
+   historyData,
+   onComplete,
+   onError,
+@@ -303,6 +312,8 @@ function StreamingQaItem({
+     (historyData
+       ? parseChecklistItemContents(historyData.checklistItemContent)
+       : []);
++  const userDisplayName =
++    userDisplayNameProp ?? historyData?.userDisplayName ?? "";
+   // 調査タスクの状態
+   const [researchTasks, setResearchTasks] = useState<ResearchTaskState[]>([]);
+   // 回答テキスト（ストリーミング中）
+@@ -474,6 +485,11 @@ function StreamingQaItem({
+           <div className="bg-blue-500 rounded-lg p-4 shadow-sm">
+             <p className="text-sm text-white whitespace-pre-wrap">{question}</p>
+           </div>
++          {userDisplayName && (
++            <div className="text-xs text-gray-500 mt-1 text-right">
++              <span className="font-medium">{userDisplayName}</span>
++            </div>
++          )}
+         </div>
+         <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white flex-shrink-0">
+           <User className="h-4 w-4" />
+@@ -611,6 +627,7 @@ export function QaHistoryList({
+   activeQaHistoryId,
+   currentQuestion,
+   currentChecklistItemContents,
++  currentUserDisplayName,
+   onComplete,
+   onError,
+   onScrollToBottom,
+@@ -671,6 +688,7 @@ export function QaHistoryList({
+           qaHistoryId={activeQaHistoryId!}
+           question={currentQuestion!}
+           checklistItemContents={currentChecklistItemContents!}
++          userDisplayName={currentUserDisplayName}
+           onComplete={onComplete!}
+           onError={onError!}
+           onScrollToBottom={scrollToBottom}
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/components/QaPageClient.tsx b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/components/QaPageClient.tsx
+index 599ed45..ff7fe0c 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/components/QaPageClient.tsx
++++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/components/QaPageClient.tsx
+@@ -18,6 +18,8 @@ interface ChecklistItem {
+  */
+ interface QaHistoryData {
+   id: string;
++  userId: string;
++  userDisplayName: string;
+   question: string;
+   checklistItemContent: string;
+   answer: string | null;
+@@ -37,6 +39,10 @@ interface QaPageClientProps {
+   targetName: string;
+   checklistItems: ChecklistItem[];
+   initialHistories: QaHistoryData[];
++  /** 現在のユーザーID */
++  currentUserId: string;
++  /** 現在のユーザー表示名 */
++  currentUserDisplayName: string;
+ }
+ 
+ /**
+@@ -51,6 +57,8 @@ export function QaPageClient({
+   targetName,
+   checklistItems,
+   initialHistories,
++  currentUserId,
++  currentUserDisplayName,
+ }: QaPageClientProps) {
+   // 現在処理中のQ&A履歴ID
+   const [activeQaHistoryId, setActiveQaHistoryId] = useState<string | null>(
+@@ -93,6 +101,8 @@ export function QaPageClient({
+         ...prev,
+         {
+           id: qaHistoryId,
++          userId: currentUserId,
++          userDisplayName: currentUserDisplayName,
+           question,
+           checklistItemContent: JSON.stringify(checklistItemContents),
+           answer: null,
+@@ -104,7 +114,7 @@ export function QaPageClient({
+         },
+       ]);
+     },
+-    [],
++    [currentUserId, currentUserDisplayName],
+   );
+ 
+   // Q&A完了時のハンドラー
+@@ -227,6 +237,7 @@ export function QaPageClient({
+                 activeQaHistoryId={activeQaHistoryId}
+                 currentQuestion={currentQuestion}
+                 currentChecklistItemContents={currentChecklistItemContents}
++                currentUserDisplayName={currentUserDisplayName}
+                 onComplete={handleQaComplete}
+                 onError={handleQaError}
+                 onScrollToBottom={scrollToBottom}
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/page.tsx b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/page.tsx
+index 39af510..5cf682d 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/page.tsx
++++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/qa/page.tsx
+@@ -89,6 +89,7 @@ export default async function QaPage({ params }: QaPageProps) {
+     reviewTargetRepository,
+     reviewSpaceRepository,
+     projectRepository,
++    userRepository,
+   );
+ 
+   let qaHistories;
+@@ -118,6 +119,8 @@ export default async function QaPage({ params }: QaPageProps) {
+       targetName={reviewTargetData.name}
+       checklistItems={checklistItems}
+       initialHistories={qaHistories.items}
++      currentUserId={authUser.userId}
++      currentUserDisplayName={authUser.displayName}
+     />
+   );
+ }
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/retry/actions/retryReview.ts b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/retry/actions/retryReview.ts
+index 10f37a1..e15e547 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/retry/actions/retryReview.ts
++++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/[targetId]/retry/actions/retryReview.ts
+@@ -88,6 +88,7 @@ export const retryReviewAction = authenticatedAction
+     const result = await service.execute({
+       reviewTargetId,
+       userId: ctx.auth.userId,
++      employeeId: ctx.auth.employeeId,
+       retryScope,
+       useLatestChecklist,
+       reviewType,
+diff --git a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/new/actions/executeReview.ts b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/new/actions/executeReview.ts
+index d309dc4..30b9efe 100644
+--- a/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/new/actions/executeReview.ts
++++ b/next-server/app/(space)/projects/[projectId]/spaces/[spaceId]/review/new/actions/executeReview.ts
+@@ -271,6 +271,7 @@ export const executeReviewAction = authenticatedAction
+       reviewSpaceId,
+       name,
+       userId: ctx.auth.userId,
++      employeeId: ctx.auth.employeeId,
+       files,
+       fileBuffers,
+       reviewSettings,
+diff --git a/next-server/app/api/sse/qa/[qaHistoryId]/route.ts b/next-server/app/api/sse/qa/[qaHistoryId]/route.ts
+index a56d490..b57f946 100644
+--- a/next-server/app/api/sse/qa/[qaHistoryId]/route.ts
++++ b/next-server/app/api/sse/qa/[qaHistoryId]/route.ts
+@@ -38,6 +38,7 @@ export async function GET(
+   }
+ 
+   const userId = session.user.id;
++  const employeeId = session.user.employeeId;
+ 
+   try {
+     // Q&A履歴の存在確認
+@@ -137,7 +138,11 @@ export async function GET(
+             eventBroker,
+             mastra,
+           );
+-          await startWorkflowService.startWorkflow(qaHistoryId, userId);
++          await startWorkflowService.startWorkflow(
++            qaHistoryId,
++            userId,
++            employeeId,
++          );
+         } catch (error) {
+           logger.error(
+             { err: error, qaHistoryId },
+diff --git a/next-server/application/aiTask/AiTaskExecutor.ts b/next-server/application/aiTask/AiTaskExecutor.ts
+index 8e09f0a..2c40656 100644
+--- a/next-server/application/aiTask/AiTaskExecutor.ts
++++ b/next-server/application/aiTask/AiTaskExecutor.ts
+@@ -45,8 +45,10 @@ export interface ReviewTaskPayload {
+   reviewTargetId: string;
+   /** レビュースペースID */
+   reviewSpaceId: string;
+-  /** 実行ユーザーID */
++  /** 実行ユーザーID（DBのUUID） */
+   userId: string;
++  /** 社員ID（Keycloakのpreferred_username） */
++  employeeId: string;
+   /** ファイルメタデータ */
+   files: RawUploadFileMeta[];
+   /** チェックリスト項目 */
+@@ -76,8 +78,10 @@ export interface ReviewTaskPayload {
+ export interface ChecklistGenerationTaskPayload {
+   /** レビュースペースID */
+   reviewSpaceId: string;
+-  /** 実行ユーザーID */
++  /** 実行ユーザーID（DBのUUID） */
+   userId: string;
++  /** 社員ID（Keycloakのpreferred_username） */
++  employeeId: string;
+   /** ファイルメタデータ */
+   files: RawUploadFileMeta[];
+   /** チェックリスト生成要件 */
+@@ -237,7 +241,7 @@ export class AiTaskExecutor {
+       // RuntimeContextを作成（確定済みのAI API設定を設定）
+       const runtimeContext =
+         new RuntimeContext<ReviewExecutionWorkflowRuntimeContext>();
+-      runtimeContext.set("employeeId", payload.userId);
++      runtimeContext.set("employeeId", payload.employeeId);
+       runtimeContext.set("aiApiKey", payload.aiApiConfig.apiKey);
+       runtimeContext.set("aiApiUrl", payload.aiApiConfig.apiUrl);
+       runtimeContext.set("aiApiModel", payload.aiApiConfig.apiModel);
+@@ -531,7 +535,7 @@ export class AiTaskExecutor {
+     // RuntimeContextを作成（確定済みのAI API設定を設定）
+     const runtimeContext =
+       new RuntimeContext<ChecklistGenerationWorkflowRuntimeContext>();
+-    runtimeContext.set("employeeId", payload.userId);
++    runtimeContext.set("employeeId", payload.employeeId);
+     runtimeContext.set("aiApiKey", payload.aiApiConfig.apiKey);
+     runtimeContext.set("aiApiUrl", payload.aiApiConfig.apiUrl);
+     runtimeContext.set("aiApiModel", payload.aiApiConfig.apiModel);
+diff --git a/next-server/application/aiTask/__tests__/AiTaskExecutor.test.ts b/next-server/application/aiTask/__tests__/AiTaskExecutor.test.ts
+index fb8074a..9e9f287 100644
+--- a/next-server/application/aiTask/__tests__/AiTaskExecutor.test.ts
++++ b/next-server/application/aiTask/__tests__/AiTaskExecutor.test.ts
+@@ -246,6 +246,7 @@ describe("AiTaskExecutor", () => {
+         reviewTargetId: testReviewTargetId,
+         reviewSpaceId: testReviewSpaceId,
+         userId: "test-user-id",
++        employeeId: "test-employee-id",
+         files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+         checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+         reviewSettings: {
+@@ -386,6 +387,7 @@ describe("AiTaskExecutor", () => {
+       payload: {
+         reviewSpaceId: testReviewSpaceId,
+         userId: "test-user-id",
++        employeeId: "test-employee-id",
+         files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
+         checklistRequirements: "テスト用のチェックリストを生成してください",
+         aiApiConfig: {
+@@ -547,6 +549,7 @@ describe("AiTaskExecutor", () => {
+           reviewTargetId: testReviewTargetId,
+           reviewSpaceId: testReviewSpaceId,
+           userId: "test-user-id",
++          employeeId: "test-employee-id",
+           files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+           checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+           reviewSettings: {
+@@ -615,6 +618,7 @@ describe("AiTaskExecutor", () => {
+         reviewTargetId: testReviewTargetId,
+         reviewSpaceId: testReviewSpaceId,
+         userId: "test-user-id",
++        employeeId: "test-employee-id",
+         files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+         checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+         reviewSettings: {
+@@ -659,6 +663,7 @@ describe("AiTaskExecutor", () => {
+       payload: {
+         reviewSpaceId: testReviewSpaceId,
+         userId: "test-user-id",
++        employeeId: "test-employee-id",
+         files: [{ id: "file-1", name: "document.txt", type: "text/plain" }],
+         checklistRequirements: "テスト用のチェックリストを生成してください",
+         aiApiConfig: {
+@@ -850,6 +855,7 @@ describe("AiTaskExecutor", () => {
+         reviewTargetId: testReviewTargetId,
+         reviewSpaceId: testReviewSpaceId,
+         userId: "test-user-id",
++        employeeId: "test-employee-id",
+         files: [], // リトライ時はファイルは空
+         checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+         reviewSettings: {
+@@ -1104,6 +1110,7 @@ describe("AiTaskExecutor", () => {
+         reviewTargetId: testReviewTargetId,
+         reviewSpaceId: testReviewSpaceId,
+         userId: "test-user-id",
++        employeeId: "test-employee-id",
+         files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+         checkListItems: [
+           { id: "item-1", content: "チェック項目1" },
+@@ -1325,6 +1332,7 @@ describe("AiTaskExecutor", () => {
+         reviewTargetId: testReviewTargetId,
+         reviewSpaceId: testReviewSpaceId,
+         userId: "test-user-id",
++        employeeId: "test-employee-id",
+         files: [{ id: "file-1", name: "test.txt", type: "text/plain" }],
+         checkListItems: [{ id: "item-1", content: "チェック項目1" }],
+         reviewSettings: {
+@@ -1719,6 +1727,7 @@ describe("AiTaskExecutor", () => {
+       payload: {
+         reviewSpaceId: testReviewSpaceId,
+         userId: "test-user-id",
++        employeeId: "test-employee-id",
+         files: [
+           { id: "file-1", name: "document.txt", type: "text/plain" },
+           { id: "file-2", name: "document2.pdf", type: "application/pdf" },
+diff --git a/next-server/application/aiTask/__tests__/integration/ChecklistGenerationIntegration.test.ts b/next-server/application/aiTask/__tests__/integration/ChecklistGenerationIntegration.test.ts
+index eec9a2c..58df199 100644
+--- a/next-server/application/aiTask/__tests__/integration/ChecklistGenerationIntegration.test.ts
++++ b/next-server/application/aiTask/__tests__/integration/ChecklistGenerationIntegration.test.ts
+@@ -379,6 +379,7 @@ const assertUpdateChecklistGenerationError = (
+ describe("AIチェックリスト生成 結合テスト", () => {
+   // テスト用ID（UUID形式）
+   const testUserId = "550e8400-e29b-41d4-a716-446655440000";
++  const testEmployeeId = "test-employee-001";
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
+   const testTaskId = "550e8400-e29b-41d4-a716-446655440003";
+@@ -699,6 +700,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
+         const command: GenerateCheckListByAICommand = {
+           reviewSpaceId: testReviewSpaceId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: testFiles,
+           fileBuffers: testFileBuffers,
+           checklistRequirements,
+@@ -1149,6 +1151,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
+         const command: GenerateCheckListByAICommand = {
+           reviewSpaceId: testReviewSpaceId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: [], // 空のファイル配列
+           fileBuffers: new Map(),
+           checklistRequirements: "テスト",
+@@ -1164,6 +1167,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
+         const command: GenerateCheckListByAICommand = {
+           reviewSpaceId: testReviewSpaceId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: testFiles,
+           fileBuffers: createTestFileBuffers(testFiles),
+           checklistRequirements: "   ", // 空白のみ
+@@ -1181,6 +1185,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
+         const command: GenerateCheckListByAICommand = {
+           reviewSpaceId: testReviewSpaceId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: testFiles,
+           fileBuffers: createTestFileBuffers(testFiles),
+           checklistRequirements: "テスト",
+@@ -1211,6 +1216,7 @@ describe("AIチェックリスト生成 結合テスト", () => {
+         const command: GenerateCheckListByAICommand = {
+           reviewSpaceId: testReviewSpaceId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: testFiles,
+           fileBuffers: createTestFileBuffers(testFiles),
+           checklistRequirements: "テスト",
+diff --git a/next-server/application/aiTask/__tests__/integration/QaIntegration.test.ts b/next-server/application/aiTask/__tests__/integration/QaIntegration.test.ts
+index 7aecfae..a1080c2 100644
+--- a/next-server/application/aiTask/__tests__/integration/QaIntegration.test.ts
++++ b/next-server/application/aiTask/__tests__/integration/QaIntegration.test.ts
+@@ -422,6 +422,7 @@ const createTestQaHistory = (params: {
+ describe("QA機能 結合テスト", () => {
+   // テスト用ID（UUID形式）
+   const testUserId = "550e8400-e29b-41d4-a716-446655440000";
++  const testEmployeeId = "test-employee-001";
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
+   const testReviewTargetId = "550e8400-e29b-41d4-a716-446655440003";
+@@ -1160,7 +1161,7 @@ describe("QA機能 結合テスト", () => {
+         );
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // ワークフローが非同期実行されるため、少し待つ
+         await new Promise((resolve) => setTimeout(resolve, 500));
+@@ -1249,7 +1250,7 @@ describe("QA機能 結合テスト", () => {
+         });
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // ワークフローが非同期実行されるため、十分に待つ
+         await new Promise((resolve) => setTimeout(resolve, 500));
+@@ -1319,7 +1320,7 @@ describe("QA機能 結合テスト", () => {
+         });
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // ワークフローが非同期実行されるため、少し待つ
+         await new Promise((resolve) => setTimeout(resolve, 500));
+@@ -1349,7 +1350,7 @@ describe("QA機能 結合テスト", () => {
+         );
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // ワークフローが非同期実行されるため、少し待つ
+         await new Promise((resolve) => setTimeout(resolve, 500));
+@@ -1384,7 +1385,7 @@ describe("QA機能 結合テスト", () => {
+         });
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // ワークフローが非同期実行されるため、少し待つ
+         await new Promise((resolve) => setTimeout(resolve, 500));
+@@ -1423,7 +1424,7 @@ describe("QA機能 結合テスト", () => {
+         );
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // ワークフローが非同期実行されるため、少し待つ
+         await new Promise((resolve) => setTimeout(resolve, 500));
+@@ -1453,7 +1454,7 @@ describe("QA機能 結合テスト", () => {
+         );
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // Assert: updateStatusが呼ばれないこと（ワークフローが開始されない）
+         expect(mockQaHistoryRepository.updateStatus).not.toHaveBeenCalled();
+@@ -1465,7 +1466,7 @@ describe("QA機能 結合テスト", () => {
+ 
+         // Act & Assert
+         await expect(
+-          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId),
++          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId),
+         ).rejects.toThrow("Q&A履歴が見つかりません");
+       });
+ 
+@@ -1486,7 +1487,7 @@ describe("QA機能 結合テスト", () => {
+ 
+         // Act & Assert
+         await expect(
+-          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId),
++          startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId),
+         ).rejects.toThrow("レビュー対象が見つかりません");
+       });
+ 
+@@ -1515,7 +1516,7 @@ describe("QA機能 結合テスト", () => {
+         });
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // ワークフローが非同期実行されるため、少し待つ
+         await new Promise((resolve) => setTimeout(resolve, 500));
+@@ -1567,7 +1568,7 @@ describe("QA機能 結合テスト", () => {
+         );
+ 
+         // Act
+-        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId);
++        await startQaWorkflowService.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+         // ワークフローが非同期実行されるため、少し待つ
+         await new Promise((resolve) => setTimeout(resolve, 500));
+diff --git a/next-server/application/aiTask/__tests__/integration/RetryReviewIntegration.test.ts b/next-server/application/aiTask/__tests__/integration/RetryReviewIntegration.test.ts
+index b1fb2e6..7533342 100644
+--- a/next-server/application/aiTask/__tests__/integration/RetryReviewIntegration.test.ts
++++ b/next-server/application/aiTask/__tests__/integration/RetryReviewIntegration.test.ts
+@@ -399,6 +399,7 @@ const assertSavedRetryTaskPayload = (
+ describe("レビューリトライ 結合テスト", () => {
+   // テスト用ID（UUID形式）
+   const testUserId = "550e8400-e29b-41d4-a716-446655440000";
++  const testEmployeeId = "test-employee-001";
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
+   const testTaskId = "550e8400-e29b-41d4-a716-446655440003";
+@@ -814,6 +815,7 @@ describe("レビューリトライ 結合テスト", () => {
+         const command: RetryReviewCommand = {
+           reviewTargetId: testReviewTargetId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           retryScope: "failed",
+         };
+ 
+@@ -888,6 +890,7 @@ describe("レビューリトライ 結合テスト", () => {
+         const command: RetryReviewCommand = {
+           reviewTargetId: testReviewTargetId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           retryScope: "all",
+           useLatestChecklist: false, // スナップショット使用
+         };
+@@ -945,6 +948,7 @@ describe("レビューリトライ 結合テスト", () => {
+         const command: RetryReviewCommand = {
+           reviewTargetId: testReviewTargetId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           retryScope: "all",
+           useLatestChecklist: true, // 最新チェックリスト使用
+         };
+@@ -1008,6 +1012,7 @@ describe("レビューリトライ 結合テスト", () => {
+         const command: RetryReviewCommand = {
+           reviewTargetId: testReviewTargetId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           retryScope: "failed",
+           reviewType: "large", // 大量レビュー
+         };
+@@ -1062,6 +1067,7 @@ describe("レビューリトライ 結合テスト", () => {
+         const command: RetryReviewCommand = {
+           reviewTargetId: testReviewTargetId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           retryScope: "all",
+           reviewType: "large",
+         };
+@@ -1142,6 +1148,7 @@ describe("レビューリトライ 結合テスト", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+         reviewSettings: {
+           additionalInstructions: "セキュリティに注意してレビュー",
+@@ -1203,6 +1210,7 @@ describe("レビューリトライ 結合テスト", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "all",
+         reviewType: "large", // small→largeに変更
+       };
+@@ -1232,6 +1240,7 @@ describe("レビューリトライ 結合テスト", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+         reviewType: "small", // large→smallに変更
+       };
+@@ -1466,6 +1475,7 @@ describe("レビューリトライ 結合テスト", () => {
+         const command: RetryReviewCommand = {
+           reviewTargetId: testReviewTargetId,
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           retryScope: "failed",
+         };
+ 
+diff --git a/next-server/application/aiTask/__tests__/integration/ReviewExecutionIntegration.test.ts b/next-server/application/aiTask/__tests__/integration/ReviewExecutionIntegration.test.ts
+index a7561e2..ce18668 100644
+--- a/next-server/application/aiTask/__tests__/integration/ReviewExecutionIntegration.test.ts
++++ b/next-server/application/aiTask/__tests__/integration/ReviewExecutionIntegration.test.ts
+@@ -418,6 +418,7 @@ const assertSavedReviewTaskPayload = (
+ describe("レビュー実行 結合テスト", () => {
+   // テスト用ID（UUID形式）
+   const testUserId = "550e8400-e29b-41d4-a716-446655440000";
++  const testEmployeeId = "test-employee-001";
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
+   const testTaskId = "550e8400-e29b-41d4-a716-446655440003";
+@@ -768,6 +769,7 @@ describe("レビュー実行 結合テスト", () => {
+           reviewSpaceId: testReviewSpaceId,
+           name: "テストレビュー対象",
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: testFiles,
+           fileBuffers: testFileBuffers,
+           reviewType: "small",
+@@ -1391,6 +1393,7 @@ describe("レビュー実行 結合テスト", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー対象",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: testFileBuffers,
+         reviewType: "small",
+@@ -1424,6 +1427,7 @@ describe("レビュー実行 結合テスト", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー対象",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: testFileBuffers,
+         reviewType: "large",
+@@ -1543,6 +1547,7 @@ describe("レビュー実行 結合テスト", () => {
+           reviewSpaceId: testReviewSpaceId,
+           name: "テストレビュー対象",
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: [], // 空のファイル配列
+           fileBuffers: new Map(),
+           reviewType: "small",
+@@ -1565,6 +1570,7 @@ describe("レビュー実行 結合テスト", () => {
+           reviewSpaceId: testReviewSpaceId,
+           name: "テストレビュー対象",
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: testFiles,
+           fileBuffers: createTestFileBuffers(testFiles),
+           reviewType: "small",
+@@ -1585,6 +1591,7 @@ describe("レビュー実行 結合テスト", () => {
+           reviewSpaceId: testReviewSpaceId,
+           name: "テストレビュー対象",
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: testFiles,
+           fileBuffers: createTestFileBuffers(testFiles),
+           reviewType: "small",
+@@ -1618,6 +1625,7 @@ describe("レビュー実行 結合テスト", () => {
+           reviewSpaceId: testReviewSpaceId,
+           name: "テストレビュー対象",
+           userId: testUserId,
++          employeeId: testEmployeeId,
+           files: testFiles,
+           fileBuffers: createTestFileBuffers(testFiles),
+           reviewType: "small",
+diff --git a/next-server/application/checkListItem/GenerateCheckListByAIService.ts b/next-server/application/checkListItem/GenerateCheckListByAIService.ts
+index b1ffa15..35eb61f 100644
+--- a/next-server/application/checkListItem/GenerateCheckListByAIService.ts
++++ b/next-server/application/checkListItem/GenerateCheckListByAIService.ts
+@@ -19,8 +19,10 @@ import { resolveAiApiConfig } from "@/application/shared/lib/resolveAiApiConfig"
+ export interface GenerateCheckListByAICommand {
+   /** レビュースペースID */
+   reviewSpaceId: string;
+-  /** 実行ユーザーID（権限確認用） */
++  /** 実行ユーザーID（DBのUUID、権限確認用） */
+   userId: string;
++  /** 社員ID（Keycloakのpreferred_username） */
++  employeeId: string;
+   /** ファイルメタデータの配列（バイナリデータはfileBuffersで渡す） */
+   files: RawUploadFileMeta[];
+   /** ファイルバッファのマップ（キー: ファイルID、値: バッファデータ） */
+@@ -61,8 +63,14 @@ export class GenerateCheckListByAIService {
+   async execute(
+     command: GenerateCheckListByAICommand,
+   ): Promise<GenerateCheckListByAIResult> {
+-    const { reviewSpaceId, userId, files, fileBuffers, checklistRequirements } =
+-      command;
++    const {
++      reviewSpaceId,
++      userId,
++      employeeId,
++      files,
++      fileBuffers,
++      checklistRequirements,
++    } = command;
+ 
+     // 入力バリデーション
+     if (files.length === 0) {
+@@ -110,6 +118,7 @@ export class GenerateCheckListByAIService {
+     const payload: ChecklistGenerationTaskPayload = {
+       reviewSpaceId,
+       userId,
++      employeeId,
+       files,
+       checklistRequirements,
+       aiApiConfig,
+diff --git a/next-server/application/checkListItem/__tests__/GenerateCheckListByAIService.test.ts b/next-server/application/checkListItem/__tests__/GenerateCheckListByAIService.test.ts
+index 056c12a..cf02316 100644
+--- a/next-server/application/checkListItem/__tests__/GenerateCheckListByAIService.test.ts
++++ b/next-server/application/checkListItem/__tests__/GenerateCheckListByAIService.test.ts
+@@ -84,6 +84,7 @@ describe("GenerateCheckListByAIService", () => {
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
+   const testUserId = "550e8400-e29b-41d4-a716-446655440003";
++  const testEmployeeId = "test-employee-001";
+   const testTaskId = "550e8400-e29b-41d4-a716-446655440004";
+   const testApiKeyHash = "test-api-key-hash";
+ 
+@@ -168,6 +169,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         checklistRequirements: "システム設計のチェックポイント",
+@@ -215,6 +217,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: filesWithImage,
+         fileBuffers: imageFileBuffers,
+         checklistRequirements: "ドキュメントからチェックリストを生成",
+@@ -232,6 +235,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: [],
+         fileBuffers: new Map(),
+         checklistRequirements: "テスト要件",
+@@ -246,6 +250,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         checklistRequirements: "",
+@@ -260,6 +265,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         checklistRequirements: "   ",
+@@ -278,6 +284,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         checklistRequirements: "テスト要件",
+@@ -297,6 +304,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         checklistRequirements: "テスト要件",
+@@ -318,6 +326,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: nonMemberUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         checklistRequirements: "テスト要件",
+@@ -339,6 +348,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         checklistRequirements: "セキュリティに関するチェックポイント",
+@@ -364,6 +374,7 @@ describe("GenerateCheckListByAIService", () => {
+       const command: GenerateCheckListByAICommand = {
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         checklistRequirements: "テスト要件",
+diff --git a/next-server/application/mastra/workflows/qaExecution/steps/__tests__/generateQaAnswerStep.test.ts b/next-server/application/mastra/workflows/qaExecution/steps/__tests__/generateQaAnswerStep.test.ts
+index 2242889..ca5908b 100644
+--- a/next-server/application/mastra/workflows/qaExecution/steps/__tests__/generateQaAnswerStep.test.ts
++++ b/next-server/application/mastra/workflows/qaExecution/steps/__tests__/generateQaAnswerStep.test.ts
+@@ -86,6 +86,7 @@ describe("generateQaAnswerStep", () => {
+       eventBroker?: IEventBroker;
+       userId?: string;
+       qaHistoryId?: string;
++      employeeId?: string;
+     } = {},
+   ) => {
+     const runtimeContext =
+@@ -99,6 +100,9 @@ describe("generateQaAnswerStep", () => {
+     if (options.qaHistoryId) {
+       runtimeContext.set("qaHistoryId", options.qaHistoryId);
+     }
++    if (options.employeeId) {
++      runtimeContext.set("employeeId", options.employeeId);
++    }
+     return runtimeContext;
+   };
+ 
+@@ -224,6 +228,38 @@ describe("generateQaAnswerStep", () => {
+       expect(promptText).toContain("セキュリティガイドライン.docx");
+       expect(promptText).toContain("AES-256");
+     });
++
++    it("workflowRuntimeContextからemployeeIdが伝播される", async () => {
++      // Arrange
++      mockGenerateLegacy.mockResolvedValue({
++        text: "回答テキスト",
++      });
++
++      const runtimeContext = createTestRuntimeContext({
++        employeeId: "test-employee-001",
++      });
++
++      // Act
++      await generateQaAnswerStep.execute({
++        inputData: {
++          question: testQuestion,
++          checklistResults: testChecklistResults,
++          researchResults: testResearchResults,
++        },
++        mastra: createMastraMock() as any,
++        runtimeContext,
++        getStepResult: vi.fn(),
++        getInitData: vi.fn(),
++        suspend: vi.fn(),
++        runId: "test-run-id",
++        bail: createBailMock(),
++      } as any);
++
++      // Assert
++      const callArgs = mockGenerateLegacy.mock.calls[0];
++      const options = callArgs[1];
++      expect(options.runtimeContext.get("employeeId")).toBe("test-employee-001");
++    });
+   });
+ 
+   describe("SSEストリーミング", () => {
+diff --git a/next-server/application/mastra/workflows/qaExecution/steps/__tests__/planQaResearchStep.test.ts b/next-server/application/mastra/workflows/qaExecution/steps/__tests__/planQaResearchStep.test.ts
+index c81bff3..c170962 100644
+--- a/next-server/application/mastra/workflows/qaExecution/steps/__tests__/planQaResearchStep.test.ts
++++ b/next-server/application/mastra/workflows/qaExecution/steps/__tests__/planQaResearchStep.test.ts
+@@ -1,8 +1,10 @@
+ import { describe, it, expect, vi, beforeEach } from "vitest";
++import { RuntimeContext } from "@mastra/core/di";
+ import { planQaResearchStep } from "../planQaResearchStep";
+ import type {
+   AvailableDocument,
+   ChecklistResultWithIndividual,
++  QaExecutionWorkflowRuntimeContext,
+ } from "../../types";
+ 
+ // エージェントをモック
+@@ -247,6 +249,46 @@ describe("planQaResearchStep", () => {
+         expect.any(Object),
+       );
+     });
++
++    it("workflowRuntimeContextからemployeeIdが伝播される", async () => {
++      // Arrange
++      mockGenerateLegacy.mockResolvedValue({
++        object: {
++          tasks: [
++            {
++              reasoning: "理由",
++              documentId: "doc-1",
++              researchContent: "調査内容",
++            },
++          ],
++        },
++      });
++
++      const workflowRuntimeContext =
++        new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
++      workflowRuntimeContext.set("employeeId", "test-employee-001");
++
++      // Act
++      await planQaResearchStep.execute({
++        inputData: {
++          question: testQuestion,
++          availableDocuments: testAvailableDocuments,
++          checklistResults: testChecklistResultsSmall,
++        },
++        mastra: createMastraMock() as any,
++        runtimeContext: workflowRuntimeContext,
++        getStepResult: vi.fn(),
++        getInitData: vi.fn(),
++        suspend: vi.fn(),
++        runId: "test-run-id",
++        bail: createBailMock(),
++      } as any);
++
++      // Assert
++      const callArgs = mockGenerateLegacy.mock.calls[0];
++      const options = callArgs[1];
++      expect(options.runtimeContext.get("employeeId")).toBe("test-employee-001");
++    });
+   });
+ 
+   describe("異常系", () => {
+diff --git a/next-server/application/mastra/workflows/qaExecution/steps/__tests__/researchChunkStep.test.ts b/next-server/application/mastra/workflows/qaExecution/steps/__tests__/researchChunkStep.test.ts
+index 8f40eb7..4914061 100644
+--- a/next-server/application/mastra/workflows/qaExecution/steps/__tests__/researchChunkStep.test.ts
++++ b/next-server/application/mastra/workflows/qaExecution/steps/__tests__/researchChunkStep.test.ts
+@@ -1,6 +1,10 @@
+ import { describe, it, expect, vi, beforeEach } from "vitest";
++import { RuntimeContext } from "@mastra/core/di";
+ import { researchChunkStep } from "../researchChunkStep";
+-import type { ChecklistResultWithIndividual } from "../../types";
++import type {
++  ChecklistResultWithIndividual,
++  QaExecutionWorkflowRuntimeContext,
++} from "../../types";
+ 
+ // エージェントをモック
+ const mockGenerateLegacy = vi.fn();
+@@ -235,6 +239,46 @@ describe("researchChunkStep", () => {
+       expect(options.runtimeContext.get("reviewMode")).toBe("small");
+     });
+ 
++    it("workflowRuntimeContextからemployeeIdが伝播される", async () => {
++      // Arrange
++      mockGenerateLegacy.mockResolvedValue({
++        text: "調査結果テキスト",
++      });
++
++      const workflowRuntimeContext =
++        new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
++      workflowRuntimeContext.set("employeeId", "test-employee-001");
++
++      // Act
++      await researchChunkStep.execute({
++        inputData: {
++          documentCacheId: "cache-doc-1",
++          fileName: testFileName,
++          researchContent: testResearchContent,
++          reasoning: testReasoning,
++          chunkContent: {
++            text: "テストコンテンツ",
++          },
++          chunkIndex: 0,
++          totalChunks: 1,
++          question: testQuestion,
++          checklistResults: testChecklistResultsSmall,
++        },
++        mastra: createMastraMock() as any,
++        runtimeContext: workflowRuntimeContext,
++        getStepResult: vi.fn(),
++        getInitData: vi.fn(),
++        suspend: vi.fn(),
++        runId: "test-run-id",
++        bail: createBailMock(),
++      } as any);
++
++      // Assert
++      const callArgs = mockGenerateLegacy.mock.calls[0];
++      const options = callArgs[1];
++      expect(options.runtimeContext.get("employeeId")).toBe("test-employee-001");
++    });
++
+     it("大量レビューモードの場合reviewModeがlargeになる", async () => {
+       // Arrange
+       mockGenerateLegacy.mockResolvedValue({
+diff --git a/next-server/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep.ts b/next-server/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep.ts
+index 09f70c1..9eceac4 100644
+--- a/next-server/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep.ts
++++ b/next-server/application/mastra/workflows/qaExecution/steps/generateQaAnswerStep.ts
+@@ -73,6 +73,7 @@ export const generateQaAnswerStep = createStep({
+       const qaHistoryId = typedWorkflowRuntimeContext?.get?.("qaHistoryId") as
+         | string
+         | undefined;
++      const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
+       const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+       const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+       const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
+@@ -96,6 +97,7 @@ export const generateQaAnswerStep = createStep({
+         userQuestion: question,
+         checklistInfo,
+         reviewMode,
++        employeeId,
+         aiApiKey,
+         aiApiUrl,
+         aiApiModel,
+diff --git a/next-server/application/mastra/workflows/qaExecution/steps/planQaResearchStep.ts b/next-server/application/mastra/workflows/qaExecution/steps/planQaResearchStep.ts
+index b3d8c61..0205025 100644
+--- a/next-server/application/mastra/workflows/qaExecution/steps/planQaResearchStep.ts
++++ b/next-server/application/mastra/workflows/qaExecution/steps/planQaResearchStep.ts
+@@ -86,6 +86,7 @@ export const planQaResearchStep = createStep({
+       const typedWorkflowRuntimeContext = workflowRuntimeContext as
+         | RuntimeContext<QaExecutionWorkflowRuntimeContext>
+         | undefined;
++      const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
+       const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+       const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+       const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
+@@ -96,6 +97,7 @@ export const planQaResearchStep = createStep({
+           availableDocuments,
+           checklistInfo,
+           reviewMode,
++          employeeId,
+           aiApiKey,
+           aiApiUrl,
+           aiApiModel,
+diff --git a/next-server/application/mastra/workflows/qaExecution/steps/researchChunkStep.ts b/next-server/application/mastra/workflows/qaExecution/steps/researchChunkStep.ts
+index cacbf84..c0af6b5 100644
+--- a/next-server/application/mastra/workflows/qaExecution/steps/researchChunkStep.ts
++++ b/next-server/application/mastra/workflows/qaExecution/steps/researchChunkStep.ts
+@@ -99,6 +99,7 @@ export const researchChunkStep = createStep({
+       const typedWorkflowRuntimeContext = workflowRuntimeContext as
+         | RuntimeContext<QaExecutionWorkflowRuntimeContext>
+         | undefined;
++      const employeeId = typedWorkflowRuntimeContext?.get("employeeId");
+       const aiApiKey = typedWorkflowRuntimeContext?.get("aiApiKey");
+       const aiApiUrl = typedWorkflowRuntimeContext?.get("aiApiUrl");
+       const aiApiModel = typedWorkflowRuntimeContext?.get("aiApiModel");
+@@ -113,6 +114,7 @@ export const researchChunkStep = createStep({
+           checklistInfo,
+           userQuestion: question,
+           reviewMode,
++          employeeId,
+           aiApiKey,
+           aiApiUrl,
+           aiApiModel,
+diff --git a/next-server/application/qaHistory/ListQaHistoriesService.ts b/next-server/application/qaHistory/ListQaHistoriesService.ts
+index c5efd96..085334a 100644
+--- a/next-server/application/qaHistory/ListQaHistoriesService.ts
++++ b/next-server/application/qaHistory/ListQaHistoriesService.ts
+@@ -1,10 +1,15 @@
+ import { IQaHistoryRepository } from "@/application/shared/port/repository/IQaHistoryRepository";
+ import { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
+ import { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
+-import { IProjectRepository } from "@/application/shared/port/repository";
++import {
++  IProjectRepository,
++  IUserRepository,
++} from "@/application/shared/port/repository";
++import { buildUserNameMap } from "@/application/shared/util";
+ import { ReviewTargetId } from "@/domain/reviewTarget";
+ import { ReviewSpaceId } from "@/domain/reviewSpace";
+ import { ProjectId } from "@/domain/project";
++import { UserId } from "@/domain/user";
+ import { domainValidationError } from "@/lib/server/error";
+ 
+ /**
+@@ -27,6 +32,10 @@ export interface ListQaHistoriesCommand {
+ export interface QaHistoryDto {
+   /** Q&A履歴ID */
+   id: string;
++  /** 質問者のユーザーID */
++  userId: string;
++  /** 質問者の表示名 */
++  userDisplayName: string;
+   /** 質問内容 */
+   question: string;
+   /** チェックリスト項目の内容 */
+@@ -65,6 +74,7 @@ export class ListQaHistoriesService {
+     private readonly reviewTargetRepository: IReviewTargetRepository,
+     private readonly reviewSpaceRepository: IReviewSpaceRepository,
+     private readonly projectRepository: IProjectRepository,
++    private readonly userRepository: IUserRepository,
+   ) {}
+ 
+   /**
+@@ -113,9 +123,17 @@ export class ListQaHistoriesService {
+         offset,
+       });
+ 
++    // ユニークなユーザーIDを収集してユーザー情報を一括取得
++    const uniqueUserIds = [...new Set(items.map((h) => h.userId.value))];
++    const userIdVos = uniqueUserIds.map((id) => UserId.reconstruct(id));
++    const users = await this.userRepository.findByIds(userIdVos);
++    const userNameMap = buildUserNameMap(users);
++
+     return {
+       items: items.map((qaHistory) => ({
+         id: qaHistory.id.value,
++        userId: qaHistory.userId.value,
++        userDisplayName: userNameMap.get(qaHistory.userId.value) ?? "",
+         question: qaHistory.question.value,
+         checklistItemContent: qaHistory.checkListItemContent.value,
+         answer: qaHistory.answer?.value ?? null,
+diff --git a/next-server/application/qaHistory/StartQaWorkflowService.ts b/next-server/application/qaHistory/StartQaWorkflowService.ts
+index 766ecc4..d0aa39c 100644
+--- a/next-server/application/qaHistory/StartQaWorkflowService.ts
++++ b/next-server/application/qaHistory/StartQaWorkflowService.ts
+@@ -58,9 +58,14 @@ export class StartQaWorkflowService {
+    * Q&Aワークフローを開始
+    * SSE接続確立後に呼び出される
+    * @param qaHistoryId Q&A履歴ID
+-   * @param userId ユーザーID
++   * @param userId ユーザーID（DBのUUID）
++   * @param employeeId 社員ID（Keycloakのpreferred_username）
+    */
+-  async startWorkflow(qaHistoryId: string, userId: string): Promise<void> {
++  async startWorkflow(
++    qaHistoryId: string,
++    userId: string,
++    employeeId: string,
++  ): Promise<void> {
+     const qaHistoryIdVo = QaHistoryId.reconstruct(qaHistoryId);
+     const qaHistory = await this.qaHistoryRepository.findById(qaHistoryIdVo);
+ 
+@@ -92,6 +97,7 @@ export class StartQaWorkflowService {
+     this.executeQaWorkflow(
+       qaHistoryIdVo,
+       userId,
++      employeeId,
+       qaHistory.reviewTargetId,
+     ).catch((error) => {
+       logger.error({ err: error, qaHistoryId }, "Q&A処理が失敗しました");
+@@ -101,12 +107,14 @@ export class StartQaWorkflowService {
+   /**
+    * Q&Aワークフローを実行
+    * @param qaHistoryId Q&A履歴ID
+-   * @param userId ユーザーID
++   * @param userId ユーザーID（DBのUUID）
++   * @param employeeId 社員ID（Keycloakのpreferred_username）
+    * @param reviewTargetId レビュー対象ID
+    */
+   private async executeQaWorkflow(
+     qaHistoryId: QaHistoryId,
+     userId: string,
++    employeeId: string,
+     reviewTargetId: ReviewTargetId,
+   ): Promise<void> {
+     try {
+@@ -210,6 +218,7 @@ export class StartQaWorkflowService {
+         new RuntimeContext<QaExecutionWorkflowRuntimeContext>();
+       runtimeContext.set("eventBroker", this.eventBroker);
+       runtimeContext.set("userId", userId);
++      runtimeContext.set("employeeId", employeeId);
+       runtimeContext.set("qaHistoryId", qaHistoryId.value);
+       runtimeContext.set("aiApiKey", aiApiConfig.apiKey);
+       runtimeContext.set("aiApiUrl", aiApiConfig.apiUrl);
+diff --git a/next-server/application/qaHistory/__tests__/ListQaHistoriesService.test.ts b/next-server/application/qaHistory/__tests__/ListQaHistoriesService.test.ts
+index fa651a7..33a9acc 100644
+--- a/next-server/application/qaHistory/__tests__/ListQaHistoriesService.test.ts
++++ b/next-server/application/qaHistory/__tests__/ListQaHistoriesService.test.ts
+@@ -3,7 +3,10 @@ import { ListQaHistoriesService } from "../ListQaHistoriesService";
+ import type { IQaHistoryRepository } from "@/application/shared/port/repository/IQaHistoryRepository";
+ import type { IReviewTargetRepository } from "@/application/shared/port/repository/IReviewTargetRepository";
+ import type { IReviewSpaceRepository } from "@/application/shared/port/repository/IReviewSpaceRepository";
+-import type { IProjectRepository } from "@/application/shared/port/repository";
++import type {
++  IProjectRepository,
++  IUserRepository,
++} from "@/application/shared/port/repository";
+ import {
+   QaHistory,
+   QaHistoryId,
+@@ -24,6 +27,7 @@ describe("ListQaHistoriesService", () => {
+   let mockReviewTargetRepository: IReviewTargetRepository;
+   let mockReviewSpaceRepository: IReviewSpaceRepository;
+   let mockProjectRepository: IProjectRepository;
++  let mockUserRepository: IUserRepository;
+   let service: ListQaHistoriesService;
+ 
+   // テストデータ
+@@ -32,6 +36,7 @@ describe("ListQaHistoriesService", () => {
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440003";
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440004";
+   const testQaHistoryId = "550e8400-e29b-41d4-a716-446655440005";
++  const testUserDisplayName = "テストユーザー";
+ 
+   // モックエンティティ作成ヘルパー
+   const createMockReviewTarget = () => ({
+@@ -108,11 +113,26 @@ describe("ListQaHistoriesService", () => {
+       delete: vi.fn(),
+     } as unknown as IProjectRepository;
+ 
++    mockUserRepository = {
++      findById: vi.fn(),
++      findByIds: vi.fn().mockResolvedValue([
++        {
++          id: { value: testUserId },
++          displayName: testUserDisplayName,
++          employeeId: { value: "EMP001" },
++        },
++      ]),
++      findByEmployeeId: vi.fn(),
++      save: vi.fn(),
++      upsert: vi.fn(),
++    } as unknown as IUserRepository;
++
+     service = new ListQaHistoriesService(
+       mockQaHistoryRepository,
+       mockReviewTargetRepository,
+       mockReviewSpaceRepository,
+       mockProjectRepository,
++      mockUserRepository,
+     );
+   });
+ 
+@@ -160,6 +180,8 @@ describe("ListQaHistoriesService", () => {
+       // DTO変換結果の詳細検証
+       const item = result.items[0];
+       expect(item.id).toBe(testQaHistoryId);
++      expect(item.userId).toBe(testUserId);
++      expect(item.userDisplayName).toBe(testUserDisplayName);
+       expect(item.question).toBe("テスト質問");
+       expect(item.checklistItemContent).toBe("チェック項目内容");
+       expect(item.answer).toBe("テスト回答");
+diff --git a/next-server/application/qaHistory/__tests__/StartQaWorkflowService.test.ts b/next-server/application/qaHistory/__tests__/StartQaWorkflowService.test.ts
+index 848662d..b364051 100644
+--- a/next-server/application/qaHistory/__tests__/StartQaWorkflowService.test.ts
++++ b/next-server/application/qaHistory/__tests__/StartQaWorkflowService.test.ts
+@@ -98,6 +98,7 @@ describe("StartQaWorkflowService", () => {
+ 
+   // テストデータ
+   const testUserId = "550e8400-e29b-41d4-a716-446655440001";
++  const testEmployeeId = "test-employee-001";
+   const testReviewTargetId = "550e8400-e29b-41d4-a716-446655440002";
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440003";
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440004";
+@@ -290,7 +291,7 @@ describe("StartQaWorkflowService", () => {
+       });
+ 
+       // Act
+-      await service.startWorkflow(testQaHistoryId, testUserId);
++      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+       // 非同期処理の完了を待つ
+       await new Promise((resolve) => setTimeout(resolve, 500));
+@@ -338,7 +339,7 @@ describe("StartQaWorkflowService", () => {
+       );
+ 
+       // Act
+-      await service.startWorkflow(testQaHistoryId, testUserId);
++      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+       // Assert
+       // ステータスが更新されないことを確認
+@@ -355,7 +356,7 @@ describe("StartQaWorkflowService", () => {
+       );
+ 
+       // Act
+-      await service.startWorkflow(testQaHistoryId, testUserId);
++      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+       // Assert
+       expect(mockQaHistoryRepository.updateStatus).not.toHaveBeenCalled();
+@@ -369,7 +370,7 @@ describe("StartQaWorkflowService", () => {
+       );
+ 
+       // Act
+-      await service.startWorkflow(testQaHistoryId, testUserId);
++      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+       // Assert
+       expect(mockQaHistoryRepository.updateStatus).not.toHaveBeenCalled();
+@@ -382,7 +383,7 @@ describe("StartQaWorkflowService", () => {
+ 
+       // Act & Assert
+       await expect(
+-        service.startWorkflow(testQaHistoryId, testUserId),
++        service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId),
+       ).rejects.toThrow("Q&A履歴が見つかりません");
+     });
+ 
+@@ -395,7 +396,7 @@ describe("StartQaWorkflowService", () => {
+ 
+       // Act & Assert
+       await expect(
+-        service.startWorkflow(testQaHistoryId, testUserId),
++        service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId),
+       ).rejects.toThrow("レビュー対象が見つかりません");
+ 
+       // ステータス更新前にエラーが発生するため、更新されない
+@@ -444,7 +445,7 @@ describe("StartQaWorkflowService", () => {
+       });
+ 
+       // Act
+-      await service.startWorkflow(testQaHistoryId, testUserId);
++      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+       await new Promise((resolve) => setTimeout(resolve, 100));
+ 
+       // Assert - エラーがDBに記録されたことを確認
+@@ -516,7 +517,7 @@ describe("StartQaWorkflowService", () => {
+       });
+ 
+       // Act
+-      await service.startWorkflow(testQaHistoryId, testUserId);
++      await service.startWorkflow(testQaHistoryId, testUserId, testEmployeeId);
+ 
+       // 非同期処理の完了を待つ
+       await new Promise((resolve) => setTimeout(resolve, 500));
+diff --git a/next-server/application/reviewTarget/ExecuteReviewService.ts b/next-server/application/reviewTarget/ExecuteReviewService.ts
+index d265dd5..ea1a7e5 100644
+--- a/next-server/application/reviewTarget/ExecuteReviewService.ts
++++ b/next-server/application/reviewTarget/ExecuteReviewService.ts
+@@ -49,8 +49,10 @@ export interface ExecuteReviewCommand {
+   reviewSpaceId: string;
+   /** レビュー対象名 */
+   name: string;
+-  /** 実行ユーザーID（権限確認用） */
++  /** 実行ユーザーID（DBのUUID、権限確認用） */
+   userId: string;
++  /** 社員ID（Keycloakのpreferred_username） */
++  employeeId: string;
+   /** ファイルメタデータの配列（バイナリデータはfileBuffersで渡す） */
+   files: RawUploadFileMeta[];
+   /** ファイルバッファのマップ（キー: ファイルID、値: バッファデータ） */
+@@ -99,6 +101,7 @@ export class ExecuteReviewService {
+       reviewSpaceId,
+       name,
+       userId,
++      employeeId,
+       files,
+       fileBuffers,
+       reviewSettings,
+@@ -213,6 +216,7 @@ export class ExecuteReviewService {
+       reviewTargetId: queuedTarget.id.value,
+       reviewSpaceId,
+       userId,
++      employeeId,
+       files,
+       checkListItems: checkListItemsForPayload,
+       reviewSettings: reviewSettings
+diff --git a/next-server/application/reviewTarget/RetryReviewService.ts b/next-server/application/reviewTarget/RetryReviewService.ts
+index 3a01d0d..c35f93d 100644
+--- a/next-server/application/reviewTarget/RetryReviewService.ts
++++ b/next-server/application/reviewTarget/RetryReviewService.ts
+@@ -29,8 +29,10 @@ export type RetryScope = "failed" | "all";
+ export interface RetryReviewCommand {
+   /** レビュー対象ID */
+   reviewTargetId: string;
+-  /** 実行ユーザーID（権限確認用） */
++  /** 実行ユーザーID（DBのUUID、権限確認用） */
+   userId: string;
++  /** 社員ID（Keycloakのpreferred_username） */
++  employeeId: string;
+   /** リトライ範囲 */
+   retryScope: RetryScope;
+   /** 最新チェックリストを使用するか（retryScope === 'all'の場合のみ有効） */
+@@ -80,6 +82,7 @@ export class RetryReviewService {
+     const {
+       reviewTargetId,
+       userId,
++      employeeId,
+       retryScope,
+       useLatestChecklist = false,
+       reviewType,
+@@ -244,6 +247,7 @@ export class RetryReviewService {
+       reviewTargetId,
+       reviewSpaceId: reviewTarget.reviewSpaceId.value,
+       userId,
++      employeeId,
+       files: [], // リトライ時はファイルは不要（キャッシュを使用）
+       checkListItems: targetCheckListItems,
+       reviewSettings: effectiveSettings
+diff --git a/next-server/application/reviewTarget/__tests__/ExecuteReviewService.test.ts b/next-server/application/reviewTarget/__tests__/ExecuteReviewService.test.ts
+index ddfd637..c301115 100644
+--- a/next-server/application/reviewTarget/__tests__/ExecuteReviewService.test.ts
++++ b/next-server/application/reviewTarget/__tests__/ExecuteReviewService.test.ts
+@@ -108,6 +108,7 @@ describe("ExecuteReviewService", () => {
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
+   const testUserId = "550e8400-e29b-41d4-a716-446655440003";
++  const testEmployeeId = "test-employee-001";
+   const testCheckListItemId1 = "550e8400-e29b-41d4-a716-446655440004";
+   const testCheckListItemId2 = "550e8400-e29b-41d4-a716-446655440005";
+   const testTaskId = "550e8400-e29b-41d4-a716-446655440006";
+@@ -217,6 +218,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+       };
+@@ -253,6 +255,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         reviewType: "large",
+@@ -281,6 +284,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+         reviewSettings: {
+@@ -318,6 +322,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: [],
+         fileBuffers: new Map(),
+       };
+@@ -340,6 +345,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+       };
+@@ -358,6 +364,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+       };
+@@ -377,6 +384,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+       };
+@@ -398,6 +406,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: nonMemberUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+       };
+@@ -422,6 +431,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+       };
+@@ -453,6 +463,7 @@ describe("ExecuteReviewService", () => {
+         reviewSpaceId: testReviewSpaceId,
+         name: "テストレビュー",
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: testFiles,
+         fileBuffers: createTestFileBuffers(),
+       };
+diff --git a/next-server/application/reviewTarget/__tests__/RetryReviewService.test.ts b/next-server/application/reviewTarget/__tests__/RetryReviewService.test.ts
+index 76d5cfe..aa20ada 100644
+--- a/next-server/application/reviewTarget/__tests__/RetryReviewService.test.ts
++++ b/next-server/application/reviewTarget/__tests__/RetryReviewService.test.ts
+@@ -129,6 +129,7 @@ describe("RetryReviewService", () => {
+   const testProjectId = "550e8400-e29b-41d4-a716-446655440001";
+   const testReviewSpaceId = "550e8400-e29b-41d4-a716-446655440002";
+   const testUserId = "550e8400-e29b-41d4-a716-446655440003";
++  const testEmployeeId = "test-employee-001";
+   const testReviewTargetId = "550e8400-e29b-41d4-a716-446655440004";
+   const testCheckListItemId1 = "550e8400-e29b-41d4-a716-446655440005";
+   const testCheckListItemId2 = "550e8400-e29b-41d4-a716-446655440006";
+@@ -283,6 +284,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -332,6 +334,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "all",
+         useLatestChecklist: false,
+       };
+@@ -373,6 +376,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "all",
+         useLatestChecklist: true,
+       };
+@@ -413,6 +417,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+         reviewType: "large", // 種別を変更
+       };
+@@ -452,6 +457,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+         reviewSettings: {
+           additionalInstructions: "セキュリティに注意",
+@@ -479,6 +485,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -506,6 +513,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -524,6 +532,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -545,6 +554,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -567,6 +577,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: nonMemberUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -591,6 +602,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -623,6 +635,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -674,6 +687,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed", // 失敗項目のみ指定
+       };
+ 
+@@ -706,6 +720,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -735,6 +750,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "failed",
+       };
+ 
+@@ -746,6 +762,7 @@ describe("RetryReviewService", () => {
+         reviewTargetId: testReviewTargetId,
+         reviewSpaceId: testReviewSpaceId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         files: [], // リトライ時は空
+         isRetry: true,
+         retryScope: "failed",
+@@ -776,6 +793,7 @@ describe("RetryReviewService", () => {
+       const command: RetryReviewCommand = {
+         reviewTargetId: testReviewTargetId,
+         userId: testUserId,
++        employeeId: testEmployeeId,
+         retryScope: "all",
+       };
+ 
